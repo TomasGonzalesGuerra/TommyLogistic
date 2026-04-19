@@ -1,0 +1,6 @@
+@TommyLogistic.API_HostAddress = http://localhost:5261
+
+GET {{TommyLogistic.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

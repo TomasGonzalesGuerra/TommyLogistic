@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="TommyLogistic.API/TommyLogistic.API.csproj" />
+  <Project Path="TommyLogistic.Shared/TommyLogistic.Shared.csproj" />
+</Solution>
