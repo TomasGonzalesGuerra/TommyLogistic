@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
 <head>
     <meta charset="utf-8" />
@@ -8,26 +8,27 @@
     <base href="/" />
     <link rel="preload" id="webassembly" />
     <link rel="stylesheet" href="css/app.css" />
-    <!-- If you add any scoped CSS files, uncomment the following to load them
-    <link href="TommyLogistic.Web.styles.css" rel="stylesheet" /> -->
+    <link href="TommyLogistic.Web.styles.css" rel="stylesheet" />
     <script type="importmap"></script>
 </head>
 
 <body>
     <div id="app">
-        <svg class="loading-progress">
-            <circle r="40%" cx="50%" cy="50%" />
-            <circle r="40%" cx="50%" cy="50%" />
-        </svg>
-        <div class="loading-progress-text"></div>
+        <div class="splash-loader">
+            <div class="splash-logo">TD</div>
+            <div class="splash-spinner"></div>
+            <p>Cargando TomDriver...</p>
+        </div>
     </div>
 
     <div id="blazor-error-ui">
-        An unhandled error has occurred.
-        <a href="." class="reload">Reload</a>
-        <span class="dismiss">🗙</span>
+        Ocurrió un error inesperado.
+        <a href="" class="reload">Recargar</a>
+        <a class="dismiss">✕</a>
     </div>
+
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+    <script src="_content/CurrieTechnologies.Razor.SweetAlert2/sweetAlert2.min.js"></script>
 </body>
 
 </html>

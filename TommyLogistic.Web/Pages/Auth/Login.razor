@@ -1,0 +1,93 @@
+﻿@page "/"
+@layout AuthLayout
+@inject IRepository _IRepository
+@inject ILoginService _ILoginService
+@inject SweetAlertService _SweetAlertService
+@inject NavigationManager _NavigationManager
+
+<PageTitle>Iniciar sesión — Tommy Logistic</PageTitle>
+
+<div class="login-page">
+    <div class="login-card">
+
+        <div class="login-header">
+            <div class="login-logo">TD</div>
+            <h1 class="login-title">TomDriver</h1>
+            <p class="login-subtitle">Sistema de logística</p>
+        </div>
+
+        @if (_error)
+        {
+            <div class="alert alert-danger" role="alert">
+                <span>⚠️</span>
+                <span>@_error</span>
+            </div>
+        }
+
+        <div class="form-group">
+            <EditForm Model="loginDTO" OnValidSubmit="LoginAsync">
+                <DataAnnotationsValidator />
+                <label class="form-label required">Correo electrónico</label>
+                <InputText @bind-Value="@loginDTO.Email" id="email" type="email" class="@($"form-control {("error" != null ? "invalid" : "")}")" placeholder="usuario@logistic.com" autocomplete="email" inputmode="email" disabled="@_cargando" />
+                <ValidationMessage For="@(() => loginDTO.Email)" />
+                
+                <label class="form-label required">Contraseña</label>
+                <InputText @bind-Value="@loginDTO.Password" id="password" type="@(_verPassword ? "text" : "password")" class="@($"form-control {("error" != null ? "invalid" : "")}")" autocomplete="current-password" placeholder="••••••••" disabled="@_cargando" />
+                <ValidationMessage For="@(() => loginDTO.Password)" />
+
+                <br />
+                @* <button class="btn  btn-primary" type="submit">Iniciar Sesión</button> *@
+                <button type="submit" class="btn btn-primary btn-touch">
+                    @if (_cargando)
+                    {
+                        <span class="spinner spinner-sm"></span>
+                        <span>Ingresando...</span>
+                    }
+                    else
+                    {
+                        <span>Ingresar</span>
+                    }
+                </button>
+            </EditForm>
+        </div>
+
+        <p class="login-footer">
+            ¿Problemas para acceder? Contacta a tu administrador.
+        </p>
+    </div>
+</div>
+
+@code {
+    private LoginDTO loginDTO = new();
+    private bool _error;
+    private bool _cargando;
+    private bool _verPassword;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        //TODO: Implementar un método para verificar Logeado válido y redirigirlo a Home
+        // var rol = await Sesion.ObtenerRolAsync();
+        // _NavigationManager.NavigateTo("/Home");
+    }
+    
+    private async Task LoginAsync()
+    {
+        _error = false;
+        _cargando = true;
+
+        var responseHttp = await _IRepository.Post<LoginDTO, TokenDTO>("api/auth/Login", loginDTO);
+        
+        if (responseHttp.Error)
+        {
+            var message = await responseHttp.GetErrorMessageAsync();
+            await _SweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            _error = responseHttp.Error;
+            _cargando = false;
+            return;
+        }
+
+        await _ILoginService.LoginAsync(responseHttp.Response!.Token!);
+        _NavigationManager.NavigateTo("/Home");
+    }
+}

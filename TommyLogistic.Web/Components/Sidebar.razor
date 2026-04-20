@@ -1,0 +1,78 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager _NavigationManager
+
+<div class="sidebar-inner">
+
+    <div class="sidebar-header">
+        <div class="sidebar-logo">
+            <span class="logo-mark">TD</span>
+            <span class="logo-name">TomDriver</span>
+        </div>
+        <button class="sidebar-close" @onclick="OnCerrar"
+                aria-label="Cerrar menú">✕</button>
+    </div>
+
+    <nav class="sidebar-nav">
+
+        <AuthorizeView Roles="Admin">
+            <div class="nav-section-label">Operaciones</div>
+            <NavLink class="nav-item" href="/" Match="NavLinkMatch.All">
+                <span class="nav-icon">📊</span> Dashboard
+            </NavLink>
+            <NavLink class="nav-item" href="/pedidos">
+                <span class="nav-icon">📦</span> Pedidos
+            </NavLink>
+            <NavLink class="nav-item" href="/pedidos/almacen">
+                <span class="nav-icon">🏭</span> Almacén
+            </NavLink>
+
+            <div class="nav-section-label">Gestión</div>
+            <NavLink class="nav-item" href="/empresas">
+                <span class="nav-icon">🏢</span> Empresas
+            </NavLink>
+            <NavLink class="nav-item" href="/repartidores">
+                <span class="nav-icon">🛵</span> Repartidores
+            </NavLink>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="ClienteEmpresa">
+            <div class="nav-section-label">Mi empresa</div>
+            <NavLink class="nav-item" href="/" Match="NavLinkMatch.All">
+                <span class="nav-icon">📊</span> Dashboard
+            </NavLink>
+            <NavLink class="nav-item" href="/mis-pedidos">
+                <span class="nav-icon">📦</span> Mis pedidos
+            </NavLink>
+            <NavLink class="nav-item" href="/mis-pedidos/nuevo">
+                <span class="nav-icon">➕</span> Nuevo pedido
+            </NavLink>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="Repartidor">
+            <div class="nav-section-label">Mi ruta</div>
+            <NavLink class="nav-item" href="/" Match="NavLinkMatch.All">
+                <span class="nav-icon">🗺️</span> Mi ruta
+            </NavLink>
+            <NavLink class="nav-item" href="/mis-entregas">
+                <span class="nav-icon">✅</span> Mis entregas
+            </NavLink>
+        </AuthorizeView>
+
+    </nav>
+
+    <div class="sidebar-footer">
+        <button class="btn btn-ghost w-full" @onclick="Logout">
+            <span>🚪</span> Cerrar sesión
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnCerrar { get; set; }
+
+    private async Task Logout()
+    {
+        // await AuthService.LogoutAsync();
+        _NavigationManager.NavigateTo("/login", forceLoad: true);
+    }
+}

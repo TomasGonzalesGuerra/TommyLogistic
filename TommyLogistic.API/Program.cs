@@ -50,10 +50,15 @@ static void SeedData(WebApplication app)
     service!.SeedAsync().Wait();
 }
 
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline. https://localhost:7073
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.UseCors(x => x
+.AllowAnyMethod()
+.AllowAnyHeader()
+.SetIsOriginAllowed(origin => true)
+.AllowCredentials());
 
 app.Run();

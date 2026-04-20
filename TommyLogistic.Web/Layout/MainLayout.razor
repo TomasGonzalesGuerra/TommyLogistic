@@ -1,3 +1,91 @@
 ﻿@inherits LayoutComponentBase
+@inject NavigationManager _NavigationManager
 
-@Body
+<div class="app-layout">
+    @if (_inicializando)
+    {
+        <div class="splash-loader">
+            <div class="splash-logo">TD</div>
+            <div class="splash-spinner"></div>
+            <p>Cargando...</p>
+        </div>
+    }
+    else if (_esPaginaPublica)
+    {
+        @Body
+    }
+    else
+    {
+        <nav class="app-sidebar @(_sidebarAbierto ? "open" : "")">
+            <Sidebar OnCerrar="CerrarSidebar" />
+        </nav>
+
+        @if (_sidebarAbierto)
+        {
+            <div class="sidebar-overlay" @onclick="CerrarSidebar"></div>
+        }
+
+        <div class="app-main">
+            <header class="app-topbar">
+                <button class="btn-hamburger" @onclick="ToggleSidebar" aria-label="Menú">
+                    <span></span><span></span><span></span>
+                </button>
+                <div class="topbar-logo">
+                    <span class="logo-mark">TD</span>
+                    <span class="logo-text hide-mobile">TomDriver</span>
+                </div>
+                <div class="topbar-right">
+                    <span class="topbar-rol badge @BadgeRol">@_rol</span>
+                    <span class="topbar-nombre hide-mobile">@_nombre</span>
+                </div>
+            </header>
+
+            <main class="app-content">
+                @Body
+            </main>
+        </div>
+
+        @if (_esRepartidor)
+        {
+            <MobileNav />
+        }
+    }
+</div>
+
+
+@code {
+    private bool   _inicializando   = true;
+    private bool   _esPaginaPublica;
+    private bool   _sidebarAbierto;
+    private bool   _esRepartidor;
+    private string _rol    = string.Empty;
+    private string _nombre = string.Empty;
+
+    private static readonly string[] _rutasPublicas = ["/login"];
+
+    private string BadgeRol => _rol switch
+    {
+        "Admin"          => "badge-encamino",
+        "ClienteEmpresa" => "badge-asignado",
+        "Repartidor"     => "badge-retirado",
+        _                => "badge-registrado"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        // var ruta = _NavigationManager.ToBaseRelativePath(_NavigationManager.Uri).ToLower();
+        // _esPaginaPublica = _rutasPublicas.Any(r => ruta.TrimStart('/').Equals(r.TrimStart('/'), StringComparison.OrdinalIgnoreCase));
+
+        // if (!_esPaginaPublica)
+        // {
+        //     _rol          = await Sesion.ObtenerRolAsync() ?? string.Empty;
+        //     _nombre       = await Sesion.ObtenerNombreAsync() ?? string.Empty;
+        //     _esRepartidor = _rol == "Repartidor";
+        // }
+
+        // _inicializando = false;
+    }
+
+    private void ToggleSidebar() => _sidebarAbierto = !_sidebarAbierto;
+    private void CerrarSidebar() => _sidebarAbierto = false;
+}

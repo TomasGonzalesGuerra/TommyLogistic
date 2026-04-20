@@ -1,6 +1,27 @@
-﻿<Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
-    <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
-    </Found>
-</Router>
+﻿<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(App).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(AuthLayout)">
+                <Authorizing>
+                    <div class="loading-overlay">
+                        <div class="spinner"></div>
+                        <span>Verificando sesión...</span>
+                    </div>
+                </Authorizing>
+
+                <NotAuthorized>
+                    <div class="loading-overlay">
+                        <h1>NO esta Autirizado</h1>
+                    </div>
+                </NotAuthorized>
+            </AuthorizeRouteView>
+        </Found>
+
+        <NotFound>
+            <PageTitle>No encontrado — TomDriver</PageTitle>
+            <div class="loading-overlay">
+                <p class="text-muted">La página que buscas no existe.</p>
+            </div>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>
