@@ -13,9 +13,12 @@
     }
     else
     {
-        <nav class="app-sidebar @(_sidebarAbierto ? "open" : "")">
-            <Sidebar OnCerrar="CerrarSidebar" />
-        </nav>
+        @if (!_esRepartidor)
+        {
+            <nav class="app-sidebar @(_sidebarAbierto ? "open" : "")">
+                <Sidebar OnCerrar="CerrarSidebar" />
+            </nav>
+        }
 
         @if (_sidebarAbierto)
         {
@@ -28,8 +31,8 @@
                     <span></span><span></span><span></span>
                 </button>
                 <div class="topbar-logo">
-                    <span class="logo-mark">TD</span>
-                    <span class="logo-text hide-mobile">TomDriver</span>
+                    <span class="logo-mark">TG</span>
+                    <span class="logo-text hide-mobile">Tommy Logistics</span>
                 </div>
                 <div class="topbar-right">
                     <span class="topbar-rol badge @BadgeRol">@_rol</span>
@@ -67,13 +70,11 @@
     };
 
 
-
     protected override async Task OnInitializedAsync()
     {
-        _rol          = await _SesionService.ObtenerRolAsync() ?? string.Empty;
-        _nombre       = await _SesionService.ObtenerNombreAsync() ?? string.Empty;
+        _rol = await _SesionService.GetRolAsync() ?? string.Empty;
+        _nombre = await _SesionService.GetNameAsync() ?? string.Empty;
         _esRepartidor = _rol == "Driver";
-
         _inicializando = false;
     }
 

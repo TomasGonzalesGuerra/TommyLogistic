@@ -1,6 +1,6 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
-@inject NavigationManager _NavigationManager
 @inject ILoginService _ILoginService
+@inject NavigationManager _NavigationManager
 
 <div class="sidebar-inner">
 
@@ -9,8 +9,7 @@
             <span class="logo-mark">TD</span>
             <span class="logo-name">TomDriver</span>
         </div>
-        <button class="sidebar-close" @onclick="OnCerrar"
-                aria-label="Cerrar menú">✕</button>
+        <button class="sidebar-close" @onclick="OnCerrar" aria-label="Cerrar menú">✕</button>
     </div>
 
     <nav class="sidebar-nav">

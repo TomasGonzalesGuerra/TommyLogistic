@@ -13,13 +13,13 @@ public class SesionService(AuthenticationStateProvider authProvider)
         return state.User;
     }
 
-    public async Task<string?> ObtenerRolAsync()
+    public async Task<string?> GetRolAsync()
     {
         var user = await ObtenerUsuarioAsync();
         return user.FindFirst(ClaimTypes.Role)?.Value;
     }
 
-    public async Task<string?> ObtenerNombreAsync()
+    public async Task<string?> GetNameAsync()
     {
         var user = await ObtenerUsuarioAsync();
         return user.FindFirst(ClaimTypes.Name)?.Value;
@@ -39,7 +39,7 @@ public class SesionService(AuthenticationStateProvider authProvider)
         return int.TryParse(val, out var id) ? id : null;
     }
 
-    public async Task<bool> EsAdminAsync() => (await ObtenerRolAsync()) == "Admin";
-    public async Task<bool> EsRepartidorAsync() => (await ObtenerRolAsync()) == "Repartidor";
-    public async Task<bool> EsClienteEmpresaAsync() => (await ObtenerRolAsync()) == "ClienteEmpresa";
+    public async Task<bool> EsAdminAsync() => (await GetRolAsync()) == "Admin";
+    public async Task<bool> EsRepartidorAsync() => (await GetRolAsync()) == "Repartidor";
+    public async Task<bool> EsClienteEmpresaAsync() => (await GetRolAsync()) == "ClienteEmpresa";
 }

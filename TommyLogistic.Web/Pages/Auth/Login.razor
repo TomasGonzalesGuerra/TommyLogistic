@@ -1,6 +1,8 @@
 ﻿@page "/"
+@using System.Security.Claims
 @inject IRepository _IRepository
 @inject ILoginService _ILoginService
+@inject SesionService _SesionService
 @inject SweetAlertService _SweetAlertService
 @inject NavigationManager _NavigationManager
 
@@ -65,6 +67,8 @@
 </div>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
     private LoginDTO loginDTO = new();
     private bool _error;
     private bool _cargando;
@@ -74,9 +78,16 @@
 
     protected override async Task OnInitializedAsync()
     {
-        //TODO: Implementar un método para verificar Logeado válido y redirigirlo a Home
-        // var rol = await Sesion.ObtenerRolAsync();
-        // _NavigationManager.NavigateTo("/Home");
+        if (AuthStateTask != null)
+        {
+            var authState = await AuthStateTask;
+            var user = authState.User;
+
+            if (user.Identity is not null && user.Identity.IsAuthenticated)
+            {
+                await RedirectbyRole(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            }
+        }
     }
 
     private async Task LoginAsync()
@@ -97,6 +108,39 @@
         }
 
         await _ILoginService.LoginAsync(responseHttp.Response!.Token!);
-        _NavigationManager.NavigateTo("/Home");
+        string? rol = await _SesionService.GetRolAsync();
+        await RedirectbyRole(rol!);
+    }
+
+    private async Task RedirectbyRole(string rol)
+    {
+        if (string.IsNullOrEmpty(rol))
+        {
+            await _SweetAlertService.FireAsync("Error", "No se pudo determinar el rol del usuario.", SweetAlertIcon.Error);
+            _NavigationManager.NavigateTo("/WhoAreYou");
+            return;
+        }
+
+        switch (rol)
+        {
+            case "Admin":
+                _NavigationManager.NavigateTo("/AdminDashboard");
+                break;
+            case "Supervisor":
+                _NavigationManager.NavigateTo("/SupervisorDashboard");
+                break;
+            case "Operator":
+                _NavigationManager.NavigateTo("/OperatorDashboard");
+                break;
+            case "Driver":
+                _NavigationManager.NavigateTo("/DriverDashboard");
+                break;
+            case "Client":
+                _NavigationManager.NavigateTo("/ClientDashboard");
+                break;
+            default:
+                _NavigationManager.NavigateTo("/WhoAreYou");
+                break;
+        }
     }
 }

@@ -1,0 +1,9 @@
+﻿@page "/AdminDashboard"
+@layout MainLayout
+@attribute [Authorize(Roles = nameof(UserEnum.Admin))]
+
+<h3>AdminDashboard</h3>
+
+@code {
+
+}
