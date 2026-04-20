@@ -1,5 +1,4 @@
 ﻿@page "/"
-@layout AuthLayout
 @inject IRepository _IRepository
 @inject ILoginService _ILoginService
 @inject SweetAlertService _SweetAlertService
@@ -20,7 +19,7 @@
         {
             <div class="alert alert-danger" role="alert">
                 <span>⚠️</span>
-                <span>@_error</span>
+                <span>@(_error ? "Credenciales Inválidas" : "Error al Iniciar Sesión")</span>
             </div>
         }
 
@@ -28,15 +27,23 @@
             <EditForm Model="loginDTO" OnValidSubmit="LoginAsync">
                 <DataAnnotationsValidator />
                 <label class="form-label required">Correo electrónico</label>
-                <InputText @bind-Value="@loginDTO.Email" id="email" type="email" class="@($"form-control {("error" != null ? "invalid" : "")}")" placeholder="usuario@logistic.com" autocomplete="email" inputmode="email" disabled="@_cargando" />
+                <InputText @bind-Value="@loginDTO.Email" type="email"
+                           class="@($"form-control {rojete}")"
+                           placeholder="usuario@logistic.com"
+                           autocomplete="email"
+                           inputmode="email"
+                           disabled="@_cargando" />
                 <ValidationMessage For="@(() => loginDTO.Email)" />
                 
                 <label class="form-label required">Contraseña</label>
-                <InputText @bind-Value="@loginDTO.Password" id="password" type="@(_verPassword ? "text" : "password")" class="@($"form-control {("error" != null ? "invalid" : "")}")" autocomplete="current-password" placeholder="••••••••" disabled="@_cargando" />
+                <InputText @bind-Value="@loginDTO.Password"
+                           type="@(_verPassword ? "text" : "password")"
+                           class="@($"form-control {rojete}")"
+                           autocomplete="current-password"
+                           placeholder="••••••••"
+                           disabled="@_cargando" />
                 <ValidationMessage For="@(() => loginDTO.Password)" />
 
-                <br />
-                @* <button class="btn  btn-primary" type="submit">Iniciar Sesión</button> *@
                 <button type="submit" class="btn btn-primary btn-touch">
                     @if (_cargando)
                     {
@@ -62,6 +69,7 @@
     private bool _error;
     private bool _cargando;
     private bool _verPassword;
+    private string rojete = string.Empty;
 
 
     protected override async Task OnInitializedAsync()
@@ -70,20 +78,21 @@
         // var rol = await Sesion.ObtenerRolAsync();
         // _NavigationManager.NavigateTo("/Home");
     }
-    
+
     private async Task LoginAsync()
     {
         _error = false;
         _cargando = true;
 
         var responseHttp = await _IRepository.Post<LoginDTO, TokenDTO>("api/auth/Login", loginDTO);
-        
+
         if (responseHttp.Error)
         {
             var message = await responseHttp.GetErrorMessageAsync();
             await _SweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
             _error = responseHttp.Error;
             _cargando = false;
+            rojete = _error ? "is-invalid" : string.Empty;
             return;
         }
 

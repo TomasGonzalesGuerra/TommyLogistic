@@ -1,4 +1,5 @@
 ﻿@inherits LayoutComponentBase
+@inject SesionService _SesionService
 @inject NavigationManager _NavigationManager
 
 <div class="app-layout">
@@ -9,10 +10,6 @@
             <div class="splash-spinner"></div>
             <p>Cargando...</p>
         </div>
-    }
-    else if (_esPaginaPublica)
-    {
-        @Body
     }
     else
     {
@@ -55,35 +52,29 @@
 
 @code {
     private bool   _inicializando   = true;
-    private bool   _esPaginaPublica;
     private bool   _sidebarAbierto;
     private bool   _esRepartidor;
     private string _rol    = string.Empty;
     private string _nombre = string.Empty;
-
-    private static readonly string[] _rutasPublicas = ["/login"];
-
     private string BadgeRol => _rol switch
     {
-        "Admin"          => "badge-encamino",
-        "ClienteEmpresa" => "badge-asignado",
-        "Repartidor"     => "badge-retirado",
-        _                => "badge-registrado"
+        "Admin" => "badge-encamino",
+        "Supervisor" => "badge-asignado",
+        "Operator" => "badge-retirado",
+        "Driver" => "badge-retirado",
+        "Client" => "badge-retirado",
+        _ => "badge-registrado"
     };
+
+
 
     protected override async Task OnInitializedAsync()
     {
-        // var ruta = _NavigationManager.ToBaseRelativePath(_NavigationManager.Uri).ToLower();
-        // _esPaginaPublica = _rutasPublicas.Any(r => ruta.TrimStart('/').Equals(r.TrimStart('/'), StringComparison.OrdinalIgnoreCase));
+        _rol          = await _SesionService.ObtenerRolAsync() ?? string.Empty;
+        _nombre       = await _SesionService.ObtenerNombreAsync() ?? string.Empty;
+        _esRepartidor = _rol == "Driver";
 
-        // if (!_esPaginaPublica)
-        // {
-        //     _rol          = await Sesion.ObtenerRolAsync() ?? string.Empty;
-        //     _nombre       = await Sesion.ObtenerNombreAsync() ?? string.Empty;
-        //     _esRepartidor = _rol == "Repartidor";
-        // }
-
-        // _inicializando = false;
+        _inicializando = false;
     }
 
     private void ToggleSidebar() => _sidebarAbierto = !_sidebarAbierto;

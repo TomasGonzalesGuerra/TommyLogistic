@@ -1,5 +1,6 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
 @inject NavigationManager _NavigationManager
+@inject ILoginService _ILoginService
 
 <div class="sidebar-inner">
 
@@ -72,7 +73,7 @@
 
     private async Task Logout()
     {
-        // await AuthService.LogoutAsync();
-        _NavigationManager.NavigateTo("/login", forceLoad: true);
+        await _ILoginService.LogoutAsync();
+        _NavigationManager.NavigateTo("/", forceLoad: true);
     }
 }

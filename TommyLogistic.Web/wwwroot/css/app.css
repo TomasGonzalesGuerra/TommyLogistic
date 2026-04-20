@@ -423,6 +423,7 @@ ul, ol {
     background: var(--color-surface);
     transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
     min-height: 42px;
+    margin-bottom: 1rem;
 }
 
     .form-control:focus {
