@@ -1,0 +1,145 @@
+﻿.list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-6);
+    gap: var(--space-4);
+    flex-wrap: wrap;
+}
+
+    .list-header .page-title {
+        margin-bottom: 0;
+    }
+
+.filtros-bar {
+    display: flex;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.filtro-search {
+    flex: 1;
+    min-width: 200px;
+}
+
+.filtro-estado {
+    min-width: 160px;
+}
+
+.filtro-tipo {
+    min-width: 140px;
+}
+
+.codigo-seguimiento {
+    font-family: monospace;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-primary);
+}
+
+.fila-nueva {
+    animation: highlight 2s ease-out forwards;
+}
+
+@keyframes highlight {
+    0% {
+        background: var(--color-warning-light);
+    }
+
+    100% {
+        background: transparent;
+    }
+}
+
+.list-summary {
+    margin-bottom: var(--space-4);
+}
+
+.ml-2 {
+    margin-left: var(--space-2);
+}
+
+/* Tarjetas móvil */
+.pedido-cards {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.pedido-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    cursor: pointer;
+    transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+    -webkit-tap-highlight-color: transparent;
+}
+
+    .pedido-card:active {
+        box-shadow: var(--shadow-md);
+    }
+
+.pedido-card--nuevo {
+    border-color: var(--color-warning);
+    background: var(--color-warning-light);
+}
+
+.pedido-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-2);
+}
+
+.pedido-card-nombre {
+    font-weight: 600;
+    font-size: var(--font-size-base);
+    margin-bottom: var(--space-2);
+}
+
+.pedido-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+.pedido-card-intentos {
+    margin-top: var(--space-2);
+    font-size: var(--font-size-xs);
+    color: var(--estado-ausente);
+    font-weight: 600;
+}
+
+/* Alternar tabla/tarjeta según pantalla */
+.hide-on-mobile {
+    display: block;
+}
+
+.show-on-mobile {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .hide-on-mobile {
+        display: none;
+    }
+
+    .show-on-mobile {
+        display: flex;
+    }
+
+    .filtros-bar {
+        gap: var(--space-2);
+    }
+
+    .filtro-estado,
+    .filtro-tipo {
+        min-width: 0;
+        flex: 1;
+    }
+}

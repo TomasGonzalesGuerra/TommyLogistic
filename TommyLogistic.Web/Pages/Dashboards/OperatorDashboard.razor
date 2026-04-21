@@ -1,6 +1,7 @@
 ﻿@page "/OperatorDashboard"
 @layout MainLayout
-@attribute [Authorize(Roles = nameof(UserEnum.Operator))]
+@inject NavigationManager _NavigationManager
+@attribute [Authorize(Roles = $"{nameof(UserEnum.Admin)},{nameof(UserEnum.Operator)}")]
 
 <h3>OperatorDashboard</h3>
 

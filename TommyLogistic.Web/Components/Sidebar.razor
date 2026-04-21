@@ -7,7 +7,7 @@
     <div class="sidebar-header">
         <div class="sidebar-logo">
             <span class="logo-mark">TD</span>
-            <span class="logo-name">TomDriver</span>
+            <span class="logo-name">TommyLogistic</span>
         </div>
         <button class="sidebar-close" @onclick="OnCerrar" aria-label="Cerrar menú">✕</button>
     </div>
@@ -15,18 +15,18 @@
     <nav class="sidebar-nav">
         <AuthorizeView Roles="Admin">
             <div class="nav-section-label">Operaciones</div>
-            <NavLink class="this" href="AdminDashboard">
+            <NavLink class="this" href="/AdminDashboard">
                 <span class="nav-icon">📊</span> Dashboard
             </NavLink>
-            <NavLink class="this" href="pedidos">
+            <NavLink class="this" href="/Orders">
                 <span class="nav-icon">📦</span> Pedidos
             </NavLink>
-            <NavLink class="this" href="pedidos/almacen">
+            <NavLink class="this" href="">
                 <span class="nav-icon">🏭</span> Almacén
             </NavLink>
 
             <div class="nav-section-label">Gestión</div>
-            <NavLink class="this" href="empresas">
+            <NavLink class="this" href="">
                 <span class="nav-icon">🏢</span> Empresas
             </NavLink>
             <NavLink class="this" href="Drivers">

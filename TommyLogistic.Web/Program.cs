@@ -25,6 +25,7 @@ builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<IRepository, Repository>();
 builder.Services.AddScoped<SesionService>();
 builder.Services.AddScoped<DriverService>();
+builder.Services.AddScoped<OrderService>();
 
 
 await builder.Build().RunAsync();

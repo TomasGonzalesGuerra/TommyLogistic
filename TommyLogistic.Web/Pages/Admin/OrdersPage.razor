@@ -1,0 +1,266 @@
+﻿@page "/Orders"
+@layout MainLayout
+@inject OrderService _OrderService
+@attribute [Authorize(Roles = "Admin")]
+@inject NavigationManager _NavigationManager
+
+<PageTitle>Pedidos — Logistic</PageTitle>
+
+<div class="list-header">
+    <h1 class="page-title">Todos los pedidos</h1>
+
+    <button @onclick="@(() => _NavigationManager.NavigateTo("/mis-pedidos/nuevo"))" class="btn btn-primary">
+        ➕ Nuevo pedido
+    </button>
+</div>
+
+<div class="filtros-bar">
+    <div class="filtro-search">
+        <input @bind="_busqueda" @bind:event="oninput" class="form-control" type="search" placeholder="Buscar código, destinatario, distrito..." />
+    </div>
+
+    <div class="filtro-estado">
+        <select class="form-control" @bind="_filtroEstado">
+            <option value="">Todos los estados</option>
+            @foreach (var e in Enum.GetValues<OrderStatus>())
+            {
+                <option value="@((int)e)">@NombreEstado(e)</option>
+            }
+        </select>
+    </div>
+
+    <div class="filtro-tipo">
+        <select @bind="_filtroTipo" class="form-control">
+            <option value="">Todos los tipos</option>
+            <option value="1">Mismo día</option>
+            <option value="2">Día siguiente</option>
+        </select>
+    </div>
+    <button @onclick="Refrescar" class="btn btn-ghost btn-sm" title="Actualizar">
+        🔄
+    </button>
+</div>
+
+@if (_loading)
+{
+    <div class="loading-overlay">
+        <div class="spinner"></div>
+        <span>Cargando pedidos...</span>
+    </div>
+}
+else if (!PedidosFiltrados.Any())
+{
+    <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <p class="text-bold">No hay pedidos</p>
+        <p class="text-muted">
+            @(_busqueda.Length > 0 || _filtroEstado.Length > 0
+                ? "Prueba con otros filtros"
+                : "Aún no hay pedidos registrados")
+        </p>
+    </div>
+}
+else
+{
+    <div class="list-summary text-muted text-sm mb-4">
+        @PedidosFiltrados.Count() pedidos
+        @if (_nuevos > 0)
+        {
+            <span class="badge badge-encamino ml-2">
+                @_nuevos nuevos
+            </span>
+        }
+    </div>
+
+    <!-- Vista tabla: desktop -->
+    <div class="table-wrapper hide-on-mobile">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Destinatario</th>
+                    <th>Distrito</th>
+                    <th>Paquete</th>
+                    <th>Tipo</th>
+                    <th>Estado</th>
+                    <th>Estimado</th>
+                    <th>Repartidor</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in PedidosFiltrados)
+                {
+                    <tr @onclick="() => IrADetalle(p.Id)" class="@(_newsIds.Contains(p.Id) ? "fila-nueva" : "")">
+                        <td>
+                            <span class="codigo-seguimiento">
+                                @p.TrackingCode
+                            </span>
+                        </td>
+
+                        <td>
+                            <span class="text-bold">@p.RecipientName</span>
+                        </td>
+
+                        <td class="text-muted">@p.RecipientDistrict</td>
+                        <td class="text-muted">@p.PackageDescription</td>
+                        <td>
+                            <span class="badge @(p.DeliveryType == DeliveryType.ToDay ? "badge-encamino" : "badge-asignado")">
+                                @(p.DeliveryType == DeliveryType.ToDay ? "4h" : "24h")
+                            </span>
+                        </td>
+
+                        <td><BadgeEstado Estado="@p.OrderStatus" /></td>
+
+                        <td class="text-muted text-sm">
+                            @(p.EstimatedDeliveryDate.HasValue ? p.EstimatedDeliveryDate.Value.ToString("HH:mm") : "—")
+                        </td>
+
+                        <td class="text-muted text-sm">
+                            @(p.DeliveryPersonName ?? "Sin asignar")
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Vista tarjetas: móvil -->
+    <div class="pedido-cards show-on-mobile">
+        @foreach (var p in PedidosFiltrados)
+        {
+            <div class="pedido-card @(_newsIds.Contains(p.Id) ? "pedido-card--nuevo" : "")"
+                 @onclick="() => IrADetalle(p.Id)">
+                <div class="pedido-card-top">
+                    <span class="codigo-seguimiento">@p.TrackingCode</span>
+                    <BadgeEstado Estado="@p.OrderStatus" />
+                </div>
+                <div class="pedido-card-nombre">@p.RecipientName</div>
+                <div class="pedido-card-meta">
+                    <span>📍 @p.RecipientDistrict</span>
+                    <span>📱 @p.PackageDescription</span>
+                </div>
+                @if (p.DeliveryAttempts > 0)
+                {
+                    <div class="pedido-card-intentos">
+                        ⚠️ @p.DeliveryAttempts intento(s) fallido(s)
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private int _nuevos;
+    private bool _loading = true;
+    private HashSet<int> _newsIds = [];
+    private string _busqueda = string.Empty;
+    private string _filtroTipo = string.Empty;
+    private List<OrderSummaryDTO> _orders = [];
+    private string _filtroEstado = string.Empty;
+    private IEnumerable<OrderSummaryDTO> PedidosFiltrados =>
+        _orders.Where(p =>
+        {
+            var matchBusqueda = string.IsNullOrWhiteSpace(_busqueda) ||
+                p.TrackingCode!.Contains(_busqueda, StringComparison.OrdinalIgnoreCase) ||
+                p.RecipientName!.Contains(_busqueda, StringComparison.OrdinalIgnoreCase) ||
+                p.RecipientDistrict!.Contains(_busqueda, StringComparison.OrdinalIgnoreCase);
+
+            var matchEstado = string.IsNullOrWhiteSpace(_filtroEstado) ||
+                (int)p.OrderStatus == int.Parse(_filtroEstado);
+
+            var matchTipo = string.IsNullOrWhiteSpace(_filtroTipo) ||
+                (int)p.DeliveryType == int.Parse(_filtroTipo);
+
+            return matchBusqueda && matchEstado && matchTipo;
+        });
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        // await Conectar_SignalRServiceAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _orders = await _OrderService.GetAllOrdersAsync();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task Refrescar()
+    {
+        _nuevos = 0;
+        _newsIds.Clear();
+        await LoadAsync();
+    }
+
+    //TODO: Falta Implementar SignalR
+    // private async Task Conectar_SignalRServiceAsync()
+    // {
+    //     await _SignalRService.ConectarAsync();
+
+    //     if (_esAdmin)
+    //         await _SignalRService.UnirseAAdminAsync();
+    //     else
+    //     {
+    //         var empId = await _SesionService.ObtenerEmpresaIdAsync();
+    //         if (empId.HasValue)
+    //             await _SignalRService.UnirseAEmpresaAsync(empId.Value);
+    //     }
+
+    //     _SignalRService.OnEstadoActualizado += OnActualizacion;
+    //     _SignalRService.OnNuevoPedido += OnNuevoPedido;
+    // }
+
+    private void OnActualizacion(OrderSummaryDTO DTO)
+        => InvokeAsync(() =>
+        {
+            var idx = _orders.FindIndex(p => p.Id == DTO.Id);
+            if (idx >= 0) _orders[idx] = DTO;
+            _newsIds.Add(DTO.Id);
+            StateHasChanged();
+        });
+
+    private void OnNuevoPedido(OrderSummaryDTO DTO)
+        => InvokeAsync(() =>
+        {
+            if (!_orders.Any(p => p.Id == DTO.Id))
+            {
+                _orders.Insert(0, DTO);
+                _newsIds.Add(DTO.Id);
+                _nuevos++;
+            }
+            StateHasChanged();
+        });
+
+    private void IrADetalle(int id)
+        => _NavigationManager.NavigateTo($"/pedidos/{id}");
+
+    private static string NombreEstado(OrderStatus e) => e switch
+    {
+        OrderStatus.Failed => "Fallido",
+        OrderStatus.PickedUp => "Retirado",
+        OrderStatus.Assigned => "Asignado",
+        OrderStatus.OnTheWay => "En camino",
+        OrderStatus.Delivered => "Entregado",
+        OrderStatus.Returning => "En retorno",
+        OrderStatus.OnStorage => "En almacén",
+        OrderStatus.Registered => "Registrado",
+        OrderStatus.Rescheduled => "Reprogramado",
+        OrderStatus.RecipientAbsent => "Destinatario Ausente",
+        _ => e.ToString()
+    };
+
+    // public async ValueTask DisposeAsync()
+    // {
+    //     _SignalRService.OnEstadoActualizado -= OnActualizacion;
+    //     _SignalRService.OnNuevoPedido -= OnNuevoPedido;
+    //     await _SignalRService.DisposeAsync();
+    // }
+}

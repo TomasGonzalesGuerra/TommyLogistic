@@ -1,23 +1,24 @@
-﻿using TommyLogistic.Web.Repositories;
+﻿using CurrieTechnologies.Razor.SweetAlert2;
 using TommyLogistic.Shared.DTOs.Drivers;
-using CurrieTechnologies.Razor.SweetAlert2;
+using TommyLogistic.Shared.DTOs.Order;
+using TommyLogistic.Web.Repositories;
 
 namespace TommyLogistic.Web.Services;
 
-public class DriverService(IRepository repository, SweetAlertService sweetAlertService)
+public class OrderService(IRepository repository, SweetAlertService sweetAlertService)
 {
     private readonly IRepository _repository = repository;
     private readonly SweetAlertService _sweetAlertService = sweetAlertService;
 
-    public async Task<List<DriverDTO>> GetAllDriversAsync()
+    public async Task<List<OrderSummaryDTO>> GetAllOrdersAsync()
     {
         try
         {
-            var responseHppt = await _repository.GetAsync<List<DriverDTO>>("api/Drivers/GetAllDrivers");
+            var responseHppt = await _repository.GetAsync<List<OrderSummaryDTO>>("api/Orders/GetAllOrders");
 
             if (responseHppt.Error)
             {
-                await _sweetAlertService.FireAsync("Error", "No se pudieron cargar los repartidores", SweetAlertIcon.Error);
+                await _sweetAlertService.FireAsync("Error", "No se pudieron cargar los pedidos", SweetAlertIcon.Error);
                 return [];
             }
 

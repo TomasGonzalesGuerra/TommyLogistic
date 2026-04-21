@@ -2,13 +2,14 @@
 
 public enum OrderStatus
 {
-    Registered,
+    Failed,
+    PickedUp,
     Assigned,
     OnTheWay,
     Delivered,
-    RecipientAbsent,
-    Rescheduled,
     Returning,
     OnStorage,
-    PickedUp
+    Registered,
+    Rescheduled,
+    RecipientAbsent
 }

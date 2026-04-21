@@ -1,38 +1,49 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TommyLogistic.API.Data;
+using TommyLogistic.Shared.DTOs.Order;
 using TommyLogistic.Shared.Entities;
 
 namespace TommyLogistic.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class OrdersController : ControllerBase
+    public class OrdersController(LogisticDataContext dataContext) : ControllerBase
     {
-        private readonly LogisticDataContext _context;
+        private readonly LogisticDataContext _dataContext = dataContext;
 
-        public OrdersController(LogisticDataContext context)
+        // GET: api/Orders/GetAllOrders
+        [HttpGet("GetAllOrders")]
+        public async Task<ActionResult<IEnumerable<OrderSummaryDTO>>> GetAllOrdersasync()
         {
-            _context = context;
+            List<Order> orders = await _dataContext.Orders
+                .Include(o => o.Driver).ThenInclude(d => d.User)
+                .ToListAsync();
+            if (orders.Count == 0) return Ok(new List<OrderSummaryDTO>());
+            if (orders == null) return NotFound();
+
+            List<OrderSummaryDTO> orderSummaries = orders.Select(o => new OrderSummaryDTO
+            {
+                Id = o.Id,
+                TrackingCode = o.TrackingCode,
+                RecipientName = o.RecipientName,
+                RecipientDistrict = o.RecipientDistrict,
+                PackageDescription = o.PackageDescription,
+                DeliveryType = o.DeliveryType,
+                OrderStatus = o.OrderStatus,
+                EstimatedDeliveryDate = DateTime.Now.AddHours(4),
+                DeliveryPersonName = o.Driver?.User?.FullName,
+                DeliveryAttempts = o.DeliveryAttempts
+            }).ToList();
+
+            return Ok(orderSummaries);
         }
 
-        // GET: api/Orders
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Order>>> GetOrders()
-        {
-            return await _context.Orders.ToListAsync();
-        }
-
-        // GET: api/Orders/5
+        // GET: api/Orders/#
         [HttpGet("{id}")]
         public async Task<ActionResult<Order>> GetOrder(int id)
         {
-            var order = await _context.Orders.FindAsync(id);
+            var order = await _dataContext.Orders.FindAsync(id);
 
             if (order == null)
             {
@@ -42,8 +53,7 @@ namespace TommyLogistic.API.Controllers
             return order;
         }
 
-        // PUT: api/Orders/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        // PUT: api/Orders/#
         [HttpPut("{id}")]
         public async Task<IActionResult> PutOrder(int id, Order order)
         {
@@ -52,11 +62,11 @@ namespace TommyLogistic.API.Controllers
                 return BadRequest();
             }
 
-            _context.Entry(order).State = EntityState.Modified;
+            _dataContext.Entry(order).State = EntityState.Modified;
 
             try
             {
-                await _context.SaveChangesAsync();
+                await _dataContext.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -78,31 +88,31 @@ namespace TommyLogistic.API.Controllers
         [HttpPost]
         public async Task<ActionResult<Order>> PostOrder(Order order)
         {
-            _context.Orders.Add(order);
-            await _context.SaveChangesAsync();
+            _dataContext.Orders.Add(order);
+            await _dataContext.SaveChangesAsync();
 
             return CreatedAtAction("GetOrder", new { id = order.Id }, order);
         }
 
-        // DELETE: api/Orders/5
+        // DELETE: api/Orders/#
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteOrder(int id)
         {
-            var order = await _context.Orders.FindAsync(id);
+            var order = await _dataContext.Orders.FindAsync(id);
             if (order == null)
             {
                 return NotFound();
             }
 
-            _context.Orders.Remove(order);
-            await _context.SaveChangesAsync();
+            _dataContext.Orders.Remove(order);
+            await _dataContext.SaveChangesAsync();
 
             return NoContent();
         }
 
         private bool OrderExists(int id)
         {
-            return _context.Orders.Any(e => e.Id == id);
+            return _dataContext.Orders.Any(e => e.Id == id);
         }
     }
 }
