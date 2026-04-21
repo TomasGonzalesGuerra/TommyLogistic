@@ -16,25 +16,23 @@
 }
 else
 {
+    <div class="flex gap-3 mt-6">
+        <button class="btn btn-primary" @onclick="@(() => _NavigationManager.NavigateTo("/pedidos"))">
+            Ver todos los pedidos
+        </button>
+
+        <button class="btn btn-ghost" @onclick="OnRefrescar">
+            🔄 Actualizar
+        </button>
+    </div>
+
     <div class="dashboard-grid">
-        <div class="flex gap-3 mt-6">
-            <button class="btn btn-primary" @onclick="@(() => _NavigationManager.NavigateTo("/pedidos"))">
-                Ver todos los pedidos
-            </button>
-
-            <button class="btn btn-ghost" @onclick="OnRefrescar">
-                🔄 Actualizar
-            </button>
-        </div>
-
-        <div class="cards-container">
-            <StatCard Icono="📦" Valor="@Data.TotalToday" Etiqueta="Pedidos hoy" Color="#1a56db" Fondo="#e8f0fe" />
-            <StatCard Icono="✅" Valor="@Data.Delivered" Etiqueta="Entregados" Color="#0e9f6e" Fondo="#def7ec" />
-            <StatCard Icono="🚚" Valor="@Data.OnTheWay" Etiqueta="En camino" Color="#7c3aed" Fondo="#f3e8ff" />
-            <StatCard Icono="🏭" Valor="@Data.OnStorage" Etiqueta="En almacén" Color="#6366f1" Fondo="#eef2ff" />
-            <StatCard Icono="🔄" Valor="@Data.Rescheduled" Etiqueta="Reprogramados" Color="#d97706" Fondo="#fef3c7" />
-            <StatCard Icono="❌" Valor="@Data.Failed" Etiqueta="Fallidos" Color="#e02424" Fondo="#fde8e8" />
-        </div>
+        <StatCard Icono="📦" Valor="@Data.TotalToday" Etiqueta="Pedidos hoy" Color="#1a56db" Fondo="#e8f0fe" />
+        <StatCard Icono="✅" Valor="@Data.Delivered" Etiqueta="Entregados" Color="#0e9f6e" Fondo="#def7ec" />
+        <StatCard Icono="🚚" Valor="@Data.OnTheWay" Etiqueta="En camino" Color="#7c3aed" Fondo="#f3e8ff" />
+        <StatCard Icono="🏭" Valor="@Data.OnStorage" Etiqueta="En almacén" Color="#6366f1" Fondo="#eef2ff" />
+        <StatCard Icono="🔄" Valor="@Data.Rescheduled" Etiqueta="Reprogramados" Color="#d97706" Fondo="#fef3c7" />
+        <StatCard Icono="❌" Valor="@Data.Failed" Etiqueta="Fallidos" Color="#e02424" Fondo="#fde8e8" />
     </div>
 
     <div class="card">

@@ -24,6 +24,7 @@ builder.Services.AddSweetAlert2();
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<IRepository, Repository>();
 builder.Services.AddScoped<SesionService>();
+builder.Services.AddScoped<DriverService>();
 
 
 await builder.Build().RunAsync();

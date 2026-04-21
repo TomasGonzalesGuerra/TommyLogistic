@@ -13,49 +13,48 @@
     </div>
 
     <nav class="sidebar-nav">
-
         <AuthorizeView Roles="Admin">
             <div class="nav-section-label">Operaciones</div>
-            <NavLink class="nav-item" href="/" Match="NavLinkMatch.All">
+            <NavLink class="this" href="AdminDashboard">
                 <span class="nav-icon">📊</span> Dashboard
             </NavLink>
-            <NavLink class="nav-item" href="/pedidos">
+            <NavLink class="this" href="pedidos">
                 <span class="nav-icon">📦</span> Pedidos
             </NavLink>
-            <NavLink class="nav-item" href="/pedidos/almacen">
+            <NavLink class="this" href="pedidos/almacen">
                 <span class="nav-icon">🏭</span> Almacén
             </NavLink>
 
             <div class="nav-section-label">Gestión</div>
-            <NavLink class="nav-item" href="/empresas">
+            <NavLink class="this" href="empresas">
                 <span class="nav-icon">🏢</span> Empresas
             </NavLink>
-            <NavLink class="nav-item" href="/repartidores">
+            <NavLink class="this" href="Drivers">
                 <span class="nav-icon">🛵</span> Repartidores
             </NavLink>
         </AuthorizeView>
 
         <AuthorizeView Roles="ClienteEmpresa">
             <div class="nav-section-label">Mi empresa</div>
-            <NavLink class="nav-item" href="/" Match="NavLinkMatch.All">
+            <div class="this" href="/" Match="divMatch.All">
                 <span class="nav-icon">📊</span> Dashboard
-            </NavLink>
-            <NavLink class="nav-item" href="/mis-pedidos">
+            </div>
+            <div class="this" href="/mis-pedidos">
                 <span class="nav-icon">📦</span> Mis pedidos
-            </NavLink>
-            <NavLink class="nav-item" href="/mis-pedidos/nuevo">
+            </div>
+            <div class="this" href="/mis-pedidos/nuevo">
                 <span class="nav-icon">➕</span> Nuevo pedido
-            </NavLink>
+            </div>
         </AuthorizeView>
 
         <AuthorizeView Roles="Repartidor">
             <div class="nav-section-label">Mi ruta</div>
-            <NavLink class="nav-item" href="/" Match="NavLinkMatch.All">
+            <div class="this" href="/" Match="divMatch.All">
                 <span class="nav-icon">🗺️</span> Mi ruta
-            </NavLink>
-            <NavLink class="nav-item" href="/mis-entregas">
+            </div>
+            <div class="this" href="/mis-entregas">
                 <span class="nav-icon">✅</span> Mis entregas
-            </NavLink>
+            </div>
         </AuthorizeView>
 
     </nav>
@@ -74,6 +73,18 @@
 @code {
     [Parameter] public EventCallback OnCerrar { get; set; }
     private bool isDarkMode;
+    private bool active;
+
+
+    protected override void OnInitialized()
+    {
+        _NavigationManager.LocationChanged += (s, e) => StateHasChanged();
+    }
+
+    private string IsActive(string href)
+    {
+        return _NavigationManager.Uri.EndsWith(href, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+    }
 
     private async Task Logout()
     {

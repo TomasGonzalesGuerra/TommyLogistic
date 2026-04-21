@@ -147,12 +147,34 @@ button, input, select, textarea {
 }
 
 a {
-    color: var(--color-primary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--space-3);
+    padding: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    color: var(--color-text-muted);
     text-decoration: none;
+    transition: background var(--transition-fast), color var(--transition-fast);
+    min-height: 40px;
+    cursor: pointer;
 }
 
     a:hover {
-        text-decoration: underline;
+        background: var(--color-primary-light);
+        color: var(--color-text);
+        text-decoration: none;
+        border: 1px solid var(--color-primary-light);
+    }
+
+    a.active {
+        background: var(--color-bg);
+        border: 1px solid var(--color-bg);
+        color: var(--color-primary);
+        font-weight: 600;
     }
 
 ul, ol {

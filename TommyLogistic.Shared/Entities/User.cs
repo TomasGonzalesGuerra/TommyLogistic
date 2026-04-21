@@ -26,4 +26,9 @@ public class User : IdentityUser
 
     [Display(Name = "Tipo  de  usuario")]
     public UserEnum UserType { get; set; }
+
+
+    // Navegación a Driver
+    public ICollection<Driver>? Drivers { get; set; }
+    public ICollection<Company>? Companies  { get; set; }
 }
