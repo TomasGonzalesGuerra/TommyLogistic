@@ -6,6 +6,12 @@
 <PageTitle>AdminDashboard</PageTitle>
 
 <h1 class="page-title">Dashboard</h1>
+<button class="btn btn-success" @onclick="OpenModal">
+    Abrir Modal Genérico
+</button>
+
+<!-- Usa GenericModal en lugar de Modal -->
+<GenericModel @ref="miModal" Titulo="Formulario de Registro" OnConfirmar="OnConfirmar" />
 
 @if (_loading)
 {
@@ -96,10 +102,22 @@ else
     [Parameter] public List<OrderSummaryDTO> UltimosMovimientos { get; set; } = [];
     [Parameter] public EventCallback OnRefrescar { get; set; }
 
-
     protected override void OnInitialized()
     {
         Data ??= new DashboardAdminDTO();
         _loading = false;
+    }
+
+    // Referencia al componente modal
+    private GenericModel miModal = null!;
+
+    private void OpenModal()
+    {
+        miModal.Abrir();
+    }
+
+    private void OnConfirmar()
+    {
+        Console.WriteLine("Datos guardados.");
     }
 }
