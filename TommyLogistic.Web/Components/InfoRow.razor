@@ -1,0 +1,13 @@
+﻿<div class="info-row">
+    <span class="info-icon">@Icono</span>
+    <div class="info-body">
+        <span class="info-label">@Label</span>
+        <span class="info-valor">@Valor</span>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Icono { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Valor { get; set; } = string.Empty;
+}

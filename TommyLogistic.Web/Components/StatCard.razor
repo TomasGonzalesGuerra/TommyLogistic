@@ -1,0 +1,17 @@
+﻿<div class="stat-card">
+    <div class="stat-icon" style="background: @Fondo; color: @Color">
+        @Icono
+    </div>
+    <div class="stat-info">
+        <div class="stat-value" style="color: @Color">@Valor</div>
+        <div class="stat-label">@Etiqueta</div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Icono { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public int Valor { get; set; }
+    [Parameter, EditorRequired] public string Etiqueta { get; set; } = string.Empty;
+    [Parameter] public string Color { get; set; } = "var(--color-primary)";
+    [Parameter] public string Fondo { get; set; } = "var(--color-primary-light)";
+}

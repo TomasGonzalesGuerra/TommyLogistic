@@ -1,4 +1,4 @@
-﻿@using Microsoft.AspNetCore.Components.Authorization
+﻿@inject IJSRuntime _IJSRuntime
 @inject ILoginService _ILoginService
 @inject NavigationManager _NavigationManager
 
@@ -62,17 +62,38 @@
 
     <div class="sidebar-footer">
         <button class="btn btn-ghost w-full" @onclick="Logout">
-            <span>🚪</span> Cerrar sesión
+            <span>🚪</span> Log Out
+        </button>
+
+        <button class="btn-theme" @onclick="ToggleTheme">
+            <span>@(isDarkMode ? "☀️" : "🌙")</span>
         </button>
     </div>
 </div>
 
 @code {
     [Parameter] public EventCallback OnCerrar { get; set; }
+    private bool isDarkMode;
 
     private async Task Logout()
     {
         await _ILoginService.LogoutAsync();
         _NavigationManager.NavigateTo("/", forceLoad: true);
+    }
+
+    private async Task ToggleTheme()
+    {
+        isDarkMode = !isDarkMode;
+        
+        if (isDarkMode)
+        {
+            await _IJSRuntime.InvokeVoidAsync("document.body.classList.add", "dark");
+            await _IJSRuntime.InvokeVoidAsync("localStorage.setItem", "theme", "dark");
+        }
+        else
+        {
+            await _IJSRuntime.InvokeVoidAsync("document.body.classList.remove", "dark");
+            await _IJSRuntime.InvokeVoidAsync("localStorage.setItem", "theme", "light");
+        }
     }
 }

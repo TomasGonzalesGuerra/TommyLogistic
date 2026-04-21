@@ -106,9 +106,23 @@
 }
 
 .sidebar-footer {
+    display: flex;
+    gap: .5rem;
     padding: var(--space-4) var(--space-3);
     border-top: 1px solid var(--color-border);
 }
+
+
+/* Un toque de estilo para el botón */
+.btn-theme {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: var(--radius-md);
+    transition: var(--transition-base);
+}
+
 
 @media (max-width: 768px) {
     .sidebar-close {

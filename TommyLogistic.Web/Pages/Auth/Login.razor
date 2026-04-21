@@ -78,16 +78,16 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (AuthStateTask != null)
-        {
-            var authState = await AuthStateTask;
-            var user = authState.User;
+        // if (AuthStateTask != null)
+        // {
+        //     var authState = await AuthStateTask;
+        //     var user = authState.User;
 
-            if (user.Identity is not null && user.Identity.IsAuthenticated)
-            {
-                await RedirectbyRole(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            }
-        }
+        //     if (user.Identity is not null && user.Identity.IsAuthenticated)
+        //     {
+        //         await RedirectbyRole(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        //     }
+        // }
     }
 
     private async Task LoginAsync()

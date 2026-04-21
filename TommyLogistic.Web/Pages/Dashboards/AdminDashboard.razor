@@ -1,9 +1,107 @@
 ﻿@page "/AdminDashboard"
 @layout MainLayout
+@inject NavigationManager _NavigationManager
 @attribute [Authorize(Roles = nameof(UserEnum.Admin))]
 
-<h3>AdminDashboard</h3>
+<PageTitle>AdminDashboard</PageTitle>
+
+<h1 class="page-title">Dashboard</h1>
+
+@if (_loading)
+{
+    <div class="alert alert-info" role="alert">
+        <span>⏳</span>
+        <span>Cargando datos...</span>
+    </div>
+}
+else
+{
+    <div class="dashboard-grid">
+        <div class="flex gap-3 mt-6">
+            <button class="btn btn-primary" @onclick="@(() => _NavigationManager.NavigateTo("/pedidos"))">
+                Ver todos los pedidos
+            </button>
+
+            <button class="btn btn-ghost" @onclick="OnRefrescar">
+                🔄 Actualizar
+            </button>
+        </div>
+
+        <div class="cards-container">
+            <StatCard Icono="📦" Valor="@Data.TotalToday" Etiqueta="Pedidos hoy" Color="#1a56db" Fondo="#e8f0fe" />
+            <StatCard Icono="✅" Valor="@Data.Delivered" Etiqueta="Entregados" Color="#0e9f6e" Fondo="#def7ec" />
+            <StatCard Icono="🚚" Valor="@Data.OnTheWay" Etiqueta="En camino" Color="#7c3aed" Fondo="#f3e8ff" />
+            <StatCard Icono="🏭" Valor="@Data.OnStorage" Etiqueta="En almacén" Color="#6366f1" Fondo="#eef2ff" />
+            <StatCard Icono="🔄" Valor="@Data.Rescheduled" Etiqueta="Reprogramados" Color="#d97706" Fondo="#fef3c7" />
+            <StatCard Icono="❌" Valor="@Data.Failed" Etiqueta="Fallidos" Color="#e02424" Fondo="#fde8e8" />
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="movimientos-header">
+            <h2 class="card-title">Movimientos en tiempo real</h2>
+            <span class="live-dot">EN VIVO</span>
+        </div>
+
+        @if (!UltimosMovimientos.Any())
+        {
+            <div class="empty-state">
+                <div class="empty-icon">📡</div>
+                <p>Esperando movimientos...</p>
+            </div>
+        }
+        else
+        {
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Destinatario</th>
+                            <th class="hide-mobile">Distrito</th>
+                            <th>Estado</th>
+                            <th class="hide-mobile">Repartidor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in UltimosMovimientos)
+                        {
+                            <tr @onclick="@(() => _NavigationManager.NavigateTo($"/pedidos/{p.Id}"))">
+                                <td>
+                                    <span class="text-sm text-bold">
+                                        @p.TrackingCode
+                                    </span>
+                                </td>
+                                <td>@p.RecipientName</td>
+                                <td class="hide-mobile text-muted">
+                                    @p.RecipientDistrict
+                                </td>
+                                <td>
+                                    <BadgeEstado Estado="@p.Status" />
+                                </td>
+                                <td class="hide-mobile text-muted">
+                                    @(p.DeliveryPersonName ?? "—")
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}
+
 
 @code {
+    private bool _loading = true;
+    [Parameter, EditorRequired] public DashboardAdminDTO Data { get; set; } = null!;
+    [Parameter] public List<OrderSummaryDTO> UltimosMovimientos { get; set; } = [];
+    [Parameter] public EventCallback OnRefrescar { get; set; }
 
+
+    protected override void OnInitialized()
+    {
+        Data ??= new DashboardAdminDTO();
+        _loading = false;
+    }
 }

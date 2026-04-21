@@ -1,0 +1,33 @@
+﻿<span class="badge @CssClass">@Texto</span>
+
+@code {
+    [Parameter, EditorRequired] public OrderStatus Estado { get; set; }
+
+    private string Texto => Estado switch
+    {
+        OrderStatus.Registered => "Registrado",
+        OrderStatus.Assigned => "Asignado",
+        OrderStatus.PickedUp => "Retirado",
+        OrderStatus.OnTheWay => "En camino",
+        OrderStatus.Delivered => "Entregado",
+        OrderStatus.RecipientAbsent => "Ausente",
+        OrderStatus.Rescheduled => "Reprogramado",
+        OrderStatus.Returning => "En retorno",
+        OrderStatus.OnStorage => "En almacén",
+        _ => Estado.ToString()
+    };
+
+    private string CssClass => Estado switch
+    {
+        OrderStatus.Registered => "badge-registrado",
+        OrderStatus.Assigned => "badge-asignado",
+        OrderStatus.PickedUp => "badge-retirado",
+        OrderStatus.OnTheWay => "badge-encamino",
+        OrderStatus.Delivered => "badge-entregado",
+        OrderStatus.RecipientAbsent => "badge-ausente",
+        OrderStatus.Rescheduled => "badge-reprogramado",
+        OrderStatus.Returning => "badge-retorno",
+        OrderStatus.OnStorage => "badge-almacen",
+        _ => "badge-registrado"
+    };
+}
