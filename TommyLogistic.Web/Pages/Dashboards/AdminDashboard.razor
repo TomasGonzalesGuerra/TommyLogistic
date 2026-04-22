@@ -6,12 +6,20 @@
 <PageTitle>AdminDashboard</PageTitle>
 
 <h1 class="page-title">Dashboard</h1>
-<button class="btn btn-success" @onclick="OpenModal">
+<button class="btn btn-success" @onclick="OpenCreate">
     Abrir Modal Genérico
 </button>
 
 <!-- Usa GenericModal en lugar de Modal -->
-<GenericModel @ref="miModal" Titulo="Formulario de Registro" OnConfirmar="OnConfirmar" />
+<GenericModal TModel="DashboardAdminDTO"
+              Model="DataModel"
+              Title="Titulo Escrito"
+              @bind-IsVisible="_showModal"
+              OnConfirm="SaveChanges">
+    <BodyContent Context="DataModel">
+
+    </BodyContent>
+</GenericModal>
 
 @if (_loading)
 {
@@ -107,17 +115,22 @@ else
         Data ??= new DashboardAdminDTO();
         _loading = false;
     }
+}
+@code {
+    // --- estado del modal ---
+    private bool _showModal;
+    private DashboardAdminDTO? DataModel;
 
-    // Referencia al componente modal
-    private GenericModel miModal = null!;
-
-    private void OpenModal()
+    // --- abrir ---
+    private void OpenCreate()
     {
-        miModal.Abrir();
+        _showModal = true;
     }
 
-    private void OnConfirmar()
+    // --- confirmar ---
+    private async Task SaveChanges()
     {
-        Console.WriteLine("Datos guardados.");
+        Console.WriteLine("Guardando cambios...");
+        _showModal = false;
     }
 }

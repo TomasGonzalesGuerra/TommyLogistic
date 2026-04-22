@@ -76,6 +76,25 @@
     --transition-fast: 150ms ease;
     --transition-base: 250ms ease;
     --transition-slow: 350ms ease;
+    /**/
+    --tr-bg: #0a0a0a;
+    --tr-s1: #111111;
+    --tr-s2: #181818;
+    --tr-s3: #1f1f1f;
+    --tr-gold: #c9a84c;
+    --tr-gold-l: #e8c97a;
+    --tr-gold-d: #7a6128;
+    --tr-tx: #f0ede6;
+    --tr-tx-m: #8a8578;
+    --tr-tx-d: #4a4740;
+    --tr-bdr: rgba(201, 168, 76, 0.18);
+    --tr-bdr-s: rgba(240, 237, 230, 0.07);
+    --tr-fd: 'Cormorant Garamond', Georgia, serif;
+    --tr-fb: 'DM Sans', sans-serif;
+    --tr-r: 2px;
+    --tr-rl: 4px;
+    --tr-nav-h: 60px;
+    --tr-max: 1200px;
 }
 
 body.dark {
