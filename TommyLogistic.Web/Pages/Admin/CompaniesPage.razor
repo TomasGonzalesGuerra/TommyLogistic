@@ -1,0 +1,113 @@
+﻿@page "/Companies"
+@layout MainLayout
+@attribute [Authorize(Roles = "Admin")]
+@inject NavigationManager Nav
+
+<PageTitle>Empresas — TomDriver</PageTitle>
+
+<div class="list-header">
+    <h1 class="page-title">Empresas clientes</h1>
+    <button class="btn btn-primary">
+        ➕ Nueva empresa
+    </button>
+</div>
+
+@if (_error is not null)
+{
+    <div class="alert alert-danger mb-4">
+        <span>⚠️</span><span>@_error</span>
+    </div>
+}
+
+@if (_cargando)
+{
+    <div class="loading-overlay"><div class="spinner"></div></div>
+}
+else
+{
+    <!-- Cards de empresas -->
+    <div class="empresas-grid">
+        @foreach (var e in _empresas)
+        {
+            <div class="empresa-card @(!e.Activa ? "empresa-card--inactiva" : "")">
+                <div class="empresa-card-header">
+                    <div class="empresa-avatar">
+                        @e.Document
+                    </div>
+                    <div class="empresa-info">
+                        <span class="empresa-nombre">@e.FullName</span>
+                        <span class="text-muted text-xs">RUC: @e.Document</span>
+                    </div>
+                    <span class="badge @(e.Activa ? "badge-entregado" : "badge-registrado")">
+                        @(e.Activa ? "Activa" : "Inactiva")
+                    </span>
+                </div>
+
+                <div class="empresa-stats">
+                    <div class="empresa-stat">
+                        <span class="empresa-stat-val">@e.Orders</span>
+                        <span class="empresa-stat-label">Total pedidos</span>
+                    </div>
+                    <div class="empresa-stat">
+                        <span class="empresa-stat-val" style="color: var(--color-success)">
+                            PedidosEntregadosHoy
+                        </span>
+                        <span class="empresa-stat-label">Entregados hoy</span>
+                    </div>
+                </div>
+
+                <div class="empresa-meta text-sm text-muted">
+                    <span>📧 @e.Email</span>
+                    <span>📞 @e.Telefono</span>
+                </div>
+
+                <div class="empresa-acciones">
+                    <button class="btn btn-ghost btn-sm"
+                            @onclick="@(() => Nav.NavigateTo($"/pedidos/empresa/{e.Id}"))">
+                        Ver pedidos
+                    </button>
+                    <button class="btn btn-ghost btn-sm">
+                        Editar
+                    </button>
+                    <button class="btn btn-sm @(e.Activa ? "btn-danger" : "btn-success")"
+                            @onclick="() => ToggleActiva(e)">
+                        @(e.Activa ? "Desactivar" : "Activar")
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+
+@code {
+    private List<CompanyDTO> _empresas = [];
+    private bool _cargando = true;
+    private bool _mostrarForm;
+    private bool _guardando;
+    private string? _error;
+    private string? _formError;
+
+    private CompanyDTO? _editando;
+
+    protected override async Task OnInitializedAsync()
+        => await CargarAsync();
+
+    private async Task CargarAsync()
+    {
+        _cargando = true;
+        // _empresas = await EmpresaService.ObtenerTodasAsync();
+        _cargando = false;
+    }
+
+    private void CerrarFormulario() => _mostrarForm = false;
+
+    private async Task ToggleActiva(CompanyDTO e)
+    {
+        // var resultado = await EmpresaService.ToggleActivaAsync(e.Id);
+        // if (resultado.Exitoso)
+        //     await CargarAsync();
+        // else
+        //     _error = resultado.Error;
+    }
+}

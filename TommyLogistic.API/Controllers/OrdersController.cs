@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TommyLogistic.API.Data;
-using TommyLogistic.Shared.DTOs.Order;
+using TommyLogistic.Shared.DTOs.Orders;
 using TommyLogistic.Shared.Entities;
 
 namespace TommyLogistic.API.Controllers

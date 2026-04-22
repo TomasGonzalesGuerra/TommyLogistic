@@ -1,6 +1,6 @@
 ﻿using CurrieTechnologies.Razor.SweetAlert2;
 using TommyLogistic.Shared.DTOs.Drivers;
-using TommyLogistic.Shared.DTOs.Order;
+using TommyLogistic.Shared.DTOs.Orders;
 using TommyLogistic.Web.Repositories;
 
 namespace TommyLogistic.Web.Services;

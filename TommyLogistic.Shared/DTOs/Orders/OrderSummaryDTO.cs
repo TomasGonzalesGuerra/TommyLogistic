@@ -1,6 +1,6 @@
 ﻿using TommyLogistic.Shared.Enums;
 
-namespace TommyLogistic.Shared.DTOs.Order;
+namespace TommyLogistic.Shared.DTOs.Orders;
 
 public class OrderSummaryDTO
 {
