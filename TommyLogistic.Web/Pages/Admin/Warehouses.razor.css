@@ -1,0 +1,27 @@
+﻿/* ── Contenido scrolleable ── */
+.content {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--space-4);
+    margin: 2rem 0;
+}
+
+/* ── Grid de métricas ── */
+.metrics-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+/* ── Fila inferior ── */
+.bottom-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+@media (max-width: 480px) {
+    .content {
+        grid-template-columns: 1fr 1fr;
+    }
+}

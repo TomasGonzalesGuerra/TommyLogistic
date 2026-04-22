@@ -1,0 +1,117 @@
+<div>
+    <!-- Encabezado y filtros -->
+    <div class="
+
+">
+        <span class="section-title">Lista de pedidos</span>
+        <div class="filter-row">
+            @foreach (var estado in _filtros)
+            {
+                <span class="chip @(_filtroActivo == estado ? "active" : "")"
+                      @onclick="() => CambiarFiltro(estado)">
+                    @estado
+                </span>
+            }
+        </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="table-card">
+        <table>
+            <colgroup>
+                <col style="width:110px" />
+                <col style="width:160px" />
+                <col style="width:90px"  />
+                <col style="width:90px"  />
+                <col style="width:110px" />
+                <col style="width:90px"  />
+                <col style="width:70px"  />
+                <col style="width:90px"  />
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>Nº Pedido</th>
+                    <th>Cliente</th>
+                    <th>Zona</th>
+                    <th>Estado</th>
+                    <th>Prioridad</th>
+                    <th>Registrado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in PedidosPagina)
+                {
+                    <tr>
+                        <td><span class="order-id">@p.TrackingCode</span></td>
+                        <td>@p.RecipientName</td>
+                        <td>@p.RecipientDistrict</td>
+                        <td><StatusBadge Estado="@p.OrderStatus" /></td>
+                        <td>
+                            <span class="priority-dot p-@p.DeliveryType.ToString().ToLower()"></span>
+                            @p.DeliveryType.ToString()
+                        </td>
+                        <td>@p.RegistrationDate.ToString("dd MMM")</td>
+                        <td>
+                            <button @onclick="() => OnVerDetalle.InvokeAsync(p.Id)" class="action-btn">
+                                Ver ↗
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Paginador -->
+        <div class="pager">
+            <span>Mostrando @PedidosPagina.Count de @Total pedidos</span>
+            <div class="pager-btns">
+                <button class="pager-btn" @onclick="PaginaAnterior" disabled="@(_pagina == 1)">‹</button>
+                @for (int i = 1; i <= TotalPaginas; i++)
+                {
+                    var num = i;
+                    <button class="pager-btn @(_pagina == num ? "current" : "")"
+                            @onclick="() => IrAPagina(num)">
+                        @num
+                    </button>
+                }
+                <button class="pager-btn" @onclick="PaginaSiguiente" disabled="@(_pagina == TotalPaginas)">›</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int PageSize { get; set; } = 5;
+    [Parameter] public EventCallback<int> OnVerDetalle { get; set; }
+    [Parameter, EditorRequired] public List<OrderSummaryDTO> Pedidos { get; set; } = [];
+
+
+    private int _pagina = 1;
+    private readonly string[] _filtros =
+    [
+        "Todos",
+        OrderStatus.Failed.ToString(),
+        OrderStatus.PickedUp.ToString(),
+        OrderStatus.Assigned.ToString(),
+        OrderStatus.OnTheWay.ToString(),
+        OrderStatus.Delivered.ToString(),
+        OrderStatus.Returning.ToString(),
+        OrderStatus.OnStorage.ToString(),
+        OrderStatus.Registered.ToString(),
+        OrderStatus.Rescheduled.ToString(),
+        OrderStatus.RecipientAbsent.ToString()
+    ];
+    private string _filtroActivo = "Todos";
+    private int Total => PedidosFiltrados.Count;
+    private int TotalPaginas => Math.Max(1, (int)Math.Ceiling(Total / (double)PageSize));
+    private List<OrderSummaryDTO> PedidosFiltrados => _filtroActivo == "Todos" ? Pedidos
+        : Pedidos.Where(p => p.OrderStatus.Equals(_filtroActivo)).ToList();
+
+
+    private List<OrderSummaryDTO> PedidosPagina => PedidosFiltrados.Skip((_pagina - 1) * PageSize).Take(PageSize).ToList();
+    private void PaginaAnterior() => IrAPagina(_pagina - 1);
+    private void PaginaSiguiente() => IrAPagina(_pagina + 1);
+    private void IrAPagina(int n) => _pagina = Math.Clamp(n, 1, TotalPaginas);
+    private void CambiarFiltro(string filtro) { _filtroActivo = filtro; _pagina = 1; }
+}

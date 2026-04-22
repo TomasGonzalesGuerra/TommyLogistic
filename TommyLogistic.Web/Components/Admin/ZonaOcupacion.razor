@@ -1,0 +1,29 @@
+<div class="panel">
+    <div class="panel-title">Ocupación por zona</div>
+
+    @* @foreach (var zona in Zonas)
+    {
+        <div class="zone-row">
+            <span class="zone-label">@zona.Nombre</span>
+            <div class="zone-bar-wrap">
+                <div class="zone-bar"
+                     style="width: @zona.Porcentaje%; background: @ColorPorcentaje(zona.Porcentaje);">
+                </div>
+            </div>
+            <span class="zone-count">@zona.Porcentaje%</span>
+        </div>
+    } *@
+</div>
+
+@code {
+    //TODO: Implemetar Zonas
+    // [Parameter, EditorRequired] public List<ZonaDto> Zonas { get; set; } = [];
+
+    private static string ColorPorcentaje(int pct) => pct switch
+    {
+        >= 90 => "#E24B4A",
+        >= 70 => "#EF9F27",
+        >= 50 => "#378ADD",
+        _     => "#1D9E75"
+    };
+}

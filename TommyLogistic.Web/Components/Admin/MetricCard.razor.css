@@ -1,0 +1,26 @@
+﻿.metric-label {
+    font-size: 11px;
+    color: var(--color-text-muted, #9ca3af);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.metric-value {
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--color-text-primary, #111827);
+}
+
+.metric-delta {
+    font-size: 11px;
+    margin-top: 4px;
+}
+
+.delta-up {
+    color: #0F6E56;
+}
+
+.delta-down {
+    color: #993C1D;
+}

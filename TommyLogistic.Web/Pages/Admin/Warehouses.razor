@@ -1,0 +1,57 @@
+﻿@page "/Warehouses"
+@layout MainLayout
+@inject NavigationManager Nav
+
+<PageTitle>Warehouses</PageTitle>
+
+<div class="content">
+    <!-- Métricas -->
+    <div class="metrics-row">
+        <MetricCard Label="Total pedidos hoy"
+                    Value="248" Delta="12% vs ayer" DeltaPositive="true" />
+
+        <MetricCard Label="Pendientes"
+                    Value="34" Delta="5 sin asignar" DeltaPositive="false" />
+
+        <MetricCard Label="Listos para despacho"
+                    Value="89" Delta="8% esta semana" DeltaPositive="true" />
+
+        <MetricCard Label="Enviados hoy"
+                    Value="125" Delta="18% vs ayer" DeltaPositive="true" />
+    </div>
+
+    <!-- Tabla de pedidos -->
+    <PedidosTable Pedidos="@PedidosFiltrados" PageSize="5" OnVerDetalle="VerDetalle" />
+
+    <!-- Paneles inferiores -->
+    <div class="bottom-row">
+        @* <ZonaOcupacion Zonas="@_zonas" /> *@
+    </div>
+
+</div>
+
+@code {
+    private string _busqueda = "";
+
+    /* ── Datos de ejemplo (reemplazar con inyección de servicio) ── */
+
+    private List<OrderSummaryDTO> _pedidos = [];
+
+    private List<OrderSummaryDTO> PedidosFiltrados => string.IsNullOrWhiteSpace(_busqueda)
+            ? _pedidos
+            : _pedidos.Where(p =>
+                p.TrackingCode.Contains(_busqueda, StringComparison.OrdinalIgnoreCase) ||
+                p.RecipientName.Contains(_busqueda, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    // private readonly List<ZonaDto> _zonas =
+    // [
+    //     new("Zona A", 82),
+    //     new("Zona B", 61),
+    //     new("Zona C", 45),
+    //     new("Zona D", 93),
+    //     new("Zona E", 28),
+    // ];
+
+    private void NuevoPedido() => Nav.NavigateTo("/pedidos/nuevo");
+    private void VerDetalle(int id) => Nav.NavigateTo($"/pedidos/{id}");
+}

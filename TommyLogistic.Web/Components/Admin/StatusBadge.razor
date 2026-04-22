@@ -1,0 +1,22 @@
+<span class="badge badge-@Estado">
+    @Icon @Estado
+</span>
+
+@code {
+    [Parameter, EditorRequired] public OrderStatus Estado { get; set; } = OrderStatus.Registered;
+
+    private string Icon => Estado switch
+    {
+        OrderStatus.Failed => "✕",
+        OrderStatus.PickedUp => "-.-",
+        OrderStatus.Assigned => "-.-",
+        OrderStatus.OnTheWay => "↑",
+        OrderStatus.Delivered => "✓",
+        OrderStatus.Returning => "-.-",
+        OrderStatus.OnStorage => "⧖",
+        OrderStatus.Registered => "-.-",
+        OrderStatus.Rescheduled => "-.-",
+        OrderStatus.RecipientAbsent => "-.-",
+        _ => ""
+    };
+}
