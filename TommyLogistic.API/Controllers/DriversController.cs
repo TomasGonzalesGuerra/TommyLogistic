@@ -27,6 +27,11 @@ public class DriversController(LogisticDataContext dadaContext) : ControllerBase
             FullName = u.FullName ?? string.Empty,
             Celular = u.PhoneNumber ?? string.Empty,
             DNI = u.Document ?? string.Empty,
+            Photo = u.Photo ?? string.Empty,
+            Available = u.Drivers?.FirstOrDefault()?.Available ?? false,
+            Placa = u.Drivers?.FirstOrDefault()?.Placa ?? string.Empty,
+            DeliveredToday = u.Drivers?.FirstOrDefault()?.Orders?.Count(o => o.OrderStatus == OrderStatus.Delivered && o.DeliveryDate == DateTime.Today) ?? 0,
+            ActiveOrderToday = u.Drivers?.FirstOrDefault()?.Orders?.Count(o => o.OrderStatus == OrderStatus.Assigned && o.DeliveryDate == DateTime.Today) ?? 0
         }).ToList();
 
         return Ok(driverDTOs);

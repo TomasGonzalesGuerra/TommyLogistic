@@ -8,6 +8,7 @@ public class DriverDTO
     public bool Available { get; set; }
     public string? Celular { get; set; }
     public string? FullName { get; set; }
+    public string? Photo { get; set; }
     public int DeliveredToday { get; set; }
     public int ActiveOrderToday { get; set; }
 }

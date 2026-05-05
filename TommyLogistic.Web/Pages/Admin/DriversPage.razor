@@ -6,12 +6,9 @@
 
 <PageTitle>Repartidores — Tommy Logistic</PageTitle>
 
-<h3>Drivers</h3>
 <div class="list-header">
     <h1 class="page-title">Repartidores</h1>
-    <button class="btn btn-primary">
-        ➕ Nuevo repartidor
-    </button>
+    <button class="btn btn-primary">➕ Nuevo repartidor</button>
 </div>
 
 @if (_error is not null)
@@ -32,9 +29,8 @@ else
         {
             <div class="rep-card">
                 <div class="rep-card-header">
-                    <div class="rep-avatar"
-                         style="background: @(item.Available ? "var(--color-success)" : "var(--color-text-muted)")">
-                        @item.FullName
+                    <div class="rep-avatar" style="background: @(item.Available ? "var(--color-success)" : "var(--color-text-muted)")">
+                        <img src="@item.Photo" alt="@item.FullName" />
                     </div>
 
                     <div class="rep-info">
@@ -50,7 +46,7 @@ else
                 <div class="rep-meta">
                     <span class="text-sm">🚗 @item.Placa</span>
                     <span class="text-sm">📞 @item.Celular</span>
-                    @if (true)
+                    @if (item.Available)
                     {
                         <span class="badge badge-ausente">Sin acceso al sistema</span>
                     }
