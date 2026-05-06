@@ -1,6 +1,10 @@
-﻿using TommyLogistic.Web.Repositories;
+﻿using CurrieTechnologies.Razor.SweetAlert2;
+using System.ComponentModel.DataAnnotations;
+using System.Net;
+using System.Runtime.ConstrainedExecution;
 using TommyLogistic.Shared.DTOs.Drivers;
-using CurrieTechnologies.Razor.SweetAlert2;
+using TommyLogistic.Shared.Entities;
+using TommyLogistic.Web.Repositories;
 
 namespace TommyLogistic.Web.Services;
 
@@ -13,15 +17,15 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
     {
         try
         {
-            var responseHppt = await _repository.GetAsync<List<DriverDTO>>("api/Drivers/GetAllDrivers");
+            var responseHttp = await _repository.GetAsync<List<DriverDTO>>("api/Drivers/GetAllDrivers");
 
-            if (responseHppt.Error)
+            if (responseHttp.Error)
             {
                 await _sweetAlertService.FireAsync("Error", "No se pudieron cargar los repartidores", SweetAlertIcon.Error);
                 return [];
             }
 
-            return responseHppt.Response!;
+            return responseHttp.Response!;
         }
         catch (Exception ex)
         {
@@ -31,25 +35,50 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
 
     }
 
-    public async Task CreateDriverAsync(DriverCreatedDTO createdDTO)
+    public async Task<bool> CreateDriverAsync(DriverCreatedDTO createdDTO)
     {
         try
         {
-            var responseHppt = await _repository.PostAsync<DriverCreatedDTO>("api/Drivers", createdDTO);
+            var responseHttp = await _repository.PostAsync("api/Drivers/CreateDriver", createdDTO);
 
-            if (responseHppt.Error)
+            if (responseHttp.Error)
             {
                 await _sweetAlertService.FireAsync("Error", "No se pudieron crear el repartidor", SweetAlertIcon.Error);
-                return;
+                return false;
             }
 
-            return responseHppt.Response!;
+            return true;
         }
         catch (Exception ex)
         {
             await _sweetAlertService.FireAsync("Error", ex.Message, SweetAlertIcon.Error);
-            return [];
+            return false;
         }
 
     }
 }
+
+//ayudame ha hacer um modal en el renderize un formulario para crear un Driver con servicio y el endpoint estoy en blazor y una api con ef:
+//Driver:
+//public class Driver
+//{
+//    [Key]
+//    public string UserID { get; set; } = null!;
+//    public string Placa { get; set; } = null!;
+//    public bool Available { get; set; }
+
+//    // Navegación a User
+//    public User User { get; set; } = null!;
+
+//    // Navegación a Orders
+//    public ICollection<Order> Orders { get; set; } = [];
+//}
+//DriverCreatedDTO:
+//public class DriverCreatedDTO
+//{
+//    public string DNI { get; set; } = null!;
+//    public string Placa { get; set; } = null!;
+//    public string Email { get; set; } = null!;
+//    public string Celular { get; set; } = null!;
+//    public string FullName { get; set; } = null!;
+//}

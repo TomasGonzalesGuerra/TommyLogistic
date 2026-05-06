@@ -10,20 +10,18 @@
                 <button @onclick="HandleCancel" class="adm-modal__close">✕</button>
             </div>
 
-            <div class="adm-modal__body">
+            <EditForm Model="Model" OnSubmit="HandleConfirm" class="adm-modal__body">
                 @BodyContent(Model)
-            </div>
+                <div class="adm-modal__footer">
+                    <button @onclick="HandleCancel" class="adm-btn adm-btn--ghost">
+                        Cancelar
+                    </button>
 
-            <div class="adm-modal__footer">
-                <button @onclick="HandleCancel" class="adm-btn adm-btn--ghost">
-                    Cancelar
-                </button>
-
-                <button @onclick="HandleConfirm" class="adm-btn adm-btn--primary">
-                    Guardar
-                </button>
-            </div>
-
+                    <button type="submit" class="adm-btn adm-btn--primary">
+                        Guardar
+                    </button>
+                </div>
+            </EditForm>
         </div>
     </div>
 }

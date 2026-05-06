@@ -87,7 +87,7 @@ else
               IsVisible="_mostrarForm"
               OnConfirm="OnConfirm"
               OnCancel="OnCancel">
-    <BodyContent>
+    <BodyContent Context="_CreatedDTO">
         <DriverForm CreatedDTO="_CreatedDTO" />
     </BodyContent>
 </GenericModal>
@@ -113,14 +113,25 @@ else
 
     private async Task OnConfirm()
     {
-        await _DriverService.CreateDriverAsync(_CreatedDTO);
-        _mostrarForm = false;
-        _CreatedDTO = new();
-        await LoadAsync();
+        _loading = true;
+
+        var success = await _DriverService.CreateDriverAsync(_CreatedDTO);
+
+        if (success)
+        {
+            _mostrarForm = false;
+            _CreatedDTO = new();
+            await LoadAsync();
+        }
+
+        _loading = false;
+        StateHasChanged();
+        Console.WriteLine("Creando repartidor...");
     }
 
     private async Task OnCancel()
     {
+        Console.WriteLine("Cancelando");
         _mostrarForm = false;
         _CreatedDTO = new();
     }

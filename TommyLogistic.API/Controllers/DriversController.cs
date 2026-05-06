@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using TommyLogistic.Api.Helpers;
 using TommyLogistic.API.Data;
 using TommyLogistic.Shared.DTOs.Drivers;
 using TommyLogistic.Shared.Entities;
@@ -9,8 +10,9 @@ namespace TommyLogistic.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class DriversController(LogisticDataContext dadaContext) : ControllerBase
+public class DriversController(LogisticDataContext dadaContext, IUserHelper userHelper) : ControllerBase
 {
+    private readonly IUserHelper _userHelper = userHelper;
     private readonly LogisticDataContext _dadaContext = dadaContext;
 
     // GET: api/Drivers/GetAllDrivers
@@ -37,13 +39,43 @@ public class DriversController(LogisticDataContext dadaContext) : ControllerBase
         return Ok(driverDTOs);
     }
 
-    // POST: api/Drivers
-    [HttpPost]
-    public async Task<ActionResult> PostDriver(DriverCreatedDTO createdDTO)
+    // POST: api/Drivers/CreateDriver
+    [HttpPost("CreateDriver")]
+    public async Task<ActionResult> CreateDriverAsync(DriverCreatedDTO createdDTO)
     {
-        _dadaContext.Drivers.Add(driver);
-        await _dadaContext.SaveChangesAsync();
+        var userExists = await _userHelper.GetUserAsync(createdDTO.Email);
+        if (userExists != null) return BadRequest("El correo ya está registrado.");
 
+        User newUser = new()
+        {
+            UserName = createdDTO.Email,
+            Email = createdDTO.Email,
+            PhoneNumber = createdDTO.Celular,
+            FullName = createdDTO.FullName,
+            Document = createdDTO.DNI,
+            UserType = UserEnum.Driver,
+            Companies = [],
+        };
+
+        var result = await _userHelper.AddUserAsync(newUser, "123456");
+
+        if (!result.Succeeded)
+        {
+            return BadRequest(result.Errors.FirstOrDefault()?.Description);
+        }
+
+        await _userHelper.AddUserToRoleAsync(newUser, UserEnum.Driver.ToString());
+
+        Driver newDriver = new()
+        {
+            UserID = newUser.Id,
+            Placa = createdDTO.Placa,
+            Available = true,
+            Orders = [],
+        };
+
+        _dadaContext.Drivers.Add(newDriver);
+        await _dadaContext.SaveChangesAsync();
         return Ok();
     }
 
