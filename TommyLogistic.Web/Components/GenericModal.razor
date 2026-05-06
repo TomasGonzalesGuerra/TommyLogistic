@@ -28,20 +28,15 @@
     </div>
 }
 
+
 @code {
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
     [Parameter] public EventCallback OnConfirm { get; set; }
     [Parameter, EditorRequired] public TModel Model { get; set; }
-    [Parameter] public EventCallback<bool> IsVisibleChanged { get; set; }
     [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
     [Parameter, EditorRequired] public RenderFragment<TModel> BodyContent { get; set; } = null!;
 
     private async Task HandleConfirm() => await OnConfirm.InvokeAsync();
-
-    private async Task HandleCancel()
-    {
-        await OnCancel.InvokeAsync();
-        await IsVisibleChanged.InvokeAsync(false);
-    }
+    private async Task HandleCancel() => await OnCancel.InvokeAsync();
 }

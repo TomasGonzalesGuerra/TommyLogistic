@@ -6,17 +6,19 @@
     align-items: center;
     justify-content: center;
     z-index: 200;
-    padding: 20px;
+    padding: var(--space-4);
+    backdrop-filter: blur(4px);
 }
 
 .adm-modal {
-    background: #111;
-    border: 0.5px solid rgba(201,168,76,0.18);
-    border-radius: var(--tr-rl);
+    background: var(--color-surface);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
     width: 100%;
     max-width: 520px;
     max-height: 90vh;
     overflow-y: auto;
+    box-shadow: var(--shadow-xl);
 }
 
 .adm-modal--sm {
@@ -33,19 +35,28 @@
 
 .adm-modal__title {
     font-family: var(--tr-fd);
-    font-size: 20px;
-    font-weight: 300;
+    font-size: var(--font-size-xl);
+    font-weight: 700;
     color: var(--tr-tx);
 }
 
 .adm-modal__close {
     background: none;
     border: none;
-    color: var(--tr-tx-m);
+    font-size: var(--font-size-lg);
     cursor: pointer;
-    font-size: 14px;
-    padding: 4px 8px;
+    color: var(--color-text-muted);
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
+
+    .adm-modal__close:hover {
+        background: var(--color-bg);
+    }
 
 .adm-modal__body {
     padding: 16px 22px;

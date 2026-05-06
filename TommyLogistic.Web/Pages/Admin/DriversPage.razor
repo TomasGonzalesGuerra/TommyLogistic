@@ -8,7 +8,7 @@
 
 <div class="list-header">
     <h1 class="page-title">Repartidores</h1>
-    <button class="btn btn-primary">➕ Nuevo repartidor</button>
+    <button @onclick="OpenModal" class="btn btn-primary">➕ Nuevo repartidor</button>
 </div>
 
 @if (_error is not null)
@@ -81,83 +81,25 @@ else
     </div>
 }
 
-<!-- Modal nuevo repartidor -->
-@* @if (_mostrarForm)
-{
-    <div class="modal-overlay" @onclick="CerrarFormulario">
-        <div class="modal-box" @onclick:stopPropagation="true">
-            <div class="modal-header">
-                <h2 class="modal-title">Nuevo repartidor</h2>
-                <button class="modal-close" @onclick="CerrarFormulario">✕</button>
-            </div>
+<GenericModal TModel="DriverCreatedDTO"
+              Model="_CreatedDTO"
+              Title="Nuevo Repartidor"
+              IsVisible="_mostrarForm"
+              OnConfirm="OnConfirm"
+              OnCancel="OnCancel">
+    <BodyContent>
+        <DriverForm _DTO="_CreatedDTO" />
+    </BodyContent>
+</GenericModal>
 
-            @if (_formError is not null)
-            {
-                <div class="alert alert-danger mb-4">
-                    <span>⚠️</span><span>@_formError</span>
-                </div>
-            }
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label required">Nombre</label>
-                    <input class="form-control" @bind="_form.Nombre"
-                           placeholder="Juan" />
-                </div>
-                <div class="form-group">
-                    <label class="form-label required">Apellido</label>
-                    <input class="form-control" @bind="_form.Apellido"
-                           placeholder="Quispe" />
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label required">DNI</label>
-                    <input class="form-control" @bind="_form.DNI"
-                           placeholder="45678901"
-                           inputmode="numeric"
-                           maxlength="8" />
-                </div>
-                <div class="form-group">
-                    <label class="form-label required">Teléfono</label>
-                    <input class="form-control" @bind="_form.Telefono"
-                           placeholder="987654321"
-                           inputmode="tel" />
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label required">Placa del vehículo</label>
-                <input class="form-control" @bind="_form.Placa"
-                       placeholder="ABC-123" />
-            </div>
-
-            <div class="modal-footer">
-                <button class="btn btn-ghost" @onclick="CerrarFormulario">
-                    Cancelar
-                </button>
-                <button class="btn btn-primary"
-                        @onclick="Crear"
-                        disabled="@_guardando">
-                    @if (_guardando)
-                    {
-                        <span class="spinner spinner-sm"></span>
-                    }
-                    Crear repartidor
-                </button>
-            </div>
-        </div>
-    </div>
-} *@
 
 @code {
     private List<DriverDTO> _allDriversDTO = [];
+    private DriverCreatedDTO _CreatedDTO = new();
     private bool _loading = true;
     private bool _mostrarForm;
     private bool _guardando;
     private string? _error;
-    private string? _formError;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -167,4 +109,17 @@ else
         _loading = false;
     }
 
+    private void OpenModal() => _mostrarForm = true;
+
+    private async Task OnCancel()
+    {
+        _mostrarForm = false;
+        _CreatedDTO = new();
+    }
+
+    private async Task OnConfirm()
+    {
+        _mostrarForm = false;
+        _CreatedDTO = new();
+    }
 }
