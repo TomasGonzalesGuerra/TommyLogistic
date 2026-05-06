@@ -28,12 +28,23 @@ public class DriversController(LogisticDataContext dadaContext) : ControllerBase
             Celular = u.PhoneNumber ?? string.Empty,
             DNI = u.Document ?? string.Empty,
             Photo = u.Photo ?? string.Empty,
-            Available = u.Drivers?.FirstOrDefault()?.Available ?? false,
-            Placa = u.Drivers?.FirstOrDefault()?.Placa ?? string.Empty,
-            DeliveredToday = u.Drivers?.FirstOrDefault()?.Orders?.Count(o => o.OrderStatus == OrderStatus.Delivered && o.DeliveryDate == DateTime.Today) ?? 0,
-            ActiveOrderToday = u.Drivers?.FirstOrDefault()?.Orders?.Count(o => o.OrderStatus == OrderStatus.Assigned && o.DeliveryDate == DateTime.Today) ?? 0
+            Available = u.Driver?.Available ?? false,
+            Placa = u.Driver?.Placa ?? string.Empty,
+            DeliveredToday = u.Driver?.Orders?.Count(o => o.OrderStatus == OrderStatus.Delivered && o.DeliveryDate == DateTime.Today) ?? 0,
+            ActiveOrderToday = u.Driver?.Orders?.Count(o => o.OrderStatus == OrderStatus.Assigned && o.DeliveryDate == DateTime.Today) ?? 0
         }).ToList();
 
         return Ok(driverDTOs);
     }
+
+    // POST: api/Drivers
+    [HttpPost]
+    public async Task<ActionResult> PostDriver(DriverCreatedDTO createdDTO)
+    {
+        _dadaContext.Drivers.Add(driver);
+        await _dadaContext.SaveChangesAsync();
+
+        return Ok();
+    }
+
 }

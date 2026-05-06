@@ -35,7 +35,7 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
     {
         try
         {
-            var responseHppt = await _repository.PostAsync<DriverCreatedDTO>("api/Drivers/CreateDriver", createdDTO);
+            var responseHppt = await _repository.PostAsync<DriverCreatedDTO>("api/Drivers", createdDTO);
 
             if (responseHppt.Error)
             {
