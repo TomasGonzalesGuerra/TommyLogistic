@@ -1,29 +1,33 @@
 ﻿<div class="form-row">
     <div class="form-group">
+        <label class="form-label required">Email</label>
+        <input class="form-control" @bind="CreatedDTO.Email" />
+    </div>
+    <div class="form-group">
         <label class="form-label required">Nombre</label>
-        <input class="form-control" @bind="_DTO.FullName" />
+        <input class="form-control" @bind="CreatedDTO.FullName" />
     </div>
 </div>
 
 <div class="form-row">
     <div class="form-group">
         <label class="form-label required">DNI</label>
-        <input class="form-control" @bind="_DTO.DNI" />
+        <input class="form-control" @bind="CreatedDTO.DNI" />
     </div>
 
     <div class="form-group">
         <label class="form-label required">Teléfono</label>
-        <input class="form-control" @bind="_DTO.Celular" />
+        <input class="form-control" @bind="CreatedDTO.Celular" />
     </div>
 </div>
 
 <div class="form-group">
     <label class="form-label required">Placa del vehículo</label>
-    <input class="form-control" @bind="_DTO.Placa" />
+    <input class="form-control" @bind="CreatedDTO.Placa" />
 </div>
 
 
 @code {
     [Parameter , EditorRequired]
-    public DriverCreatedDTO _DTO { get; set; }
+    public DriverCreatedDTO CreatedDTO { get; set; }
 }

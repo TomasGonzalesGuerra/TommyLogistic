@@ -1,13 +1,15 @@
-﻿namespace TommyLogistic.Shared.Entities;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace TommyLogistic.Shared.Entities;
 
 public class Driver
 {
-    public int Id { get; set; }
-    public string? Placa { get; set; }
+    [Key]
+    public string UserID { get; set; } = null!;
+    public string Placa { get; set; } = null!;
     public bool Available { get; set; }
 
     // Navegación a User
-    public string? UserID { get; set; }
     public User User { get; set; } = null!;
 
     // Navegación a Orders

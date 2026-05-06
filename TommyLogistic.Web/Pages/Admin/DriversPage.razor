@@ -88,7 +88,7 @@ else
               OnConfirm="OnConfirm"
               OnCancel="OnCancel">
     <BodyContent>
-        <DriverForm _DTO="_CreatedDTO" />
+        <DriverForm CreatedDTO="_CreatedDTO" />
     </BodyContent>
 </GenericModal>
 
@@ -111,13 +111,15 @@ else
 
     private void OpenModal() => _mostrarForm = true;
 
-    private async Task OnCancel()
+    private async Task OnConfirm()
     {
+        await _DriverService.CreateDriverAsync(_CreatedDTO);
         _mostrarForm = false;
         _CreatedDTO = new();
+        await LoadAsync();
     }
 
-    private async Task OnConfirm()
+    private async Task OnCancel()
     {
         _mostrarForm = false;
         _CreatedDTO = new();

@@ -9,4 +9,12 @@ public class LogisticDataContext(DbContextOptions<LogisticDataContext> options) 
     public DbSet<Driver> Drivers { get; set; }
     public DbSet<Company> Companies { get; set; }
     public DbSet<Order> Orders { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Driver>().HasKey(d => d.UserID);
+        modelBuilder.Entity<User>().HasOne(u => u.Driver).WithOne(d => d.User).HasForeignKey<Driver>(d => d.UserID);
+    }
 }

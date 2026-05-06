@@ -28,7 +28,7 @@ public class User : IdentityUser
     public UserEnum UserType { get; set; }
 
 
-    // Navegación a Driver
-    public ICollection<Driver>? Drivers { get; set; }
+    // Navegaciones
+    public Driver? Driver { get; set; }
     public ICollection<Company>? Companies  { get; set; }
 }

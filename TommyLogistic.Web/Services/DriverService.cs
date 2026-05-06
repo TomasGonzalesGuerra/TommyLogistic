@@ -30,4 +30,26 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
         }
 
     }
+
+    public async Task CreateDriverAsync(DriverCreatedDTO createdDTO)
+    {
+        try
+        {
+            var responseHppt = await _repository.PostAsync<DriverCreatedDTO>("api/Drivers/CreateDriver", createdDTO);
+
+            if (responseHppt.Error)
+            {
+                await _sweetAlertService.FireAsync("Error", "No se pudieron crear el repartidor", SweetAlertIcon.Error);
+                return;
+            }
+
+            return responseHppt.Response!;
+        }
+        catch (Exception ex)
+        {
+            await _sweetAlertService.FireAsync("Error", ex.Message, SweetAlertIcon.Error);
+            return [];
+        }
+
+    }
 }
