@@ -25,6 +25,6 @@ public class Order
     public Company Company { get; set; } = null!;
 
     // Driver Asignado
-    public string DriverID { get; set; } = null!;
+    public string? DriverID { get; set; }
     public Driver? Driver { get; set; }
 }

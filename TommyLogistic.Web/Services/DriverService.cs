@@ -1,10 +1,6 @@
-﻿using CurrieTechnologies.Razor.SweetAlert2;
-using System.ComponentModel.DataAnnotations;
-using System.Net;
-using System.Runtime.ConstrainedExecution;
+﻿using TommyLogistic.Web.Repositories;
 using TommyLogistic.Shared.DTOs.Drivers;
-using TommyLogistic.Shared.Entities;
-using TommyLogistic.Web.Repositories;
+using CurrieTechnologies.Razor.SweetAlert2;
 
 namespace TommyLogistic.Web.Services;
 

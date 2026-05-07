@@ -31,4 +31,27 @@ public class OrderService(IRepository repository, SweetAlertService sweetAlertSe
         }
 
     }
+
+    public async Task<bool> SimularRecepcionMasiva(List<ExternalOrderDTO> listaPedidos)
+    {
+        try
+        {
+            var responseHttp = await _repository.PostAsync("api/Orders/ReceiveExternalOrders", listaPedidos);
+
+            if (responseHttp.Error)
+            {
+                var message = await responseHttp.GetErrorMessageAsync();
+                await _sweetAlertService.FireAsync("Error", "No se Pudo Recibir Pedidos", SweetAlertIcon.Error);
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            await _sweetAlertService.FireAsync("Error", ex.Message, SweetAlertIcon.Error);
+            return false;
+        }
+
+    }
 }

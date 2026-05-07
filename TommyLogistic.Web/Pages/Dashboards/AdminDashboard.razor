@@ -1,5 +1,7 @@
 ﻿@page "/AdminDashboard"
 @layout MainLayout
+@inject OrderService _OrderService
+@inject IJSRuntime _IJSRuntime
 @inject NavigationManager _NavigationManager
 @attribute [Authorize(Roles = nameof(UserEnum.Admin))]
 
@@ -17,12 +19,12 @@
 else
 {
     <div class="flex gap-3 mt-6">
-        <button class="btn btn-primary" @onclick="@(() => _NavigationManager.NavigateTo("/pedidos"))">
-            Ver todos los pedidos
+        <button class="btn btn-primary" @onclick="SimularRecepcionMasiva">
+            Cargar Comandas (Simulación)
         </button>
 
-        <button class="btn btn-ghost" @onclick="OnRefrescar">
-            🔄 Actualizar
+        <button class="btn btn-success" @onclick="@(() => _NavigationManager.NavigateTo("/pedidos"))">
+            Ver Pedidos
         </button>
     </div>
 
@@ -89,18 +91,64 @@ else
     </div>
 }
 
+<GenericModal Title="Reciviendo Comandas" IsVisible="_showModal" OnCancel="OnCancel">
+    <BodyContent>
+        <div class="alert alert-info" role="alert">
+            <span>⏳</span>
+            <span>Simulando recepción masiva de pedidos...</span>
+        </div>
+    </BodyContent>
+</GenericModal>
+
 
 @code {
     private bool _loading = true;
-    [Parameter, EditorRequired] public DashboardAdminDTO Data { get; set; } = null!;
-    [Parameter] public List<OrderSummaryDTO> UltimosMovimientos { get; set; } = [];
-    [Parameter] public EventCallback OnRefrescar { get; set; }
+    private bool _showModal = false;
+    public DashboardAdminDTO Data { get; set; } = null!;
+    public List<OrderSummaryDTO> UltimosMovimientos { get; set; } = [];
 
     protected override void OnInitialized()
     {
         Data ??= new DashboardAdminDTO();
         _loading = false;
     }
-}
 
+    private async Task SimularRecepcionMasiva()
+    {
+        _showModal = true;
+        Random random = new();
+        List<ExternalOrderDTO> listaPedidos = [];
+
+        // Datos para aleatoriedad
+        string[] empresas = { "naruto@yopmail.com", "angelina@yopmail.com" };
+        string[] productos = { "Caja de Herramientas", "Monitor 24p", "Zapatillas Running", "Kit de Limpieza", "Teclado Mecánico", "Cafetera Express" };
+        string[] nombres = { "Monkey D. Luffy", "Roronoa Zoro", "Nami Swan", "Sanji Vinsmoke", "Tony Chopper", "Nico Robin" };
+        string[] distritos = { "Miraflores", "San Isidro", "Surco", "Los Olivos", "Lince" };
+
+        for (int i = 1; i <= 30; i++)
+        {
+            listaPedidos.Add(new ExternalOrderDTO
+            {
+                CompanyEmail = empresas[random.Next(empresas.Length)],
+                ProductName = $"{productos[random.Next(productos.Length)]} #{i}",
+                Quantity = random.Next(1, 5),
+                Recipient = nombres[random.Next(nombres.Length)],
+                Address = $"Calle Ficticia {random.Next(100, 999)}",
+                District = distritos[random.Next(distritos.Length)],
+                Phone = $"9{random.Next(10000000, 99999999)}"
+            });
+        }
+
+        var response = await _OrderService.SimularRecepcionMasiva(listaPedidos);
+
+        if (!response)
+        {
+            _showModal = false;
+            await _IJSRuntime.InvokeVoidAsync("alert", $"La Cagastesss");
+        }
+
+        _showModal = false;
+    }
+
+    private async Task OnCancel() => _showModal = false;
 }

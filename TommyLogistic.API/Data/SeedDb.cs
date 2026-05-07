@@ -135,7 +135,7 @@ public class SeedDb(LogisticDataContext datacontext, IUserHelper userHelper)
         string[] direcciones = { "Calle Ninja 123", "Av. Hokage 456", "Barrio Uchiha 789", "Torre Administrativa 10", "Bosque de la Muerte 5" };
         string[] distritos = { "Konoha", "Suna", "Kiri", "Kumo", "Iwa" };
         string[] descripciones = { "Set de Kunais", "Pergaminos de Invocación", "Ramen Instantáneo", "Botiquín Médico", "Capa de Akatsuki" };
-        OrderStatus[] estados = { OrderStatus.Registered, OrderStatus.OnTheWay, OrderStatus.Delivered, OrderStatus.PickedUp };
+        OrderStatus[] estados = { OrderStatus.OnStorage, OrderStatus.PickedUp };
 
         for (int i = 1; i <= 20; i++)
         {
