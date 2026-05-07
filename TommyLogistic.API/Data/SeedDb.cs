@@ -19,7 +19,14 @@ public class SeedDb(LogisticDataContext datacontext, IUserHelper userHelper)
         await CheckAdminAsync("El Tommy", "eltommy@yopmail.com", "322 311 420", "naruto.gif", UserEnum.Admin);
         await CheckUserAsync("Brad Pitt", "brad@yopmail.com", "322 311 462", "https://www.famousbirthdays.com/headshots/brad-pitt-9.jpg", UserEnum.Driver, "ABC-123");
         await CheckUserAsync("Bob Marley", "bob@yopmail.com", "322 314 620", "https://upload.wikimedia.org/wikipedia/commons/7/7a/SpongeBob_SquarePants_character.png", UserEnum.Driver, "REG-420");
-        await CheckUserAsync("Ino Sarutobi", "ino@tommy.com", "928 172 129", "https://www.nicepng.com/png/full/847-8475061_ino-yamanaka-naruto-blazing.png", UserEnum.Driver, "NIN-777");
+        await CheckUserAsync("Ino Sarutobi", "ino@yopmail.com", "928 172 129", "https://www.nicepng.com/png/full/847-8475061_ino-yamanaka-naruto-blazing.png", UserEnum.Driver, "NIN-777");
+        await CheckUserAsync("Boruto el Puto", "boruto@yopmail.com", "987 654 231", "https://tierragamer.com/wp-content/uploads/2025/07/El-verdadero-autor-de-boruto-no-es-masahi-kishimoto-2-768x432.webp", UserEnum.Driver, "BOR-666");
+        await CheckUserAsync("Sarada Uchiha", "sarada@yopmail.com", "963 852 147", "https://i.pinimg.com/236x/66/2d/71/662d717b1134b7a00116727bdcba82be.jpg", UserEnum.Driver, "SAR-234");
+        await CheckUserAsync("Ang del Aire", "ang@yopmail.com", "987 456 321", "https://i.pinimg.com/564x/29/b5/4d/29b54db491b9f9499f76268c58afac4e.jpg", UserEnum.Driver, "ANG-777");
+        await CheckUserAsync("Toph de Tierra", "toph@yopmail.com", "951 425 687", "https://image.tensorartassets.com/cdn-cgi/image/anim=true,plain=false,w=500,q=85/model_showcase/608513797151344272/d477d208-f808-5a10-453b-d813769bd9df.jpeg", UserEnum.Driver, "TOP-874");
+        await CheckUserAsync("Zuko del Fuego", "zuko@yopmail.com", "987 412 365", "https://i.pinimg.com/474x/ab/79/ea/ab79ea0dcbfbfbd5a299f7fa07f31066.jpg", UserEnum.Driver, "ZUK-677");
+        await CheckUserAsync("Makima de Tommy", "makima@yopmail.com", "987 654 321", "https://img.anmosugoi.com/file/media-sugoi/2022/10/Makima-Chainsaw-Man-3.jpg", UserEnum.Driver, "MAK-666");
+        await CheckUserAsync("Powder de Tommy", "powder@yopmail.com", "987 654 322", "https://image.tensorartassets.com/model_showcase/608861109681797221/7d2aad9a-9ce0-9923-ed18-437f869ad135.jpeg", UserEnum.Driver, "POW-666");
         await CheckUserAsync("Mila Azul", "mila@yopmail.com", "382 314 620", "https://wikisbios.com/wp-content/uploads/2022/11/1669490405_657_Mila-Azul-Height-Weight-Bio-Wiki-Age-Photo-Instagram.jpg", UserEnum.Operator);
         await CheckUserAsync("Sai Ambu", "miha@yopmail.com", "377 314 620", "https://www.nicepng.com/png/full/399-3995389_sai-by-kakashidoe-sai-by-kakashidoe-sai-naruto.png", UserEnum.Supervisor);
         

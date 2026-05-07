@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Collections;
 using TommyLogistic.API.Data;
 using TommyLogistic.Shared.DTOs.Orders;
 using TommyLogistic.Shared.Entities;
@@ -104,7 +105,7 @@ public class OrdersController(LogisticDataContext dataContext) : ControllerBase
                 RecipientAddress = item.Address,
                 RecipientDistrict = item.District,
                 RecipientPhone = item.Phone,
-                RegistrationDate = DateTime.Now,
+                RegistrationDate = DateTime.UtcNow,
                 OrderStatus = OrderStatus.Registered,
                 TrackingCode = $"TL-{Guid.NewGuid().ToString().Substring(0, 8).ToUpper()}",
                 DeliveryType = DeliveryType.ToDay
@@ -113,7 +114,58 @@ public class OrdersController(LogisticDataContext dataContext) : ControllerBase
 
         _dataContext.Orders.AddRange(newOrders);
         await _dataContext.SaveChangesAsync();
-        return Ok($"{newOrders.Count} pedidos registrados correctamente.");
+        return Ok();
+    }
+
+    // POST: api/Orders/AutoRouteAndAssign
+    [HttpPost("AutoRouteAndAssign")]
+    public async Task<IActionResult> AutoRouteAndAssign()
+    {
+        DateTime todayUtc = DateTime.UtcNow;
+        DateTime tomorrowUtc = todayUtc.AddDays(1);
+        List<Order> registeredOrders = await _dataContext.Orders
+            .Where(o => o.OrderStatus == OrderStatus.Registered)
+            .Where(o => o.RegistrationDate >= todayUtc && o.RegistrationDate < tomorrowUtc)
+            .ToListAsync();
+        List<Driver> availableDrivers = await _dataContext.Drivers.Where(d => d.Available).ToListAsync();
+        if (registeredOrders is [] || availableDrivers is []) return BadRequest("No se puede Realizar la Asignación");
+
+        var ordersByDistrict = registeredOrders.GroupBy(o => o.RecipientDistrict);
+        int driverIndex = 0;
+        int totalAssigned = 0;
+
+        foreach (var carga in ordersByDistrict)
+        {
+            var chunks = carga.Chunk(10);
+
+            foreach (var item in chunks)
+            {
+                if (driverIndex >= availableDrivers.Count) break;
+                var currentDriver = availableDrivers[driverIndex];
+
+                foreach (var order in item)
+                {
+                    order.DriverID = currentDriver.UserID;
+                    order.OrderStatus = OrderStatus.Assigned;
+                    totalAssigned++;
+                }
+
+                currentDriver.Available = false;
+                driverIndex++;
+            }
+
+            if (driverIndex >= availableDrivers.Count) break;
+        }
+
+        await _dataContext.SaveChangesAsync();
+
+        int ordersLeft = registeredOrders.Count - totalAssigned;
+        return Ok(new
+        {
+            Message = $"Asignación completada: {totalAssigned} órdenes asignadas.",
+            DriversUsed = driverIndex,
+            OrdersPending = ordersLeft
+        });
     }
 
 }
