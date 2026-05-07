@@ -81,14 +81,9 @@ else
     </div>
 }
 
-<GenericModal TModel="DriverCreatedDTO"
-              Model="_CreatedDTO"
-              Title="Nuevo Repartidor"
-              IsVisible="_mostrarForm"
-              OnConfirm="OnConfirm"
-              OnCancel="OnCancel">
-    <BodyContent Context="_CreatedDTO">
-        <DriverForm CreatedDTO="_CreatedDTO" />
+<GenericModal Title="Nuevo Repartidor" IsVisible="_mostrarForm" OnCancel="OnCancel">
+    <BodyContent>
+        <DriverForm @ref="_DriverForm" CreatedDTO="_CreatedDTO" OnValidSubmit="OnCreateAsync" ReturnAction="OnCancel" />
     </BodyContent>
 </GenericModal>
 
@@ -96,6 +91,7 @@ else
 @code {
     private List<DriverDTO> _allDriversDTO = [];
     private DriverCreatedDTO _CreatedDTO = new();
+    private DriverForm _DriverForm = null!;
     private bool _loading = true;
     private bool _mostrarForm;
     private bool _guardando;
@@ -111,7 +107,7 @@ else
 
     private void OpenModal() => _mostrarForm = true;
 
-    private async Task OnConfirm()
+    private async Task OnCreateAsync()
     {
         _loading = true;
 

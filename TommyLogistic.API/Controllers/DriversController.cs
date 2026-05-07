@@ -26,21 +26,21 @@ public class DriversController(LogisticDataContext dadaContext, IUserHelper user
         List<DriverDTO> driverDTOs = users.Select(u => new DriverDTO
         {
             Id = int.TryParse(u.Id, out var parsedId) ? parsedId : 0,
-            FullName = u.FullName ?? string.Empty,
-            Celular = u.PhoneNumber ?? string.Empty,
-            DNI = u.Document ?? string.Empty,
+            FullName = u.FullName,
+            Celular = u.PhoneNumber,
+            DNI = u.Document,
             Photo = u.Photo ?? string.Empty,
-            Available = u.Driver?.Available ?? false,
-            Placa = u.Driver?.Placa ?? string.Empty,
-            DeliveredToday = u.Driver?.Orders?.Count(o => o.OrderStatus == OrderStatus.Delivered && o.DeliveryDate == DateTime.Today) ?? 0,
-            ActiveOrderToday = u.Driver?.Orders?.Count(o => o.OrderStatus == OrderStatus.Assigned && o.DeliveryDate == DateTime.Today) ?? 0
+            Available = (bool)(u.Driver!.Available),
+            Placa = u.Driver!.Placa,
+            DeliveredToday = u.Driver!.Orders?.Count(o => o.OrderStatus == OrderStatus.Delivered && o.DeliveryDate == DateTime.Today) ?? 0,
+            ActiveOrderToday = u.Driver!.Orders?.Count(o => o.OrderStatus == OrderStatus.Assigned && o.DeliveryDate == DateTime.Today) ?? 0
         }).ToList();
 
         return Ok(driverDTOs);
     }
 
-    // POST: api/Drivers/CreateDriver
-    [HttpPost("CreateDriver")]
+    // POST: api/Drivers
+    [HttpPost]
     public async Task<ActionResult> CreateDriverAsync(DriverCreatedDTO createdDTO)
     {
         var userExists = await _userHelper.GetUserAsync(createdDTO.Email);
@@ -53,6 +53,8 @@ public class DriversController(LogisticDataContext dadaContext, IUserHelper user
             PhoneNumber = createdDTO.Celular,
             FullName = createdDTO.FullName,
             Document = createdDTO.DNI,
+            Address = string.Empty,
+            Photo = string.Empty,
             UserType = UserEnum.Driver,
             Companies = [],
         };

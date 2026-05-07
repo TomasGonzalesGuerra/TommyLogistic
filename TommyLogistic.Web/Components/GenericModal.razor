@@ -1,6 +1,4 @@
-﻿@typeparam TModel
-
-@if (IsVisible)
+﻿@if (IsVisible)
 {
     <div class="adm-overlay" @onclick="HandleCancel">
         <div class="adm-modal" @onclick:stopPropagation>
@@ -10,18 +8,7 @@
                 <button @onclick="HandleCancel" class="adm-modal__close">✕</button>
             </div>
 
-            <EditForm Model="Model" OnSubmit="HandleConfirm" class="adm-modal__body">
-                @BodyContent(Model)
-                <div class="adm-modal__footer">
-                    <button @onclick="HandleCancel" class="adm-btn adm-btn--ghost">
-                        Cancelar
-                    </button>
-
-                    <button type="submit" class="adm-btn adm-btn--primary">
-                        Guardar
-                    </button>
-                </div>
-            </EditForm>
+            @BodyContent
         </div>
     </div>
 }
@@ -30,11 +17,8 @@
 @code {
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
-    [Parameter] public EventCallback OnConfirm { get; set; }
-    [Parameter, EditorRequired] public TModel Model { get; set; }
     [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
-    [Parameter, EditorRequired] public RenderFragment<TModel> BodyContent { get; set; } = null!;
+    [Parameter, EditorRequired] public RenderFragment BodyContent { get; set; } = null!;
 
-    private async Task HandleConfirm() => await OnConfirm.InvokeAsync();
     private async Task HandleCancel() => await OnCancel.InvokeAsync();
 }
