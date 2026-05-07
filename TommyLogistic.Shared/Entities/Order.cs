@@ -8,23 +8,23 @@ public class Order
     public int Quantity { get; set; }
     public bool Invoiced { get; set; }
     public int DeliveryAttempts { get; set; }
-    public string? TrackingCode { get; set; }
-    public string? RecipientName { get; set; }
-    public string? RecipientPhone { get; set; }
     public DateTime? DeliveryDate { get; set; }
     public OrderStatus OrderStatus { get; set; }
-    public string? RecipientAddress { get; set; }
-    public string? RecipientDistrict { get; set; }
     public DeliveryType DeliveryType { get; set; }
     public DateTime RegistrationDate { get; set; }
     public DateTime? RescheduledDate { get; set; }
-    public string? PackageDescription { get; set; }
+    public string TrackingCode { get; set; } = null!;
+    public string RecipientName { get; set; } = null!;
+    public string RecipientPhone { get; set; } = null!;
+    public string RecipientAddress { get; set; } = null!;
+    public string RecipientDistrict { get; set; } = null!;
+    public string PackageDescription { get; set; } = null!;
 
     // Company Dueña
     public int CompanyID { get; set; }
     public Company Company { get; set; } = null!;
 
     // Driver Asignado
-    public int? DriverID { get; set; }
-    public Driver Driver { get; set; } = null!;
+    public string DriverID { get; set; } = null!;
+    public Driver? Driver { get; set; }
 }

@@ -2,13 +2,13 @@
 
 public class DriverDTO
 {
-    public int Id { get; set; }
-    public string? DNI { get; set; }
-    public string? Placa { get; set; }
-    public string? Photo { get; set; }
+    public string Id { get; set; } = null!;
+    public string DNI { get; set; } = null!;
+    public string Placa { get; set; } = null!;
+    public string Photo { get; set; } = null!;
+    public string Celular { get; set; } = null!;
+    public string FullName { get; set; } = null!;
     public bool Available { get; set; }
-    public string? Celular { get; set; }
-    public string? FullName { get; set; }
     public int DeliveredToday { get; set; }
     public int ActiveOrderToday { get; set; }
 }

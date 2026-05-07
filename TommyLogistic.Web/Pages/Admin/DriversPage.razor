@@ -46,7 +46,7 @@ else
                 <div class="rep-meta">
                     <span class="text-sm">🚗 @item.Placa</span>
                     <span class="text-sm">📞 @item.Celular</span>
-                    @if (item.Available)
+                    @if (!item.Available)
                     {
                         <span class="badge badge-ausente">Sin acceso al sistema</span>
                     }

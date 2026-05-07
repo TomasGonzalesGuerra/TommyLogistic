@@ -7,9 +7,9 @@ public class Company
     public DateTime RegisterDate { get; set; }
 
     // Navegación a User
-    public string? UserID { get; set; }
+    public string UserID { get; set; } = null!;
     public User User { get; set; } = null!;
 
     // Navegación a Orders
-    public ICollection<Order>? Orders { get; set; }
+    public ICollection<Order> Orders { get; set; } = null!;
 }

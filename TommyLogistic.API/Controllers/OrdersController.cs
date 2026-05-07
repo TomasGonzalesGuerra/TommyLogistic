@@ -3,6 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using TommyLogistic.API.Data;
 using TommyLogistic.Shared.DTOs.Orders;
 using TommyLogistic.Shared.Entities;
+using static Azure.Core.HttpHeader;
+using static NuGet.Packaging.PackagingConstants;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace TommyLogistic.API.Controllers
 {
@@ -115,3 +118,36 @@ namespace TommyLogistic.API.Controllers
         }
     }
 }
+
+//[HttpGet]
+//public async Task<ActionResult<IEnumerable<Order>>> GetOrders(
+//    [FromQuery] string? name,
+//    [FromQuery] DateTime? date)
+//{
+//    // Creamos la consulta base incluyendo las relaciones para ver los nombres
+//    var query = _context.Orders
+//        .Include(o => o.Company)
+//        .Include(o => o.Driver)
+//        .ThenInclude(d => d.User)
+//        .AsQueryable();
+
+//    // Filtro por Nombre del Destinatario (o puedes cambiarlo por nombre de empresa)
+//    if (!string.IsNullOrWhiteSpace(name))
+//    {
+//        query = query.Where(o => o.RecipientName!.Contains(name) ||
+//                                 o.PackageDescription!.Contains(name));
+//    }
+
+//    // Filtro por Fecha de Registro
+//    if (date.HasValue)
+//    {
+//        // Comparamos solo la parte de la fecha (sin horas)
+//        query = query.Where(o => o.RegistrationDate.Date == date.Value.Date);
+//    }
+
+//    return await query.OrderByDescending(o => o.RegistrationDate).ToListAsync();
+//}
+
+//Por nombre: api/orders?name=Kakash
+//Por fecha: api/orders?date=2023-10-27
+//Combinado: api/orders?name=Ramen&date=2023-10-27

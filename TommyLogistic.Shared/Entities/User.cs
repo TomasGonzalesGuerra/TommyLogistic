@@ -9,17 +9,17 @@ public class User : IdentityUser
     [Display(Name = "Apellidos")]
     [MaxLength(50, ErrorMessage = "El campo {0} debe tener máximo {1} caractéres.")]
     [Required(ErrorMessage = "El campo {0} es obligatorio.")]
-    public string? FullName { get; set; }
+    public string FullName { get; set; } = null!;
 
     [Display(Name = "Documento")]
     [MaxLength(50, ErrorMessage = "El campo {0} debe tener máximo {1} caractéres.")]
     [Required(ErrorMessage = "El campo {0} es obligatorio.")]
-    public string? Document { get; set; }
+    public string Document { get; set; } = null!;
 
     [Display(Name = "Dirección")]
     [MaxLength(50, ErrorMessage = "El campo {0} debe tener máximo {1} caractéres.")]
     [Required(ErrorMessage = "El campo {0} es obligatorio.")]
-    public string? Address { get; set; }
+    public string Address { get; set; } = null!;
 
     [Display(Name = "Foto")]
     public string? Photo { get; set; }

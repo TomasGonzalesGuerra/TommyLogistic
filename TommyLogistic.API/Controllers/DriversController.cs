@@ -19,19 +19,23 @@ public class DriversController(LogisticDataContext dadaContext, IUserHelper user
     [HttpGet("GetAllDrivers")]
     public async Task<ActionResult<IEnumerable<DriverDTO>>> GetAllDriversAsync()
     {
-        List<User> users = await _dadaContext.Users.Where(u => u.UserType == UserEnum.Driver).ToListAsync();
+        List<User> users = await _dadaContext.Users
+            .Include(u => u.Driver).ThenInclude(d => d.Orders)
+            .Where(u => u.UserType == UserEnum.Driver)
+            .ToListAsync();
+
         if (users.Count == 0) return Ok(new List<DriverDTO>());
         if (users == null) return NotFound();
 
         List<DriverDTO> driverDTOs = users.Select(u => new DriverDTO
         {
-            Id = int.TryParse(u.Id, out var parsedId) ? parsedId : 0,
+            Id = u.Id,
             FullName = u.FullName,
-            Celular = u.PhoneNumber,
+            Celular = u.PhoneNumber!,
             DNI = u.Document,
             Photo = u.Photo ?? string.Empty,
-            Available = (bool)(u.Driver!.Available),
-            Placa = u.Driver!.Placa,
+            Available = u.Driver!.Available,
+            Placa = u.Driver.Placa,
             DeliveredToday = u.Driver!.Orders?.Count(o => o.OrderStatus == OrderStatus.Delivered && o.DeliveryDate == DateTime.Today) ?? 0,
             ActiveOrderToday = u.Driver!.Orders?.Count(o => o.OrderStatus == OrderStatus.Assigned && o.DeliveryDate == DateTime.Today) ?? 0
         }).ToList();
