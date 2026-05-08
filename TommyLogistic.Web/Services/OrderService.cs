@@ -10,6 +10,7 @@ public class OrderService(IRepository repository, SweetAlertService sweetAlertSe
     private readonly IRepository _repository = repository;
     private readonly SweetAlertService _sweetAlertService = sweetAlertService;
 
+
     public async Task<List<OrderSummaryDTO>> GetAllOrdersAsync()
     {
         try
@@ -54,4 +55,6 @@ public class OrderService(IRepository repository, SweetAlertService sweetAlertSe
         }
 
     }
+
+
 }

@@ -1,7 +1,9 @@
 ﻿@page "/AdminDashboard"
 @layout MainLayout
-@inject OrderService _OrderService
 @inject IJSRuntime _IJSRuntime
+@inject HttpClient _HttpClient
+@inject SweetAlertService _Swal
+@inject OrderService _OrderService
 @inject NavigationManager _NavigationManager
 @attribute [Authorize(Roles = nameof(UserEnum.Admin))]
 
@@ -21,6 +23,10 @@ else
     <div class="flex gap-3 mt-6">
         <button class="btn btn-primary" @onclick="SimularRecepcionMasiva">
             Cargar Comandas (Simulación)
+        </button>
+
+        <button class="btn btn-success" @onclick="ExecuteAutoAssign">
+            Armar Cargas
         </button>
 
         <button class="btn btn-success" @onclick="@(() => _NavigationManager.NavigateTo("/pedidos"))">
@@ -91,19 +97,9 @@ else
     </div>
 }
 
-<GenericModal Title="Reciviendo Comandas" IsVisible="_showModal" OnCancel="OnCancel">
-    <BodyContent>
-        <div class="alert alert-info" role="alert">
-            <span>⏳</span>
-            <span>Simulando recepción masiva de pedidos...</span>
-        </div>
-    </BodyContent>
-</GenericModal>
-
 
 @code {
     private bool _loading = true;
-    private bool _showModal = false;
     public DashboardAdminDTO Data { get; set; } = null!;
     public List<OrderSummaryDTO> UltimosMovimientos { get; set; } = [];
 
@@ -115,7 +111,6 @@ else
 
     private async Task SimularRecepcionMasiva()
     {
-        _showModal = true;
         Random random = new();
         List<ExternalOrderDTO> listaPedidos = [];
 
@@ -143,12 +138,50 @@ else
 
         if (!response)
         {
-            _showModal = false;
-            await _IJSRuntime.InvokeVoidAsync("alert", $"La Cagastesss");
+            await _Swal.FireAsync("Atención", "La Cagastesss", SweetAlertIcon.Warning);
         }
-
-        _showModal = false;
+        
+        await _Swal.FireAsync(new SweetAlertOptions
+        {
+            Title = "¡Asignación Exitosa!",
+            Text = $"Por fin te Hiiste Una 👍🏽",
+            Icon = SweetAlertIcon.Success,
+            ConfirmButtonText = "Entendido"
+        });
     }
 
-    private async Task OnCancel() => _showModal = false;
+    private async Task ExecuteAutoAssign()
+    {
+        var response = await _HttpClient.PostAsync("api/Orders/AutoRouteAndAssign", null);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            await _Swal.FireAsync("Atención", errorContent, SweetAlertIcon.Warning);
+            return;
+        }
+
+        var datos = await response.Content.ReadFromJsonAsync<AssignmentResponse>();
+
+        if (datos != null)
+        {
+            await _Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "¡Asignación Exitosa!",
+                Text = $"{datos.Message} (Conductores usados: {datos.DriversUsed})",
+                Icon = SweetAlertIcon.Success,
+                ConfirmButtonText = "Entendido"
+            });
+        }
+    }
+
+
+    public class AssignmentResponse
+    {
+        public string Message { get; set; }
+        public int DriversUsed { get; set; }
+        public int OrdersPending { get; set; }
+    }
+
+
 }

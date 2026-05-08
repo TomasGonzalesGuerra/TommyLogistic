@@ -19,22 +19,24 @@ public class SeedDb(LogisticDataContext datacontext, IUserHelper userHelper)
         await CheckAdminAsync("El Tommy", "eltommy@yopmail.com", "322 311 420", "naruto.gif", UserEnum.Admin);
         await CheckUserAsync("Brad Pitt", "brad@yopmail.com", "322 311 462", "https://www.famousbirthdays.com/headshots/brad-pitt-9.jpg", UserEnum.Driver, "ABC-123");
         await CheckUserAsync("Bob Marley", "bob@yopmail.com", "322 314 620", "https://upload.wikimedia.org/wikipedia/commons/7/7a/SpongeBob_SquarePants_character.png", UserEnum.Driver, "REG-420");
-        await CheckUserAsync("Ino Sarutobi", "ino@yopmail.com", "928 172 129", "https://www.nicepng.com/png/full/847-8475061_ino-yamanaka-naruto-blazing.png", UserEnum.Driver, "NIN-777");
         await CheckUserAsync("Boruto el Puto", "boruto@yopmail.com", "987 654 231", "https://tierragamer.com/wp-content/uploads/2025/07/El-verdadero-autor-de-boruto-no-es-masahi-kishimoto-2-768x432.webp", UserEnum.Driver, "BOR-666");
-        await CheckUserAsync("Sarada Uchiha", "sarada@yopmail.com", "963 852 147", "https://i.pinimg.com/236x/66/2d/71/662d717b1134b7a00116727bdcba82be.jpg", UserEnum.Driver, "SAR-234");
         await CheckUserAsync("Ang del Aire", "ang@yopmail.com", "987 456 321", "https://i.pinimg.com/564x/29/b5/4d/29b54db491b9f9499f76268c58afac4e.jpg", UserEnum.Driver, "ANG-777");
         await CheckUserAsync("Toph de Tierra", "toph@yopmail.com", "951 425 687", "https://image.tensorartassets.com/cdn-cgi/image/anim=true,plain=false,w=500,q=85/model_showcase/608513797151344272/d477d208-f808-5a10-453b-d813769bd9df.jpeg", UserEnum.Driver, "TOP-874");
         await CheckUserAsync("Zuko del Fuego", "zuko@yopmail.com", "987 412 365", "https://i.pinimg.com/474x/ab/79/ea/ab79ea0dcbfbfbd5a299f7fa07f31066.jpg", UserEnum.Driver, "ZUK-677");
         await CheckUserAsync("Makima de Tommy", "makima@yopmail.com", "987 654 321", "https://img.anmosugoi.com/file/media-sugoi/2022/10/Makima-Chainsaw-Man-3.jpg", UserEnum.Driver, "MAK-666");
         await CheckUserAsync("Powder de Tommy", "powder@yopmail.com", "987 654 322", "https://image.tensorartassets.com/model_showcase/608861109681797221/7d2aad9a-9ce0-9923-ed18-437f869ad135.jpeg", UserEnum.Driver, "POW-666");
         await CheckUserAsync("Mila Azul", "mila@yopmail.com", "382 314 620", "https://wikisbios.com/wp-content/uploads/2022/11/1669490405_657_Mila-Azul-Height-Weight-Bio-Wiki-Age-Photo-Instagram.jpg", UserEnum.Operator);
-        await CheckUserAsync("Sai Ambu", "miha@yopmail.com", "377 314 620", "https://www.nicepng.com/png/full/399-3995389_sai-by-kakashidoe-sai-by-kakashidoe-sai-naruto.png", UserEnum.Supervisor);
+        await CheckUserAsync("Sai Ambu", "sai@yopmail.com", "377 314 620", "https://www.nicepng.com/png/full/399-3995389_sai-by-kakashidoe-sai-by-kakashidoe-sai-naruto.png", UserEnum.Supervisor);
         
-        var naruto = await CheckUserAsync("Naruto Uzumaki", "naruto@yopmail.com", "322 311 460", "https://play-lh.googleusercontent.com/QT1k7Q1JS114SUNJoxoR0admTsC1EUx54hOa7tdYUu_z6MkTIYJ7FEtRXn7XZ-4l3nzj3st9hVxHqT63L0Uktw", UserEnum.Client);
-        var angelina = await CheckUserAsync("Angelina Jolie", "angelina@yopmail.com", "322 311 620", "https://th.bing.com/th/id/R.ea08e41477d34ca50ea1d471ae9a24c1?rik=syM1YQV3YAeA8A&riu=http%3a%2f%2fwww.pngall.com%2fwp-content%2fuploads%2f4%2fAngelina-Jolie-PNG-Download-Image-180x180.png", UserEnum.Client);
+        User ino = await CheckUserAsync("Ino Sarutobi", "ino@yopmail.com", "928 172 129", "https://www.nicepng.com/png/full/847-8475061_ino-yamanaka-naruto-blazing.png", UserEnum.Client);
+        User sarada = await CheckUserAsync("Sarada Uchiha", "sarada@yopmail.com", "963 852 147", "https://i.pinimg.com/236x/66/2d/71/662d717b1134b7a00116727bdcba82be.jpg", UserEnum.Client);
+        User naruto = await CheckUserAsync("Naruto Uzumaki", "naruto@yopmail.com", "322 311 460", "https://play-lh.googleusercontent.com/QT1k7Q1JS114SUNJoxoR0admTsC1EUx54hOa7tdYUu_z6MkTIYJ7FEtRXn7XZ-4l3nzj3st9hVxHqT63L0Uktw", UserEnum.Client);
+        User angelina = await CheckUserAsync("Angelina Jolie", "angelina@yopmail.com", "322 311 620", "https://th.bing.com/th/id/R.ea08e41477d34ca50ea1d471ae9a24c1?rik=syM1YQV3YAeA8A&riu=http%3a%2f%2fwww.pngall.com%2fwp-content%2fuploads%2f4%2fAngelina-Jolie-PNG-Download-Image-180x180.png", UserEnum.Client);
 
         await CheckCompaniesAsync(naruto);
         await CheckCompaniesAsync(angelina);
+        await CheckCompaniesAsync(ino);
+        await CheckCompaniesAsync(sarada);
 
         await CheckOrdersAsync();
     }
@@ -95,7 +97,6 @@ public class SeedDb(LogisticDataContext datacontext, IUserHelper userHelper)
             await _userHelper.AddUserAsync(user, "123456");
             await _userHelper.AddUserToRoleAsync(user, userType.ToString());
 
-            // Si es Driver, creamos su entidad Driver
             if (userType == UserEnum.Driver)
             {
                 _datacontext.Drivers.Add(new Driver
@@ -119,7 +120,7 @@ public class SeedDb(LogisticDataContext datacontext, IUserHelper userHelper)
             _datacontext.Companies.Add(new Company
             {
                 Activa = true,
-                RegisterDate = DateTime.Now,
+                RegisterDate = DateTime.UtcNow,
                 UserID = user.Id
             });
             await _datacontext.SaveChangesAsync();
@@ -132,12 +133,10 @@ public class SeedDb(LogisticDataContext datacontext, IUserHelper userHelper)
 
         var companies = await _datacontext.Companies.ToListAsync();
         var drivers = await _datacontext.Drivers.ToListAsync();
+        if (companies is [] || drivers is []) return;
 
-        if (!companies.Any() || !drivers.Any()) return;
+        Random random = new();
 
-        var random = new Random();
-
-        // Arrays de datos para aleatoriedad
         string[] nombres = { "Kakashi Hatake", "Sakura Haruno", "Sasuke Uchiha", "Shikamaru Nara", "Jiraiya Sama" };
         string[] direcciones = { "Calle Ninja 123", "Av. Hokage 456", "Barrio Uchiha 789", "Torre Administrativa 10", "Bosque de la Muerte 5" };
         string[] distritos = { "Konoha", "Suna", "Kiri", "Kumo", "Iwa" };
@@ -155,7 +154,7 @@ public class SeedDb(LogisticDataContext datacontext, IUserHelper userHelper)
                 CompanyID = company.Id,
                 DriverID = driver.UserID,
                 Quantity = random.Next(1, 10),
-                RegistrationDate = DateTime.Now.AddDays(-random.Next(1, 30)),
+                RegistrationDate = DateTime.UtcNow.AddDays(-random.Next(1, 30)),
                 TrackingCode = $"TL-{1000 + i}",
                 RecipientName = nombres[random.Next(nombres.Length)],
                 RecipientAddress = direcciones[random.Next(direcciones.Length)],
@@ -172,18 +171,3 @@ public class SeedDb(LogisticDataContext datacontext, IUserHelper userHelper)
         await _datacontext.SaveChangesAsync();
     }
 }
-
-//    public async Task SeedAsync()
-//    {
-//        await _datacontext.Database.EnsureCreatedAsync();
-//        await CheckRolesAsync();
-//        await CheckAdminAsync("El Tommy", "eltommy@yopmail.com", "322 311 420", "naruto.gif", UserEnum.Admin);
-//        await CheckUserAsync("Naruto", "naruto@yopmail.com", "322 311 460", "https://tse2.mm.bing.net/th/id/OIP.qmzNgDc5Qif3CKQhHPz0CwHaJe?w=1600&h=2048&rs=1&pid=ImgDetMain&o=7&rm=3", UserEnum.Client);
-//        await CheckUserAsync("Brad Pitt", "brad@yopmail.com", "322 311 462", "https://www.famousbirthdays.com/headshots/brad-pitt-9.jpg", UserEnum.Driver);
-//        await CheckUserAsync("Angelina Jolie", "angelina@yopmail.com", "322 311 620", "https://th.bing.com/th/id/R.ea08e41477d34ca50ea1d471ae9a24c1?rik=syM1YQV3YAeA8A&riu=http%3a%2f%2fwww.pngall.com%2fwp-content%2fuploads%2f4%2fAngelina-Jolie-PNG-Download-Image-180x180.png&ehk=9PpQoKwZZnToSx13c8BKIY7KF8ZVFGienK24OKAGXTk%3d&risl=&pid=ImgRaw&r=0", UserEnum.Client);
-//        await CheckUserAsync("Bob Marley", "bob@yopmail.com", "322 314 620", "https://th.bing.com/th/id/R.0775505a15a8846b6aa0930ab5e0d8dd?rik=wC1YaVdSPWOamQ&riu=http%3a%2f%2fwww.myfirstrecord.co.uk%2frecordpress%2fwp-content%2fuploads%2f2011%2f05%2fBob-Marley1-150x150.jpg&ehk=nOBcCpQOgc8iSniug5PCieOqW5fNq3ja%2faS%2bCWw9xxE%3d&risl=&pid=ImgRaw&r=0", UserEnum.Driver);
-//        await CheckUserAsync("Mila Azul", "mila@yopmail.com", "382 314 620", "https://wikisbios.com/wp-content/uploads/2022/11/1669490405_657_Mila-Azul-Height-Weight-Bio-Wiki-Age-Photo-Instagram.jpg", UserEnum.Operator);
-//        await CheckUserAsync("Sai Ambu", "miha@yopmail.com", "377 314 620", "https://tse4.mm.bing.net/th/id/OIP.ZltgcqHOJxCsj2Pf9IhKqQAAAA?rs=1&pid=ImgDetMain&o=7&rm=3", UserEnum.Supervisor);
-//        await CheckUserAsync("Hynata Hyuga", "hyna@tommy.com", "928 172 126", "https://pt.quizur.com/_image?href=https://img.quizur.com/f/img6149da08ee4b74.87549065.jpg?lastEdited=1632229911&w=600&h=600&f=webp", UserEnum.Operator);
-//        await CheckUserAsync("Ino Sarutobi", "ino@tommy.com", "928 172 129", "https://th.bing.com/th/id/R.cbca06d335b58ddea8eafd6f1207f994?rik=XIcp71ShwjKQ3g&riu=http%3a%2f%2ficons.iconseeker.com%2fpng%2f128%2fnaruto-vol-2%2fyamanaka-ino.png&ehk=m2lPEUWXtlWr9W%2fne%2bmOtCfLTzCrULFN5%2bNL%2b%2fPVciI%3d&risl=&pid=ImgRaw&r=0", UserEnum.Driver);
-//    }

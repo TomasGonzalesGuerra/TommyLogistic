@@ -86,7 +86,7 @@ public class OrdersController(LogisticDataContext dataContext) : ControllerBase
     [HttpPost("ReceiveExternalOrders")]
     public async Task<IActionResult> ReceiveExternalOrders([FromBody] List<ExternalOrderDTO> externalOrders)
     {
-        if (externalOrders == null || !externalOrders.Any()) return BadRequest("No hay datos.");
+        if (externalOrders == null || externalOrders is []) return BadRequest("No hay datos.");
 
         List<Company> companies = await _dataContext.Companies.Include(c => c.User).ToListAsync();
         List<Order> newOrders = [];
@@ -121,14 +121,17 @@ public class OrdersController(LogisticDataContext dataContext) : ControllerBase
     [HttpPost("AutoRouteAndAssign")]
     public async Task<IActionResult> AutoRouteAndAssign()
     {
-        DateTime todayUtc = DateTime.UtcNow;
+        DateTime todayUtc = DateTime.UtcNow.Date;
         DateTime tomorrowUtc = todayUtc.AddDays(1);
+
         List<Order> registeredOrders = await _dataContext.Orders
             .Where(o => o.OrderStatus == OrderStatus.Registered)
             .Where(o => o.RegistrationDate >= todayUtc && o.RegistrationDate < tomorrowUtc)
             .ToListAsync();
+
         List<Driver> availableDrivers = await _dataContext.Drivers.Where(d => d.Available).ToListAsync();
-        if (registeredOrders is [] || availableDrivers is []) return BadRequest("No se puede Realizar la Asignación");
+
+        if (registeredOrders is [] || availableDrivers is []) return BadRequest("No se pudo Realizar la Asignación []");
 
         var ordersByDistrict = registeredOrders.GroupBy(o => o.RecipientDistrict);
         int driverIndex = 0;
@@ -158,8 +161,8 @@ public class OrdersController(LogisticDataContext dataContext) : ControllerBase
         }
 
         await _dataContext.SaveChangesAsync();
-
         int ordersLeft = registeredOrders.Count - totalAssigned;
+
         return Ok(new
         {
             Message = $"Asignación completada: {totalAssigned} órdenes asignadas.",
