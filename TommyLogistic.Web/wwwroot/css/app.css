@@ -1,8 +1,3 @@
-/* ═══════════════════════════════════════════════════════════
-   TOMDRIVER — CSS GLOBAL
-   Sistema de diseño: mobile-first, responsive, sin librerías
-   ═══════════════════════════════════════════════════════════ */
-
 /* ── 1. TOKENS ─────────────────────────────────────────────── */
 :root {
     /* Colores primarios */
@@ -228,7 +223,7 @@ ul, ol {
 .app-main {
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     margin-left: var(--sidebar-width);
     width: 100%;

@@ -1,57 +1,65 @@
 ﻿@page "/Warehouses"
 @layout MainLayout
-@inject NavigationManager Nav
+@attribute [Authorize(Roles = "Admin")]
+@inject NavigationManager _NavigationManager
 
 <PageTitle>Warehouses</PageTitle>
 
-<div class="content">
+<div class="wh-page">
+
+    <!-- Encabezado -->
+    <div class="wh-page__header">
+        <h1 class="page-title">Almacén</h1>
+    </div>
+
     <!-- Métricas -->
-    <div class="metrics-row">
+    <div class="wh-metrics">
         <MetricCard Label="Total pedidos hoy"
-                    Value="248" Delta="12% vs ayer" DeltaPositive="true" />
+                    Value="248"
+                    Delta="12% vs ayer"
+                    DeltaPositive="true"
+                    Icon="📦" />
 
         <MetricCard Label="Pendientes"
-                    Value="34" Delta="5 sin asignar" DeltaPositive="false" />
+                    Value="34"
+                    Delta="5 sin asignar"
+                    DeltaPositive="false"
+                    Icon="⏳" />
 
         <MetricCard Label="Listos para despacho"
-                    Value="89" Delta="8% esta semana" DeltaPositive="true" />
+                    Value="89"
+                    Delta="8% esta semana"
+                    DeltaPositive="true"
+                    Icon="✅" />
 
         <MetricCard Label="Enviados hoy"
-                    Value="125" Delta="18% vs ayer" DeltaPositive="true" />
+                    Value="125"
+                    Delta="18% vs ayer"
+                    DeltaPositive="true"
+                    Icon="🚚" />
     </div>
 
     <!-- Tabla de pedidos -->
-    <PedidosTable Pedidos="@PedidosFiltrados" PageSize="5" OnVerDetalle="VerDetalle" />
-
-    <!-- Paneles inferiores -->
-    <div class="bottom-row">
-        @* <ZonaOcupacion Zonas="@_zonas" /> *@
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Pedidos</span>
+        </div>
+        <PedidosTable Pedidos="@PedidosFiltrados"
+                      PageSize="10"
+                      OnVerDetalle="ShowDetails" />
     </div>
+
+    <!-- Paneles inferiores (preparado para ZonaOcupacion) -->
+    @* <div class="wh-bottom">
+        <ZonaOcupacion Zonas="@_zonas" />
+    </div> *@
 
 </div>
 
 @code {
-    private string _busqueda = "";
-
-    /* ── Datos de ejemplo (reemplazar con inyección de servicio) ── */
-
     private List<OrderSummaryDTO> _pedidos = [];
 
-    private List<OrderSummaryDTO> PedidosFiltrados => string.IsNullOrWhiteSpace(_busqueda)
-            ? _pedidos
-            : _pedidos.Where(p =>
-                p.TrackingCode.Contains(_busqueda, StringComparison.OrdinalIgnoreCase) ||
-                p.RecipientName.Contains(_busqueda, StringComparison.OrdinalIgnoreCase)).ToList();
+    private List<OrderSummaryDTO> PedidosFiltrados => _pedidos;
 
-    // private readonly List<ZonaDto> _zonas =
-    // [
-    //     new("Zona A", 82),
-    //     new("Zona B", 61),
-    //     new("Zona C", 45),
-    //     new("Zona D", 93),
-    //     new("Zona E", 28),
-    // ];
-
-    private void NuevoPedido() => Nav.NavigateTo("/pedidos/nuevo");
-    private void VerDetalle(int id) => Nav.NavigateTo($"/pedidos/{id}");
+    private void ShowDetails(int id) => _NavigationManager.NavigateTo($"/OrderDetails/{id}");
 }

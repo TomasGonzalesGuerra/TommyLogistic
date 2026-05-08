@@ -1,18 +1,37 @@
-﻿<div class="card">
-    <div class="metric-label">@Label</div>
-    <div class="metric-value">@Value</div>
+﻿<div class="metric-card @(DeltaPositive.HasValue ? (DeltaPositive.Value ? "metric-card--up" : "metric-card--down") : "")">
 
-    @if (!string.IsNullOrEmpty(Delta))
+    @if (!string.IsNullOrEmpty(Icon))
     {
-        <div class="metric-delta @(DeltaPositive ? "delta-up" : "delta-down")">
-            @(DeltaPositive ? "↑" : "↓") @Delta
-        </div>
+        <div class="metric-card__icon">@Icon</div>
     }
+
+    <div class="metric-card__body">
+        <span class="metric-card__label">@Label</span>
+        <span class="metric-card__value">@Value</span>
+
+        @if (!string.IsNullOrEmpty(Delta))
+        {
+            <span class="metric-card__delta">
+                <span class="metric-card__delta-arrow">
+                    @if (DeltaPositive.HasValue)
+                    {
+                        @(DeltaPositive.Value ? "▲" : "▼")
+                    }
+                    else
+                    {
+                        @("•")
+                    }
+                </span>
+                @Delta
+            </span>
+        }
+    </div>
 </div>
 
 @code {
     [Parameter, EditorRequired] public string Label { get; set; } = "";
     [Parameter, EditorRequired] public string Value { get; set; } = "";
     [Parameter] public string Delta { get; set; } = "";
-    [Parameter] public bool DeltaPositive { get; set; } = true;
+    [Parameter] public bool? DeltaPositive { get; set; } = null;
+    [Parameter] public string Icon { get; set; } = "";
 }

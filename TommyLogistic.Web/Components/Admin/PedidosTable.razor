@@ -1,117 +1,121 @@
-<div>
-    <!-- Encabezado y filtros -->
-    <div class="
+@using System.Linq
 
-">
-        <span class="section-title">Lista de pedidos</span>
-        <div class="filter-row">
-            @foreach (var estado in _filtros)
-            {
-                <span class="chip @(_filtroActivo == estado ? "active" : "")"
-                      @onclick="() => CambiarFiltro(estado)">
-                    @estado
-                </span>
-            }
+<div class="pedidos-table-wrapper">
+
+    <!-- Barra superior: búsqueda + conteo -->
+    <div class="pedidos-table__toolbar">
+        <div class="pedidos-table__search">
+            <span class="pedidos-table__search-icon">🔍</span>
+            <input class="form-control pedidos-table__input"
+                   type="search"
+                   placeholder="Buscar por código o destinatario…"
+                   @bind="_busqueda"
+                   @bind:event="oninput" />
         </div>
+        <span class="text-muted text-sm">@Paginados.Count() de @Filtrados.Count() pedidos</span>
     </div>
 
     <!-- Tabla -->
-    <div class="table-card">
-        <table>
-            <colgroup>
-                <col style="width:110px" />
-                <col style="width:160px" />
-                <col style="width:90px"  />
-                <col style="width:90px"  />
-                <col style="width:110px" />
-                <col style="width:90px"  />
-                <col style="width:70px"  />
-                <col style="width:90px"  />
-            </colgroup>
+    <div class="table-wrapper">
+        <table class="table">
             <thead>
                 <tr>
-                    <th>Nº Pedido</th>
-                    <th>Cliente</th>
-                    <th>Zona</th>
+                    <th>Tracking</th>
+                    <th>Destinatario</th>
+                    <th class="hide-mobile">Dirección</th>
                     <th>Estado</th>
-                    <th>Prioridad</th>
-                    <th>Registrado</th>
-                    <th>Acciones</th>
+                    <th class="hide-mobile">Fecha</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var p in PedidosPagina)
+                @if (!Paginados.Any())
                 {
                     <tr>
-                        <td><span class="order-id">@p.TrackingCode</span></td>
-                        <td>@p.RecipientName</td>
-                        <td>@p.RecipientDistrict</td>
-                        <td><StatusBadge Estado="@p.OrderStatus" /></td>
-                        <td>
-                            <span class="priority-dot p-@p.DeliveryType.ToString().ToLower()"></span>
-                            @p.DeliveryType.ToString()
-                        </td>
-                        <td>@p.RegistrationDate.ToString("dd MMM")</td>
-                        <td>
-                            <button @onclick="() => OnVerDetalle.InvokeAsync(p.Id)" class="action-btn">
-                                Ver ↗
-                            </button>
+                        <td colspan="6">
+                            <div class="pedidos-table__empty">
+                                <span>📦</span>
+                                <p>No se encontraron pedidos</p>
+                            </div>
                         </td>
                     </tr>
                 }
+                else
+                {
+                    @foreach (var p in Paginados)
+                    {
+                        <tr @onclick="() => OnVerDetalle.InvokeAsync(p.Id)">
+                            <td>
+                                <span class="pedidos-table__tracking">@p.TrackingCode</span>
+                            </td>
+                            <td>@p.RecipientName</td>
+                            <td class="hide-mobile text-muted text-sm">@p.RecipientDistrict</td>
+                            <td><span class="badge badge-@p.OrderStatus.ToString().ToLower()">@p.OrderStatus</span></td>
+                            <td class="hide-mobile text-muted text-sm">
+                                @p.RegistrationDate.ToString("dd/MM/yyyy")
+                            </td>
+                            <td>
+                                <button class="btn btn-ghost btn-sm"
+                                        @onclick:stopPropagation="true"
+                                        @onclick="() => OnVerDetalle.InvokeAsync(p.Id)">
+                                    Ver
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
             </tbody>
         </table>
-
-        <!-- Paginador -->
-        <div class="pager">
-            <span>Mostrando @PedidosPagina.Count de @Total pedidos</span>
-            <div class="pager-btns">
-                <button class="pager-btn" @onclick="PaginaAnterior" disabled="@(_pagina == 1)">‹</button>
-                @for (int i = 1; i <= TotalPaginas; i++)
-                {
-                    var num = i;
-                    <button class="pager-btn @(_pagina == num ? "current" : "")"
-                            @onclick="() => IrAPagina(num)">
-                        @num
-                    </button>
-                }
-                <button class="pager-btn" @onclick="PaginaSiguiente" disabled="@(_pagina == TotalPaginas)">›</button>
-            </div>
-        </div>
     </div>
+
+    <!-- Paginación -->
+    @if (TotalPaginas > 1)
+    {
+        <div class="pedidos-table__pagination">
+            <button class="btn btn-ghost btn-sm"
+                    disabled="@(_pagina <= 1)"
+                    @onclick="() => _pagina--">
+                ← Anterior
+            </button>
+
+            <span class="text-sm text-muted">
+                Página @_pagina de @TotalPaginas
+            </span>
+
+            <button class="btn btn-ghost btn-sm"
+                    disabled="@(_pagina >= TotalPaginas)"
+                    @onclick="() => _pagina++">
+                Siguiente →
+            </button>
+        </div>
+    }
+
 </div>
 
 @code {
-    [Parameter] public int PageSize { get; set; } = 5;
-    [Parameter] public EventCallback<int> OnVerDetalle { get; set; }
     [Parameter, EditorRequired] public List<OrderSummaryDTO> Pedidos { get; set; } = [];
+    [Parameter] public int PageSize { get; set; } = 10;
+    [Parameter] public EventCallback<int> OnVerDetalle { get; set; }
 
-
+    private string _busqueda = "";
     private int _pagina = 1;
-    private readonly string[] _filtros =
-    [
-        "Todos",
-        OrderStatus.Failed.ToString(),
-        OrderStatus.PickedUp.ToString(),
-        OrderStatus.Assigned.ToString(),
-        OrderStatus.OnTheWay.ToString(),
-        OrderStatus.Delivered.ToString(),
-        OrderStatus.Returning.ToString(),
-        OrderStatus.OnStorage.ToString(),
-        OrderStatus.Registered.ToString(),
-        OrderStatus.Rescheduled.ToString(),
-        OrderStatus.RecipientAbsent.ToString()
-    ];
-    private string _filtroActivo = "Todos";
-    private int Total => PedidosFiltrados.Count;
-    private int TotalPaginas => Math.Max(1, (int)Math.Ceiling(Total / (double)PageSize));
-    private List<OrderSummaryDTO> PedidosFiltrados => _filtroActivo == "Todos" ? Pedidos
-        : Pedidos.Where(p => p.OrderStatus.Equals(_filtroActivo)).ToList();
 
+    private IEnumerable<OrderSummaryDTO> Filtrados => string.IsNullOrWhiteSpace(_busqueda)
+        ? Pedidos
+        : Pedidos.Where(p =>
+            p.TrackingCode.Contains(_busqueda, StringComparison.OrdinalIgnoreCase) ||
+            p.RecipientName.Contains(_busqueda, StringComparison.OrdinalIgnoreCase));
 
-    private List<OrderSummaryDTO> PedidosPagina => PedidosFiltrados.Skip((_pagina - 1) * PageSize).Take(PageSize).ToList();
-    private void PaginaAnterior() => IrAPagina(_pagina - 1);
-    private void PaginaSiguiente() => IrAPagina(_pagina + 1);
-    private void IrAPagina(int n) => _pagina = Math.Clamp(n, 1, TotalPaginas);
-    private void CambiarFiltro(string filtro) { _filtroActivo = filtro; _pagina = 1; }
+    private IEnumerable<OrderSummaryDTO> Paginados =>
+        Filtrados.Skip((_pagina - 1) * PageSize).Take(PageSize);
+
+    private int TotalPaginas =>
+        (int)Math.Ceiling(Filtrados.Count() / (double)PageSize);
+
+    // Resetear página al cambiar búsqueda
+    private string BusquedaProxy
+    {
+        get => _busqueda;
+        set { _busqueda = value; _pagina = 1; }
+    }
 }
