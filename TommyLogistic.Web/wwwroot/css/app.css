@@ -71,7 +71,7 @@
     --sidebar-width: 240px;
     --topbar-height: 60px;
     --mobile-nav-height: 4.5rem;
-    --content-max-width: 1200px;
+    --content-max-width: 1300px;
     /* Transiciones */
     --transition-fast: 150ms ease;
     --transition-base: 250ms ease;
@@ -226,14 +226,16 @@ ul, ol {
 
 /* Contenido principal */
 .app-main {
-    flex: 1;
-    margin-left: var(--sidebar-width);
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    justify-content: center;
+    align-items: center;
+    margin-left: var(--sidebar-width);
+    width: 100%;
 }
 
 .app-topbar {
+    width: 100%;
     height: var(--topbar-height);
     background: var(--color-surface);
     border-bottom: 1px solid var(--color-border);
@@ -247,11 +249,8 @@ ul, ol {
 }
 
 .app-content {
-    flex: 1;
     padding: var(--space-6);
-    max-width: var(--content-max-width);
-    width: 100%;
-    margin: 0 auto;
+    width: 95%;
 }
 
 /* Navegación móvil inferior — para repartidores */

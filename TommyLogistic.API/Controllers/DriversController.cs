@@ -36,8 +36,8 @@ public class DriversController(LogisticDataContext dadaContext, IUserHelper user
             Photo = u.Photo ?? string.Empty,
             Available = u.Driver!.Available,
             Placa = u.Driver.Placa,
-            DeliveredToday = u.Driver!.Orders?.Count(o => o.OrderStatus == OrderStatus.Delivered && o.DeliveryDate == DateTime.Today) ?? 0,
-            ActiveOrderToday = u.Driver!.Orders?.Count(o => o.OrderStatus == OrderStatus.Assigned && o.DeliveryDate == DateTime.Today) ?? 0
+            DeliveredToday = (int)(u.Driver!.Orders?.Count(o => o.OrderStatus == OrderStatus.Delivered))!,
+            ActiveOrderToday = (int)(u.Driver!.Orders?.Count(o => o.OrderStatus == OrderStatus.Assigned))!
         }).ToList();
 
         return Ok(driverDTOs);

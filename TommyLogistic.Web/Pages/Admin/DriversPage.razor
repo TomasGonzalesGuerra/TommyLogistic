@@ -29,9 +29,7 @@ else
         {
             <div class="rep-card">
                 <div class="rep-card-header">
-                    <div class="rep-avatar" style="background: @(item.Available ? "var(--color-success)" : "var(--color-text-muted)")">
-                        <img src="@item.Photo" alt="@item.FullName" />
-                    </div>
+                    <div class="rep-avatar" style="background-image: url('@item.Photo')"></div>
 
                     <div class="rep-info">
                         <span class="rep-nombre">@item.FullName</span>
@@ -48,7 +46,7 @@ else
                     <span class="text-sm">📞 @item.Celular</span>
                     @if (!item.Available)
                     {
-                        <span class="badge badge-ausente">Sin acceso al sistema</span>
+                        <span class="badge badge-ausente">Carga Asignada</span>
                     }
                 </div>
 
