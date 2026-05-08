@@ -1,4 +1,5 @@
-﻿@page "/AdminDashboard"
+﻿
+@page "/AdminDashboard"
 @layout MainLayout
 @inject IJSRuntime _IJSRuntime
 @inject HttpClient _HttpClient
@@ -7,40 +8,80 @@
 @inject NavigationManager _NavigationManager
 @attribute [Authorize(Roles = nameof(UserEnum.Admin))]
 
-<PageTitle>AdminDashboard</PageTitle>
-
-<h1 class="page-title">Dashboard</h1>
+<PageTitle>Dashboard — Tommy Logistic</PageTitle>
 
 @if (_loading)
 {
-    <div class="alert alert-info" role="alert">
-        <span>⏳</span>
-        <span>Cargando datos...</span>
+    <div class="loading-overlay">
+        <div class="spinner"></div>
+        <span>Cargando dashboard...</span>
     </div>
 }
 else
 {
-    <div class="flex gap-3 mt-6">
-        <button class="btn btn-primary" @onclick="SimularRecepcionMasiva">
-            Cargar Comandas (Simulación)
-        </button>
-
-        <button class="btn btn-success" @onclick="ExecuteAutoAssign">
-            Armar Cargas
-        </button>
-
-        <button class="btn btn-success" @onclick="@(() => _NavigationManager.NavigateTo("/pedidos"))">
-            Ver Pedidos
-        </button>
+    <div class="dashboard-header">
+        <h1 class="page-title">Dashboard</h1>
+        <div class="dashboard-actions">
+            <button class="btn btn-ghost" @onclick="SimularRecepcionMasiva">
+                📥 Simular comandas
+            </button>
+            <button class="btn btn-success" @onclick="ExecuteAutoAssign">
+                ⚡ Armar cargas
+            </button>
+            <button class="btn btn-outline" @onclick="@(() => _NavigationManager.NavigateTo("/Orders"))">
+                📦 Ver pedidos
+            </button>
+        </div>
     </div>
 
     <div class="dashboard-grid">
-        <StatCard Icono="📦" Valor="@Data.TotalToday" Etiqueta="Pedidos hoy" Color="#1a56db" Fondo="#e8f0fe" />
-        <StatCard Icono="✅" Valor="@Data.Delivered" Etiqueta="Entregados" Color="#0e9f6e" Fondo="#def7ec" />
-        <StatCard Icono="🚚" Valor="@Data.OnTheWay" Etiqueta="En camino" Color="#7c3aed" Fondo="#f3e8ff" />
-        <StatCard Icono="🏭" Valor="@Data.OnStorage" Etiqueta="En almacén" Color="#6366f1" Fondo="#eef2ff" />
-        <StatCard Icono="🔄" Valor="@Data.Rescheduled" Etiqueta="Reprogramados" Color="#d97706" Fondo="#fef3c7" />
-        <StatCard Icono="❌" Valor="@Data.Failed" Etiqueta="Fallidos" Color="#e02424" Fondo="#fde8e8" />
+        <div class="stat-card-v2" style="--sc-color:#1a56db; --sc-bg:#e8f0fe">
+            <div class="stat-card-v2__icon">📦</div>
+            <div class="stat-card-v2__body">
+                <span class="stat-card-v2__label">Pedidos hoy</span>
+                <span class="stat-card-v2__value">@Data.TotalToday</span>
+            </div>
+        </div>
+
+        <div class="stat-card-v2" style="--sc-color:#0e9f6e; --sc-bg:#def7ec">
+            <div class="stat-card-v2__icon">✅</div>
+            <div class="stat-card-v2__body">
+                <span class="stat-card-v2__label">Entregados</span>
+                <span class="stat-card-v2__value">@Data.Delivered</span>
+            </div>
+        </div>
+
+        <div class="stat-card-v2" style="--sc-color:#7c3aed; --sc-bg:#f3e8ff">
+            <div class="stat-card-v2__icon">🚚</div>
+            <div class="stat-card-v2__body">
+                <span class="stat-card-v2__label">En camino</span>
+                <span class="stat-card-v2__value">@Data.OnTheWay</span>
+            </div>
+        </div>
+
+        <div class="stat-card-v2" style="--sc-color:#6366f1; --sc-bg:#eef2ff">
+            <div class="stat-card-v2__icon">🏭</div>
+            <div class="stat-card-v2__body">
+                <span class="stat-card-v2__label">En almacén</span>
+                <span class="stat-card-v2__value">@Data.OnStorage</span>
+            </div>
+        </div>
+
+        <div class="stat-card-v2" style="--sc-color:#d97706; --sc-bg:#fef3c7">
+            <div class="stat-card-v2__icon">🔄</div>
+            <div class="stat-card-v2__body">
+                <span class="stat-card-v2__label">Reprogramados</span>
+                <span class="stat-card-v2__value">@Data.Rescheduled</span>
+            </div>
+        </div>
+
+        <div class="stat-card-v2" style="--sc-color:#e02424; --sc-bg:#fde8e8">
+            <div class="stat-card-v2__icon">❌</div>
+            <div class="stat-card-v2__body">
+                <span class="stat-card-v2__label">Fallidos</span>
+                <span class="stat-card-v2__value">@Data.Failed</span>
+            </div>
+        </div>
     </div>
 
     <div class="card">
@@ -52,8 +93,9 @@ else
         @if (!UltimosMovimientos.Any())
         {
             <div class="empty-state">
-                <div class="empty-icon">📡</div>
-                <p>Esperando movimientos...</p>
+                <span class="empty-icon">📡</span>
+                <p class="text-bold">Sin movimientos aún</p>
+                <p class="text-muted">Los eventos aparecerán aquí en tiempo real</p>
             </div>
         }
         else
@@ -74,20 +116,12 @@ else
                         {
                             <tr @onclick="@(() => _NavigationManager.NavigateTo($"/pedidos/{p.Id}"))">
                                 <td>
-                                    <span class="text-sm text-bold">
-                                        @p.TrackingCode
-                                    </span>
+                                    <span class="codigo-seguimiento">@p.TrackingCode</span>
                                 </td>
-                                <td>@p.RecipientName</td>
-                                <td class="hide-mobile text-muted">
-                                    @p.RecipientDistrict
-                                </td>
-                                <td>
-                                    <BadgeEstado Estado="@p.OrderStatus" />
-                                </td>
-                                <td class="hide-mobile text-muted">
-                                    @(p.DeliveryPersonName ?? "—")
-                                </td>
+                                <td class="text-bold">@p.RecipientName</td>
+                                <td class="hide-mobile text-muted">@p.RecipientDistrict</td>
+                                <td><BadgeEstado Estado="@p.OrderStatus" /></td>
+                                <td class="hide-mobile text-muted">@(p.DeliveryPersonName ?? "—")</td>
                             </tr>
                         }
                     </tbody>
@@ -96,7 +130,6 @@ else
         }
     </div>
 }
-
 
 @code {
     private bool _loading = true;
@@ -113,8 +146,6 @@ else
     {
         Random random = new();
         List<ExternalOrderDTO> listaPedidos = [];
-
-        // Datos para aleatoriedad
         string[] empresas = { "naruto@yopmail.com", "angelina@yopmail.com" };
         string[] productos = { "Caja de Herramientas", "Monitor 24p", "Zapatillas Running", "Kit de Limpieza", "Teclado Mecánico", "Cafetera Express" };
         string[] nombres = { "Monkey D. Luffy", "Roronoa Zoro", "Nami Swan", "Sanji Vinsmoke", "Tony Chopper", "Nico Robin" };
@@ -138,13 +169,14 @@ else
 
         if (!response)
         {
-            await _Swal.FireAsync("Atención", "La Cagastesss", SweetAlertIcon.Warning);
+            await _Swal.FireAsync("Atención", "Algo salió mal con la simulación", SweetAlertIcon.Warning);
+            return;
         }
-        
+
         await _Swal.FireAsync(new SweetAlertOptions
         {
-            Title = "¡Asignación Exitosa!",
-            Text = $"Por fin te Hiiste Una 👍🏽",
+            Title = "¡Simulación completada!",
+            Text = "Se crearon 30 pedidos de prueba 👍🏽",
             Icon = SweetAlertIcon.Success,
             ConfirmButtonText = "Entendido"
         });
@@ -167,21 +199,18 @@ else
         {
             await _Swal.FireAsync(new SweetAlertOptions
             {
-                Title = "¡Asignación Exitosa!",
-                Text = $"{datos.Message} (Conductores usados: {datos.DriversUsed})",
+                Title = "¡Asignación exitosa!",
+                Text = $"{datos.Message} — Conductores usados: {datos.DriversUsed}",
                 Icon = SweetAlertIcon.Success,
                 ConfirmButtonText = "Entendido"
             });
         }
     }
 
-
     public class AssignmentResponse
     {
-        public string Message { get; set; }
+        public string Message { get; set; } = "";
         public int DriversUsed { get; set; }
         public int OrdersPending { get; set; }
     }
-
-
 }

@@ -6,16 +6,17 @@
 
     <div class="sidebar-header">
         <div class="sidebar-logo">
-            <span class="logo-mark">TD</span>
+            <span class="logo-mark">TL</span>
             <span class="logo-name">TommyLogistic</span>
         </div>
         <button class="sidebar-close" @onclick="OnCerrar" aria-label="Cerrar menú">✕</button>
     </div>
 
-    <nav class="sidebar-nav">
+    <nav class="sidebar-nav" aria-label="Navegación principal">
+
         <AuthorizeView Roles="Admin">
             <div class="nav-section-label">Operaciones</div>
-            <NavLink class="this" href="/AdminDashboard">
+            <NavLink class="this" href="/AdminDashboard" Match="NavLinkMatch.All">
                 <span class="nav-icon">📊</span> Dashboard
             </NavLink>
             <NavLink class="this" href="/Orders">
@@ -27,63 +28,78 @@
             <NavLink class="this" href="/Warehouses">
                 <span class="nav-icon">🏭</span> Almacén
             </NavLink>
-
             <div class="nav-section-label">Gestión</div>
             <NavLink class="this" href="/Companies">
                 <span class="nav-icon">🏢</span> Empresas
             </NavLink>
         </AuthorizeView>
 
+        <AuthorizeView Roles="Supervisor">
+            <div class="nav-section-label">Supervisión</div>
+            <NavLink class="this" href="/SupervisorDashboard" Match="NavLinkMatch.All">
+                <span class="nav-icon">📊</span> Dashboard
+            </NavLink>
+            <NavLink class="this" href="/Orders">
+                <span class="nav-icon">📦</span> Pedidos
+            </NavLink>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="Operator">
+            <div class="nav-section-label">Operador</div>
+            <NavLink class="this" href="/OperatorDashboard" Match="NavLinkMatch.All">
+                <span class="nav-icon">📊</span> Dashboard
+            </NavLink>
+            <NavLink class="this" href="/Orders">
+                <span class="nav-icon">📦</span> Pedidos
+            </NavLink>
+        </AuthorizeView>
+
         <AuthorizeView Roles="ClienteEmpresa">
             <div class="nav-section-label">Mi empresa</div>
-            <div class="this" href="/" Match="divMatch.All">
+            <NavLink class="this" href="/ClientDashboard" Match="NavLinkMatch.All">
                 <span class="nav-icon">📊</span> Dashboard
-            </div>
-            <div class="this" href="/mis-pedidos">
+            </NavLink>
+            <NavLink class="this" href="/mis-pedidos">
                 <span class="nav-icon">📦</span> Mis pedidos
-            </div>
-            <div class="this" href="/mis-pedidos/nuevo">
+            </NavLink>
+            <NavLink class="this" href="/mis-pedidos/nuevo">
                 <span class="nav-icon">➕</span> Nuevo pedido
-            </div>
+            </NavLink>
         </AuthorizeView>
 
         <AuthorizeView Roles="Repartidor">
             <div class="nav-section-label">Mi ruta</div>
-            <div class="this" href="/" Match="divMatch.All">
+            <NavLink class="this" href="/DriverDashboard" Match="NavLinkMatch.All">
                 <span class="nav-icon">🗺️</span> Mi ruta
-            </div>
-            <div class="this" href="/mis-entregas">
+            </NavLink>
+            <NavLink class="this" href="/mis-entregas">
                 <span class="nav-icon">✅</span> Mis entregas
-            </div>
+            </NavLink>
         </AuthorizeView>
 
     </nav>
 
     <div class="sidebar-footer">
-        <button class="btn btn-ghost w-full" @onclick="Logout">
-            <span>🚪</span> Log Out
+        <button class="btn btn-ghost w-full sidebar-logout" @onclick="Logout">
+            <span>🚪</span> Salir
         </button>
-
-        <button class="btn-theme" @onclick="ToggleTheme">
-            <span>@(isDarkMode ? "☀️" : "🌙")</span>
+        <button class="btn-theme" @onclick="ToggleTheme" title="@(isDarkMode ? "Modo claro" : "Modo oscuro")">
+            @(isDarkMode ? "☀️" : "🌙")
         </button>
     </div>
 </div>
 
 @code {
     [Parameter] public EventCallback OnCerrar { get; set; }
-    private bool isDarkMode = true;
-    private bool active;
+    private bool isDarkMode = false;
 
-
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        _NavigationManager.LocationChanged += (s, e) => StateHasChanged();
-    }
-
-    private string IsActive(string href)
-    {
-        return _NavigationManager.Uri.EndsWith(href, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+        _NavigationManager.LocationChanged += (s, e) => InvokeAsync(StateHasChanged);
+        // Leer preferencia guardada
+        var saved = await _IJSRuntime.InvokeAsync<string?>("localStorage.getItem", "theme");
+        isDarkMode = saved == "dark";
+        await ApplyTheme();
     }
 
     private async Task Logout()
@@ -95,7 +111,11 @@
     private async Task ToggleTheme()
     {
         isDarkMode = !isDarkMode;
-        
+        await ApplyTheme();
+    }
+
+    private async Task ApplyTheme()
+    {
         if (isDarkMode)
         {
             await _IJSRuntime.InvokeVoidAsync("document.body.classList.add", "dark");

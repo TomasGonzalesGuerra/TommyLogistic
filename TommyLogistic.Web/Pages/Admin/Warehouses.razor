@@ -6,47 +6,23 @@
 <PageTitle>Warehouses</PageTitle>
 
 <div class="wh-page">
-
-    <!-- Encabezado -->
     <div class="wh-page__header">
         <h1 class="page-title">Almacén</h1>
     </div>
 
-    <!-- Métricas -->
     <div class="wh-metrics">
-        <MetricCard Label="Total pedidos hoy"
-                    Value="248"
-                    Delta="12% vs ayer"
-                    DeltaPositive="true"
-                    Icon="📦" />
-
-        <MetricCard Label="Pendientes"
-                    Value="34"
-                    Delta="5 sin asignar"
-                    DeltaPositive="false"
-                    Icon="⏳" />
-
-        <MetricCard Label="Listos para despacho"
-                    Value="89"
-                    Delta="8% esta semana"
-                    DeltaPositive="true"
-                    Icon="✅" />
-
-        <MetricCard Label="Enviados hoy"
-                    Value="125"
-                    Delta="18% vs ayer"
-                    DeltaPositive="true"
-                    Icon="🚚" />
+        <MetricCard Label="Total pedidos hoy" Value="248" Delta="12% vs ayer" DeltaPositive="true"Icon="📦" />
+        <MetricCard Label="Pendientes" Value="34" Delta="5 sin asignar" DeltaPositive="false" Icon="⏳" />
+        <MetricCard Label="Listos para despacho" Value="89" Delta="8% esta semana" DeltaPositive="true" Icon="✅" />
+        <MetricCard Label="Enviados hoy" Value="125" Delta="18% vs ayer" DeltaPositive="true" Icon="🚚" />
     </div>
 
-    <!-- Tabla de pedidos -->
     <div class="card">
         <div class="card-header">
             <span class="card-title">Pedidos</span>
         </div>
-        <PedidosTable Pedidos="@PedidosFiltrados"
-                      PageSize="10"
-                      OnVerDetalle="ShowDetails" />
+
+        <PedidosTable Pedidos="@PedidosFiltrados" PageSize="10" OnVerDetalle="ShowDetails" />
     </div>
 
     <!-- Paneles inferiores (preparado para ZonaOcupacion) -->

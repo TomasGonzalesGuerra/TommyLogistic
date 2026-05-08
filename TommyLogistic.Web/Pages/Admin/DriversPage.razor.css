@@ -1,30 +1,74 @@
-﻿.repartidores-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+﻿.drivers-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-6);
     gap: var(--space-4);
-    padding: 2rem 0;
+    flex-wrap: wrap;
 }
 
+    .drivers-header .page-title {
+        margin-bottom: 0;
+    }
+
+.repartidores-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(18.75rem, 1fr));
+    gap: var(--space-4);
+}
+
+/* ── Card del repartidor ── */
 .rep-card {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-xl);
     padding: var(--space-5);
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
+    transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+    position: relative;
+    overflow: hidden;
 }
 
+    .rep-card:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-1px);
+    }
+
+    /* Línea de disponibilidad */
+    .rep-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 0.1875rem;
+        background: var(--color-border);
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        transition: background var(--transition-fast);
+    }
+
+    .rep-card.disponible::before {
+        background: var(--color-success);
+    }
+
+    .rep-card.ocupado::before {
+        background: var(--color-warning);
+    }
+
+/* Header: avatar + info + badge */
 .rep-card-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: var(--space-3);
 }
 
 .rep-avatar {
-    width: 8rem;
-    height: 8rem;
+    width: 3.5rem;
+    height: 3.5rem;
     border-radius: 50%;
+    background: var(--color-primary);
     color: #fff;
     display: flex;
     align-items: center;
@@ -36,56 +80,95 @@
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    border: 2px solid var(--color-border);
 }
 
 .rep-info {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 0.125rem;
     min-width: 0;
 }
 
 .rep-nombre {
     font-weight: 700;
     font-size: var(--font-size-base);
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
+/* Datos del repartidor */
 .rep-meta {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
-    flex-wrap: wrap;
 }
 
+.rep-meta-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+    .rep-meta-item .rep-meta-icon {
+        width: 1rem;
+        text-align: center;
+        font-size: 0.875rem;
+    }
+
+/* Stats: activos / entregados */
 .rep-stats {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--space-3);
-    background: var(--color-bg);
-    border-radius: var(--radius-md);
-    padding: var(--space-3);
+    background: var(--color-surface-2);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--color-border);
 }
 
 .rep-stat-mini {
     text-align: center;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 0.125rem;
 }
 
-    .rep-stat-mini span:first-child {
-        font-size: var(--font-size-xl);
-        font-weight: 800;
-    }
+.rep-stat-value {
+    font-size: var(--font-size-xl);
+    font-weight: 800;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+}
 
+.rep-stat-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* Acciones */
 .rep-acciones {
     display: flex;
     gap: var(--space-2);
     flex-wrap: wrap;
 }
 
-@media (max-width: 480px) {
+    .rep-acciones .btn {
+        flex: 1;
+        min-width: 7.5rem;
+    }
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
     .repartidores-grid {
         grid-template-columns: 1fr;
     }

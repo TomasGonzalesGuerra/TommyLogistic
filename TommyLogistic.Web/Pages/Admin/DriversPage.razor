@@ -1,14 +1,16 @@
 ﻿@page "/Drivers"
 @layout MainLayout
 @inject DriverService _DriverService
-@attribute [Authorize(Roles = "Admin")]
 @inject NavigationManager _NavigationManager
+@attribute [Authorize(Roles = nameof(UserEnum.Admin))]
 
 <PageTitle>Repartidores — Tommy Logistic</PageTitle>
 
-<div class="list-header">
+<div class="drivers-header">
     <h1 class="page-title">Repartidores</h1>
-    <button @onclick="OpenModal" class="btn btn-primary">➕ Nuevo repartidor</button>
+    <button @onclick="OpenModal" class="btn btn-primary">
+        ➕ Nuevo repartidor
+    </button>
 </div>
 
 @if (_error is not null)
@@ -20,48 +22,71 @@
 
 @if (_loading)
 {
-    <div class="loading-overlay"><div class="spinner"></div></div>
+    <div class="loading-overlay">
+        <div class="spinner"></div>
+        <span>Cargando repartidores...</span>
+    </div>
+}
+else if (!_allDriversDTO.Any())
+{
+    <div class="empty-state">
+        <span class="empty-icon">🛵</span>
+        <p class="text-bold">Sin repartidores registrados</p>
+        <p class="text-muted">Agrega el primero con el botón de arriba</p>
+    </div>
 }
 else
 {
     <div class="repartidores-grid">
         @foreach (var item in _allDriversDTO)
         {
-            <div class="rep-card">
+            <div class="rep-card @(item.Available ? "disponible" : "ocupado")">
+
                 <div class="rep-card-header">
-                    <div class="rep-avatar" style="background-image: url('@item.Photo')"></div>
+                    <div class="rep-avatar"
+                         style="@(string.IsNullOrEmpty(item.Photo) ? $"background:{AvatarColor(item.FullName)}" : $"background-image:url('{item.Photo}')")">
+                        @(string.IsNullOrEmpty(item.Photo) ? Initials(item.FullName) : "")
+                    </div>
 
                     <div class="rep-info">
                         <span class="rep-nombre">@item.FullName</span>
                         <span class="text-xs text-muted">DNI: @item.DNI</span>
                     </div>
 
-                    <span class="badge @(item.Available ? "badge-entregado" : "badge-registrado")">
+                    <span class="badge @(item.Available ? "badge-entregado" : "badge-ausente")">
                         @(item.Available ? "Disponible" : "Ocupado")
                     </span>
                 </div>
 
                 <div class="rep-meta">
-                    <span class="text-sm">🚗 @item.Placa</span>
-                    <span class="text-sm">📞 @item.Celular</span>
+                    <div class="rep-meta-item">
+                        <span class="rep-meta-icon">🚗</span>
+                        <span>@item.Placa</span>
+                    </div>
+                    <div class="rep-meta-item">
+                        <span class="rep-meta-icon">📞</span>
+                        <span>@item.Celular</span>
+                    </div>
                     @if (!item.Available)
                     {
-                        <span class="badge badge-ausente">Carga Asignada</span>
+                        <div class="rep-meta-item">
+                            <span class="badge badge-ausente">Carga asignada</span>
+                        </div>
                     }
                 </div>
 
                 <div class="rep-stats">
                     <div class="rep-stat-mini">
-                        <span style="color: var(--color-primary)">
+                        <span class="rep-stat-value" style="color: var(--color-primary)">
                             @item.ActiveOrderToday
                         </span>
-                        <span class="text-xs text-muted">Activos</span>
+                        <span class="rep-stat-label">Activos</span>
                     </div>
                     <div class="rep-stat-mini">
-                        <span style="color: var(--color-success)">
+                        <span class="rep-stat-value" style="color: var(--color-success)">
                             @item.DeliveredToday
                         </span>
-                        <span class="text-xs text-muted">Entregados</span>
+                        <span class="rep-stat-label">Entregados</span>
                     </div>
                 </div>
 
@@ -70,10 +95,11 @@ else
                             @onclick="@(() => _NavigationManager.NavigateTo($"/pedidos/repartidor/{item.Id}"))">
                         Ver pedidos
                     </button>
-                    <button class="btn btn-ghost btn-sm">
+                    <button class="btn btn-outline btn-sm">
                         @(item.Available ? "Marcar ocupado" : "Marcar libre")
                     </button>
                 </div>
+
             </div>
         }
     </div>
@@ -81,10 +107,12 @@ else
 
 <GenericModal Title="Nuevo Repartidor" IsVisible="_mostrarForm" OnCancel="OnCancel">
     <BodyContent>
-        <DriverForm @ref="_DriverForm" CreatedDTO="_CreatedDTO" OnValidSubmit="OnCreateAsync" ReturnAction="OnCancel" />
+        <DriverForm @ref="_DriverForm"
+                    CreatedDTO="_CreatedDTO"
+                    OnValidSubmit="OnCreateAsync"
+                    ReturnAction="OnCancel" />
     </BodyContent>
 </GenericModal>
-
 
 @code {
     private List<DriverDTO> _allDriversDTO = [];
@@ -98,6 +126,7 @@ else
 
     private async Task LoadAsync()
     {
+        _loading = true;
         _allDriversDTO = await _DriverService.GetAllDriversAsync();
         _loading = false;
     }
@@ -107,23 +136,38 @@ else
     private async Task OnCreateAsync()
     {
         _loading = true;
-
         var success = await _DriverService.CreateDriverAsync(_CreatedDTO);
-
         if (success)
         {
             _mostrarForm = false;
             _CreatedDTO = new();
             await LoadAsync();
         }
-
         _loading = false;
         StateHasChanged();
     }
 
-    private async Task OnCancel()
+    private Task OnCancel()
     {
         _mostrarForm = false;
         _CreatedDTO = new();
+        return Task.CompletedTask;
     }
+
+    // Helpers para avatar generado
+    private static string Initials(string name)
+    {
+        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{parts[0][0]}{parts[1][0]}"
+            : name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
+    }
+
+    private static readonly string[] _avatarColors =
+    {
+        "#1a56db","#0e9f6e","#7c3aed","#e3a008","#0694a2","#e02424","#d97706"
+    };
+
+    private static string AvatarColor(string name)
+        => _avatarColors[Math.Abs(name.GetHashCode()) % _avatarColors.Length];
 }
