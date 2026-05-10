@@ -27,4 +27,7 @@ public class Order
     // Driver Asignado
     public string? DriverID { get; set; }
     public Driver? Driver { get; set; }
+
+    public ICollection<OrderEvent>? Events { get; set; }
+    public void UpdateStatus(OrderStatus s) => OrderStatus = s;
 }

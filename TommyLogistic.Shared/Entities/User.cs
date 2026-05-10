@@ -31,4 +31,5 @@ public class User : IdentityUser
     // Navegaciones
     public Driver? Driver { get; set; }
     public ICollection<Company>? Companies  { get; set; }
+    public ICollection<OrderEvent>? Events { get; set; }
 }

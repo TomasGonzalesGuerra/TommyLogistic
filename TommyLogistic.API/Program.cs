@@ -7,6 +7,8 @@ using System.Text.Json.Serialization;
 using TommyLogistic.Api.Data;
 using TommyLogistic.Api.Helpers;
 using TommyLogistic.API.Data;
+using TommyLogistic.API.Hubs;
+using TommyLogistic.API.Services;
 using TommyLogistic.Shared.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,9 +37,36 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtKey"]!)),
         ClockSkew = TimeSpan.Zero,
     };
+    options.Events = new JwtBearerEvents
+    {
+        // JWT para SignalR llega por query string, no por header
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+            {
+                context.Token = accessToken;
+            }
+
+            return Task.CompletedTask;
+        }
+    };
 });
-builder.Services.AddScoped<IFileStorage, FileStorage>();
 builder.Services.AddScoped<IUserHelper, UserHelper>();
+builder.Services.AddScoped<IFileStorage, FileStorage>();
+builder.Services.AddScoped<OrderEventService>();
+builder.Services.AddSignalR();
+builder.Services.AddScoped<OrderHubService>();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("BlazorClient", policy =>
+        policy.WithOrigins(builder.Configuration["ClientUrl"]!)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials());
+});
 
 var app = builder.Build();
 
@@ -50,15 +79,17 @@ static void SeedData(WebApplication app)
     service!.SeedAsync().Wait();
 }
 
-// Configure the HTTP request pipeline. https://localhost:7073
+
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.UseCors("BlazorClient");
 app.UseCors(x => x
 .AllowAnyMethod()
 .AllowAnyHeader()
 .SetIsOriginAllowed(origin => true)
 .AllowCredentials());
+app.MapHub<OrderHub>("/hubs/orders");
 
 app.Run();

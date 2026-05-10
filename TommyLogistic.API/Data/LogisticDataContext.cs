@@ -9,6 +9,7 @@ public class LogisticDataContext(DbContextOptions<LogisticDataContext> options) 
     public DbSet<Driver> Drivers { get; set; }
     public DbSet<Company> Companies { get; set; }
     public DbSet<Order> Orders { get; set; }
+    public DbSet<OrderEvent> OrderEvents { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -32,6 +33,18 @@ public class LogisticDataContext(DbContextOptions<LogisticDataContext> options) 
             .HasOne(o => o.Company)
             .WithMany(c => c.Orders)
             .HasForeignKey(o => o.CompanyID)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<OrderEvent>()
+            .HasOne(e => e.Order)
+            .WithMany(o => o.Events)
+            .HasForeignKey(e => e.OrderID)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<OrderEvent>()
+            .HasOne(e => e.User)
+            .WithMany(o => o.Events)
+            .HasForeignKey(e => e.UserID)
             .OnDelete(DeleteBehavior.Restrict);
     }
 

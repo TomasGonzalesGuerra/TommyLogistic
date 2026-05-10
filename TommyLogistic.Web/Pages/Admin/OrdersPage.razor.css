@@ -1,46 +1,60 @@
-﻿.list-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: var(--space-6);
-    gap: var(--space-4);
-    flex-wrap: wrap;
-}
-
-    .list-header .page-title {
-        margin-bottom: 0;
-    }
-
+﻿/* Barra de filtros mejorada */
 .filtros-bar {
     display: flex;
     gap: var(--space-3);
     margin-bottom: var(--space-4);
     flex-wrap: wrap;
     align-items: center;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3) var(--space-4);
 }
 
 .filtro-search {
     flex: 1;
-    min-width: 200px;
+    min-width: 12.5rem;
 }
 
 .filtro-estado {
-    min-width: 160px;
+    min-width: 10rem;
 }
 
 .filtro-tipo {
-    min-width: 140px;
+    min-width: 8.75rem;
 }
 
+/* Quitar el margin-bottom del form-control dentro de filtros */
+.filtros-bar .form-control {
+    margin-bottom: 0;
+}
+
+/* Código de seguimiento monoespaciado */
 .codigo-seguimiento {
-    font-family: monospace;
-    font-size: var(--font-size-sm);
-    font-weight: 600;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
     color: var(--color-primary);
+    background: var(--color-primary-light);
+    padding: 0.1875rem 0.375rem;
+    border-radius: var(--radius-sm);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
 }
 
+/* Resumen de resultados */
+.list-summary {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+/* Fila nueva animada */
 .fila-nueva {
-    animation: highlight 2s ease-out forwards;
+    animation: highlight 2.5s ease-out forwards;
 }
 
 @keyframes highlight {
@@ -53,12 +67,13 @@
     }
 }
 
-.list-summary {
-    margin-bottom: var(--space-4);
+/* Alternar tabla/tarjeta */
+.hide-on-mobile {
+    display: block;
 }
 
-.ml-2 {
-    margin-left: var(--space-2);
+.show-on-mobile {
+    display: none;
 }
 
 /* Tarjetas móvil */
@@ -95,9 +110,10 @@
 }
 
 .pedido-card-nombre {
-    font-weight: 600;
+    font-weight: 700;
     font-size: var(--font-size-base);
     margin-bottom: var(--space-2);
+    letter-spacing: -0.01em;
 }
 
 .pedido-card-meta {
@@ -112,16 +128,10 @@
     margin-top: var(--space-2);
     font-size: var(--font-size-xs);
     color: var(--estado-ausente);
-    font-weight: 600;
-}
-
-/* Alternar tabla/tarjeta según pantalla */
-.hide-on-mobile {
-    display: block;
-}
-
-.show-on-mobile {
-    display: none;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
 }
 
 @media (max-width: 768px) {
@@ -131,9 +141,11 @@
 
     .show-on-mobile {
         display: flex;
+        flex-direction: column;
     }
 
     .filtros-bar {
+        padding: var(--space-2) var(--space-3);
         gap: var(--space-2);
     }
 

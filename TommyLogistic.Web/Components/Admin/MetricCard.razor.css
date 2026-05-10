@@ -1,29 +1,32 @@
-﻿/* ── MetricCard.razor.css ─────────────────────────────────────── */
-
-.metric-card {
+﻿.metric-card {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-xl);
     padding: var(--space-5);
-    box-shadow: var(--shadow-sm);
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
-    transition: box-shadow var(--transition-fast), transform var(--transition-fast);
     position: relative;
     overflow: hidden;
+    transition: box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 
+    .metric-card:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-1px);
+    }
+
+    /* Barra de acento superior */
     .metric-card::before {
         content: '';
         position: absolute;
         top: 0;
         left: 0;
         right: 0;
-        height: 3px;
+        height: 0.1875rem;
         background: var(--color-border);
-        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-        transition: background var(--transition-fast);
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        transition: background var(--transition-base);
     }
 
 .metric-card--up::before {
@@ -34,34 +37,39 @@
     background: var(--color-danger);
 }
 
-.metric-card:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
-}
-
-/* ── Ícono opcional ── */
+/* Ícono */
 .metric-card__icon {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     line-height: 1;
-    width: 40px;
-    height: 40px;
+    width: 2.5rem;
+    height: 2.5rem;
     border-radius: var(--radius-md);
-    background: var(--color-primary-light);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 
-/* ── Cuerpo ── */
+.metric-card--up .metric-card__icon {
+    background: var(--color-success-light);
+}
+
+.metric-card--down .metric-card__icon {
+    background: var(--color-danger-light);
+}
+
+/* Cuerpo */
 .metric-card__body {
     display: flex;
     flex-direction: column;
-    gap: var(--space-1);
+    gap: 0.25rem;
 }
 
 .metric-card__label {
     font-size: var(--font-size-xs);
-    font-weight: 600;
+    font-weight: 700;
     color: var(--color-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -72,21 +80,22 @@
 
 .metric-card__value {
     font-size: var(--font-size-3xl);
-    font-weight: 700;
+    font-weight: 800;
     color: var(--color-text);
     line-height: 1.1;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
 }
 
-/* ── Delta ── */
+/* Delta */
 .metric-card__delta {
     display: inline-flex;
     align-items: center;
     gap: var(--space-1);
     font-size: var(--font-size-xs);
-    font-weight: 500;
+    font-weight: 600;
     color: var(--color-text-muted);
-    margin-top: var(--space-1);
+    margin-top: 0.125rem;
 }
 
 .metric-card--up .metric-card__delta {
@@ -97,11 +106,11 @@
     color: var(--color-danger);
 }
 
-.metric-card__delta-arrow {
-    font-size: 0.65rem;
+.metric-card__arrow {
+    font-size: 0.625rem;
 }
 
-/* ── Responsive ── */
+/* Responsive */
 @media (max-width: 480px) {
     .metric-card {
         padding: var(--space-4);

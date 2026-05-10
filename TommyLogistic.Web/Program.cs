@@ -26,6 +26,7 @@ builder.Services.AddScoped<IRepository, Repository>();
 builder.Services.AddScoped<SesionService>();
 builder.Services.AddScoped<DriverService>();
 builder.Services.AddScoped<OrderService>();
+builder.Services.AddScoped<OrderTimelineService>();
 
 
 await builder.Build().RunAsync();

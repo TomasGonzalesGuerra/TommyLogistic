@@ -1,15 +1,12 @@
-/* ── PedidosTable.razor.css ───────────────────────────────────── */
-
-.pedidos-table-wrapper {
+.pt-wrapper {
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
-    /* ocupa todo el ancho del contenedor padre */
     width: 100%;
 }
 
-/* ── Toolbar: buscador + conteo ── */
-.pedidos-table__toolbar {
+/* Toolbar */
+.pt-toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -17,14 +14,14 @@
     flex-wrap: wrap;
 }
 
-.pedidos-table__search {
+.pt-search-wrap {
     position: relative;
     flex: 1;
-    min-width: 200px;
-    max-width: 360px;
+    min-width: 12.5rem;
+    max-width: 22.5rem;
 }
 
-.pedidos-table__search-icon {
+.pt-search-icon {
     position: absolute;
     left: var(--space-3);
     top: 50%;
@@ -34,26 +31,22 @@
     line-height: 1;
 }
 
-.pedidos-table__input {
-    padding-left: 2.2rem !important;
-    margin-bottom: 0 !important; /* anula el mb del form-control global */
+.pt-search-input {
+    padding-left: 2.25rem !important;
+    margin-bottom: 0 !important;
+    background: var(--color-surface-2) !important;
+    border-color: var(--color-border) !important;
+    height: 2.25rem;
+    min-height: unset;
+    font-size: var(--font-size-sm) !important;
 }
 
-/* ── Tracking code ── */
-.pedidos-table__tracking {
-    font-family: 'SF Mono', 'Fira Code', monospace;
-    font-size: var(--font-size-xs);
-    font-weight: 600;
-    color: var(--color-primary);
-    background: var(--color-primary-light);
-    padding: 2px var(--space-2);
-    border-radius: var(--radius-sm);
-    letter-spacing: 0.04em;
+.pt-count {
     white-space: nowrap;
 }
 
-/* ── Estado vacío ── */
-.pedidos-table__empty {
+/* Empty state */
+.pt-empty {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -64,26 +57,65 @@
     font-size: var(--font-size-sm);
 }
 
-    .pedidos-table__empty span {
+    .pt-empty span {
         font-size: 2rem;
     }
 
-/* ── Paginación ── */
-.pedidos-table__pagination {
+/* Paginación */
+.pt-pagination {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--space-4);
+    gap: var(--space-3);
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--color-border);
 }
 
-/* ── Responsive ── */
+.pt-page-numbers {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.pt-page-btn {
+    width: 1.875rem;
+    height: 1.875rem;
+    border-radius: var(--radius-md);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+    .pt-page-btn:hover {
+        background: var(--color-primary-light);
+        color: var(--color-primary);
+    }
+
+    .pt-page-btn.active {
+        background: var(--color-primary);
+        border-color: var(--color-primary);
+        color: #fff;
+    }
+
+/* Responsive */
 @media (max-width: 480px) {
-    .pedidos-table__toolbar {
+    .pt-toolbar {
         flex-direction: column;
         align-items: stretch;
     }
 
-    .pedidos-table__search {
+    .pt-search-wrap {
         max-width: 100%;
+    }
+
+    .pt-page-numbers {
+        display: none;
     }
 }

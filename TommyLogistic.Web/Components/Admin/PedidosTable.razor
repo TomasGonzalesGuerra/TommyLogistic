@@ -1,23 +1,27 @@
 @using System.Linq
 
-<div class="pedidos-table-wrapper">
+<div class="pt-wrapper">
 
-    <!-- Barra superior: búsqueda + conteo -->
-    <div class="pedidos-table__toolbar">
-        <div class="pedidos-table__search">
-            <span class="pedidos-table__search-icon">🔍</span>
-            <input class="form-control pedidos-table__input"
+    <!-- Toolbar -->
+    <div class="pt-toolbar">
+        <div class="pt-search-wrap">
+            <span class="pt-search-icon" aria-hidden="true">🔍</span>
+            <input class="form-control pt-search-input"
                    type="search"
                    placeholder="Buscar por código o destinatario…"
                    @bind="_busqueda"
-                   @bind:event="oninput" />
+                   @bind:event="oninput"
+                   @bind:after="ResetPage"
+                   aria-label="Buscar pedidos" />
         </div>
-        <span class="text-muted text-sm">@Paginados.Count() de @Filtrados.Count() pedidos</span>
+        <span class="pt-count text-xs text-muted">
+            @Paginados.Count() de @Filtrados.Count()
+        </span>
     </div>
 
     <!-- Tabla -->
     <div class="table-wrapper">
-        <table class="table">
+        <table class="table" aria-label="Listado de pedidos">
             <thead>
                 <tr>
                     <th>Tracking</th>
@@ -33,7 +37,7 @@
                 {
                     <tr>
                         <td colspan="6">
-                            <div class="pedidos-table__empty">
+                            <div class="pt-empty">
                                 <span>📦</span>
                                 <p>No se encontraron pedidos</p>
                             </div>
@@ -46,19 +50,23 @@
                     {
                         <tr @onclick="() => OnVerDetalle.InvokeAsync(p.Id)">
                             <td>
-                                <span class="pedidos-table__tracking">@p.TrackingCode</span>
+                                <span class="codigo-seguimiento">@p.TrackingCode</span>
                             </td>
-                            <td>@p.RecipientName</td>
+                            <td>
+                                <span class="text-bold">@p.RecipientName</span>
+                            </td>
                             <td class="hide-mobile text-muted text-sm">@p.RecipientDistrict</td>
-                            <td><span class="badge badge-@p.OrderStatus.ToString().ToLower()">@p.OrderStatus</span></td>
+                            <td>
+                                <BadgeEstado Estado="@p.OrderStatus" />
+                            </td>
                             <td class="hide-mobile text-muted text-sm">
-                                @p.RegistrationDate.ToString("dd/MM/yyyy")
+                                @p.RegistrationDate.ToLocalTime().ToString("dd/MM/yyyy")
                             </td>
                             <td>
                                 <button class="btn btn-ghost btn-sm"
                                         @onclick:stopPropagation="true"
                                         @onclick="() => OnVerDetalle.InvokeAsync(p.Id)">
-                                    Ver
+                                    Ver →
                                 </button>
                             </td>
                         </tr>
@@ -71,16 +79,23 @@
     <!-- Paginación -->
     @if (TotalPaginas > 1)
     {
-        <div class="pedidos-table__pagination">
+        <div class="pt-pagination">
             <button class="btn btn-ghost btn-sm"
                     disabled="@(_pagina <= 1)"
                     @onclick="() => _pagina--">
                 ← Anterior
             </button>
 
-            <span class="text-sm text-muted">
-                Página @_pagina de @TotalPaginas
-            </span>
+            <div class="pt-page-numbers">
+                @for (int i = 1; i <= TotalPaginas; i++)
+                {
+                    var page = i;
+                    <button class="pt-page-btn @(_pagina == page ? "active" : "")"
+                            @onclick="() => _pagina = page">
+                        page
+                    </button>
+                }
+            </div>
 
             <button class="btn btn-ghost btn-sm"
                     disabled="@(_pagina >= TotalPaginas)"
@@ -98,7 +113,7 @@
     [Parameter] public EventCallback<int> OnVerDetalle { get; set; }
 
     private string _busqueda = "";
-    private int _pagina = 1;
+    private int    _pagina   = 1;
 
     private IEnumerable<OrderSummaryDTO> Filtrados => string.IsNullOrWhiteSpace(_busqueda)
         ? Pedidos
@@ -112,10 +127,5 @@
     private int TotalPaginas =>
         (int)Math.Ceiling(Filtrados.Count() / (double)PageSize);
 
-    // Resetear página al cambiar búsqueda
-    private string BusquedaProxy
-    {
-        get => _busqueda;
-        set { _busqueda = value; _pagina = 1; }
-    }
+    private void ResetPage() => _pagina = 1;
 }

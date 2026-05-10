@@ -13,5 +13,5 @@ public class Driver
     public User User { get; set; } = null!;
 
     // Navegación a Orders
-    public ICollection<Order> Orders { get; set; } = null!;
+    public ICollection<Order>? Orders { get; set; }
 }
