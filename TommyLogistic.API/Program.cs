@@ -57,13 +57,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
             var accessToken = context.Request.Query["access_token"];
             var path = context.HttpContext.Request.Path;
 
-            // Condición más flexible y segura para detectar cualquier subruta de hubs
             if (!string.IsNullOrEmpty(accessToken) &&
-                path.Value!.Contains("/hubs/", StringComparison.OrdinalIgnoreCase))
+                path.StartsWithSegments("/OrderHub"))
             {
                 context.Token = accessToken;
             }
-
             return Task.CompletedTask;
         }
     };
@@ -72,6 +70,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 builder.Services.AddScoped<IUserHelper, UserHelper>();
 builder.Services.AddScoped<IFileStorage, FileStorage>();
 builder.Services.AddScoped<OrderEventService>();
+builder.Services.AddAuthorization();
 builder.Services.AddSignalR();
 builder.Services.AddScoped<OrderHubService>();
 
@@ -86,11 +85,11 @@ static void SeedData(WebApplication app)
     service!.SeedAsync().Wait();
 }
 
-app.UseHttpsRedirection();
 app.UseCors("BlazorClient");
+app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.MapHub<OrderHub>("/hubs/orders");
+app.MapHub<OrderHub>("/OrderHub");
 
 app.Run();

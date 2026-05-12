@@ -3,15 +3,6 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace TommyLogistic.API.Hubs;
 
-/// <summary>
-/// Grupos:
-///   "order-{orderId}"  → todos los clientes viendo ese pedido
-///   "dashboard"        → admins/supervisores en el dashboard principal
-///
-/// Métodos que el SERVIDOR puede llamar en el cliente:
-///   "NewOrderEvent"      → nuevo evento en el timeline
-///   "OrderStatusChanged" → cambio de estado del pedido
-/// </summary>
 [Authorize]
 public class OrderHub : Hub
 {
