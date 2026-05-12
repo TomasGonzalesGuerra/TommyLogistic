@@ -240,7 +240,7 @@ else
         });
 
     private void IrADetalle(int id)
-        => _NavigationManager.NavigateTo($"/pedidos/{id}");
+        => _NavigationManager.NavigateTo($"/OrderDetails/{id}");
 
     private static string NombreEstado(OrderStatus e) => e switch
     {

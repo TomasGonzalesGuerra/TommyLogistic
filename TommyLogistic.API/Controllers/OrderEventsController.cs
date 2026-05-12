@@ -7,10 +7,10 @@ namespace TommyLogistic.API.Controllers;
 
 [Authorize]
 [ApiController]
-[Route("api/orders/{orderId:int}/events")]
+[Route("api/[controller]/{orderId:int}/Events")]
 public class OrderEventsController(OrderEventService _eventService) : ControllerBase
 {
-    // GET api/orders/#/events
+    // GET api/OrderEvents/#/events
     [HttpGet]
     [ProducesResponseType(404)]
     [ProducesResponseType(typeof(OrderTimelineDTO), 200)]
@@ -20,7 +20,7 @@ public class OrderEventsController(OrderEventService _eventService) : Controller
         return timeline is null ? NotFound() : Ok(timeline);
     }
 
-    // POST api/orders/#/events
+    // POST api/OrderEvents/#/events
     [HttpPost]
     [ProducesResponseType(201)]
     [ProducesResponseType(400)]
@@ -41,7 +41,7 @@ public class OrderEventsController(OrderEventService _eventService) : Controller
         }
     }
 
-    // POST api/orders/#/events/pickup
+    // POST api/OrderEvents/#/events/pickup
     [HttpPost("pickup")]
     [Authorize(Roles = "Admin,Driver")]
     public async Task<IActionResult> RegisterPickup(int orderId, [FromBody] ActorNoteRequest req)
@@ -50,7 +50,7 @@ public class OrderEventsController(OrderEventService _eventService) : Controller
         return Ok(new { ev.Id, message = "Retiro registrado." });
     }
 
-    // POST api/orders/#/events/delivered
+    // POST api/OrderEvents/#/events/delivered
     [HttpPost("delivered")]
     [Authorize(Roles = "Admin,Driver")]
     public async Task<IActionResult> RegisterDelivered(int orderId, [FromBody] ActorNoteRequest req)
@@ -59,7 +59,7 @@ public class OrderEventsController(OrderEventService _eventService) : Controller
         return Ok(new { ev.Id, message = "Entrega confirmada." });
     }
 
-    // POST api/orders/#/events/absent
+    // POST api/OrderEvents/#/events/absent
     [HttpPost("absent")]
     [Authorize(Roles = "Admin,Driver")]
     public async Task<IActionResult> RegisterAbsent(int orderId, [FromBody] ActorNoteRequest req)

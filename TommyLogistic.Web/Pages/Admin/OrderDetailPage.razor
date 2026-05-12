@@ -3,6 +3,7 @@
 @implements IAsyncDisposable
 @inject OrderTimelineService _TimelineService
 @inject NavigationManager _NavigationManager
+@inject AuthenticationStateProvider AuthStateProvider
 @attribute [Authorize(Roles = "Admin,Supervisor,Operator")]
 
 <PageTitle>Detalle de pedido — Tommy Logistic</PageTitle>
@@ -19,7 +20,7 @@ else if (_timeline is null)
     <div class="empty-state">
         <span class="empty-icon">📭</span>
         <p class="text-bold">Pedido no encontrado</p>
-        <button class="btn btn-ghost mt-4" @onclick="GoBack">← Volver</button>
+        <button class="btn btn-ghost mt-4" @onclick="@(() => _NavigationManager.NavigateTo("/Orders"))">← Volver</button>
     </div>
 }
 else
@@ -256,7 +257,6 @@ else
     private string?  _actionNote;
     private DateTime _rescheduledFor  = DateTime.Today.AddDays(1);
 
-    // ── Ciclo de vida ─────────────────────────────────────────────
 
     protected override async Task OnInitializedAsync()
     {
@@ -270,19 +270,21 @@ else
     }
 
     // ── SignalR ───────────────────────────────────────────────────
-
     private async Task ConnectToHubAsync()
     {
-        var hubUrl = _NavigationManager.ToAbsoluteUri("/hubs/orders");
+        string baseUri = "https://localhost:7229/";
 
         _hubConnection = new HubConnectionBuilder()
-            .WithUrl(hubUrl, options =>
+            .WithUrl(baseUri + "hubs/orders", options =>
             {
                 options.AccessTokenProvider = async () =>
                 {
-                    // TODO: Reemplaza con cómo obtienes el token en tu app
-                    // return await _TokenService.GetTokenAsync();
-                    return null;
+                    var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+                    var user = authState.User;
+                
+                    // Extrae el token desde los Claims si lo guardaste allí al iniciar sesión
+                    var token = user.FindFirst("amr")?.Value; // Ajusta según el Claim donde guardes el JWT string
+                    return token;
                 };
             })
             .WithAutomaticReconnect()

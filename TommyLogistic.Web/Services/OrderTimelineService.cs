@@ -9,7 +9,7 @@ public class OrderTimelineService(HttpClient _http)
     {
         try
         {
-            return await _http.GetFromJsonAsync<OrderTimelineDTO>($"api/orders/{orderId}/events");
+            return await _http.GetFromJsonAsync<OrderTimelineDTO>($"api/OrderEvents/{orderId}/Events");
         }
         catch
         {
@@ -18,29 +18,29 @@ public class OrderTimelineService(HttpClient _http)
     }
 
     public async Task<bool> RegisterPickupAsync(int orderId, int driverId)
-        => await Post($"api/orders/{orderId}/events/pickup",
+        => await Post($"api/OrderEvents/{orderId}/Events/Pickup",
                       new { ActorUserId = driverId });
 
     public async Task<bool> RegisterDeliveredAsync(int orderId, int driverId, string? notes = null)
-        => await Post($"api/orders/{orderId}/events/delivered",
+        => await Post($"api/OrderEvents/{orderId}/Events/Delivered",
                       new { ActorUserId = driverId, Notes = notes });
 
     public async Task<bool> RegisterAbsentAsync(int orderId, int driverId, string? notes = null)
-        => await Post($"api/orders/{orderId}/events/absent",
+        => await Post($"api/OrderEvents/{orderId}/Events/Absent",
                       new { ActorUserId = driverId, Notes = notes });
 
     public async Task<bool> RegisterBaglokAsync(
         int orderId, int operatorId, string location, string? notes = null)
-        => await Post($"api/orders/{orderId}/events/baglok",
+        => await Post($"api/OrderEvents/{orderId}/Events/Baglok",
                       new { ActorUserId = operatorId, BaglokLocation = location, Notes = notes });
 
     public async Task<bool> RegisterRescheduleAsync(
         int orderId, int supervisorId, DateTime rescheduledFor, string? notes = null)
-        => await Post($"api/orders/{orderId}/events/reschedule",
+        => await Post($"api/OrderEvents/{orderId}/Events/Reschedule",
                       new { ActorUserId = supervisorId, RescheduledFor = rescheduledFor, Notes = notes });
 
     public async Task<bool> RegisterReleaseAsync(int orderId, int operatorId)
-        => await Post($"api/orders/{orderId}/events/release",
+        => await Post($"api/OrderEvents/{orderId}/Events/Release",
                       new { ActorUserId = operatorId });
 
     private async Task<bool> Post(string url, object body)

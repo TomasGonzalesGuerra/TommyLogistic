@@ -17,6 +17,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 builder.Services.AddDbContext<LogisticDataContext>(dc => dc.UseSqlServer(builder.Configuration["ConnectionStrings:DefaultConnection"]));
 builder.Services.AddTransient<SeedDb>();
+
 builder.Services.AddIdentity<User, IdentityRole>(x =>
 {
     x.User.RequireUniqueEmail = true;
@@ -26,6 +27,18 @@ builder.Services.AddIdentity<User, IdentityRole>(x =>
     x.Password.RequireNonAlphanumeric = false;
     x.Password.RequireUppercase = false;
 }).AddEntityFrameworkStores<LogisticDataContext>().AddDefaultTokenProviders();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("BlazorClient", policy =>
+    {
+        policy.WithOrigins(builder.Configuration["ClientUrl"]!)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
@@ -39,13 +52,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     };
     options.Events = new JwtBearerEvents
     {
-        // JWT para SignalR llega por query string, no por header
         OnMessageReceived = context =>
         {
             var accessToken = context.Request.Query["access_token"];
             var path = context.HttpContext.Request.Path;
 
-            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+            // Condición más flexible y segura para detectar cualquier subruta de hubs
+            if (!string.IsNullOrEmpty(accessToken) &&
+                path.Value!.Contains("/hubs/", StringComparison.OrdinalIgnoreCase))
             {
                 context.Token = accessToken;
             }
@@ -54,19 +68,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
         }
     };
 });
+
 builder.Services.AddScoped<IUserHelper, UserHelper>();
 builder.Services.AddScoped<IFileStorage, FileStorage>();
 builder.Services.AddScoped<OrderEventService>();
 builder.Services.AddSignalR();
 builder.Services.AddScoped<OrderHubService>();
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("BlazorClient", policy =>
-        policy.WithOrigins(builder.Configuration["ClientUrl"]!)
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials());
-});
 
 var app = builder.Build();
 
@@ -79,17 +86,11 @@ static void SeedData(WebApplication app)
     service!.SeedAsync().Wait();
 }
 
-
 app.UseHttpsRedirection();
+app.UseCors("BlazorClient");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.UseCors("BlazorClient");
-app.UseCors(x => x
-    .AllowAnyMethod()
-    .AllowAnyHeader()
-    .SetIsOriginAllowed(origin => true)
-    .AllowCredentials());
 app.MapHub<OrderHub>("/hubs/orders");
 
 app.Run();
