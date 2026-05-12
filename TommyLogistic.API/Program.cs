@@ -86,10 +86,10 @@ app.UseAuthorization();
 app.MapControllers();
 app.UseCors("BlazorClient");
 app.UseCors(x => x
-.AllowAnyMethod()
-.AllowAnyHeader()
-.SetIsOriginAllowed(origin => true)
-.AllowCredentials());
+    .AllowAnyMethod()
+    .AllowAnyHeader()
+    .SetIsOriginAllowed(origin => true)
+    .AllowCredentials());
 app.MapHub<OrderHub>("/hubs/orders");
 
 app.Run();

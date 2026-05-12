@@ -95,7 +95,7 @@
         _error = false;
         _cargando = true;
 
-        var responseHttp = await _IRepository.PostAsync<LoginDTO, TokenDTO>("api/auth/Login", loginDTO);
+        var responseHttp = await _IRepository.PostAsync<LoginDTO, TokenDTO>("api/Auth/Login", loginDTO);
 
         if (responseHttp.Error)
         {
