@@ -30,7 +30,7 @@ builder.Services.AddIdentity<User, IdentityRole>(x =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("BlazorClient", policy =>
+    options.AddPolicy("CorsPolicy", policy =>
     {
         policy.WithOrigins(builder.Configuration["ClientUrl"]!)
               .AllowAnyHeader()
@@ -57,11 +57,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
             var accessToken = context.Request.Query["access_token"];
             var path = context.HttpContext.Request.Path;
 
+            // Solo aplicar para las rutas del Hub
             if (!string.IsNullOrEmpty(accessToken) &&
-                path.StartsWithSegments("/OrderHub"))
+                path.StartsWithSegments("/hubs/notifications"))
             {
                 context.Token = accessToken;
             }
+
             return Task.CompletedTask;
         }
     };
@@ -69,10 +71,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 
 builder.Services.AddScoped<IUserHelper, UserHelper>();
 builder.Services.AddScoped<IFileStorage, FileStorage>();
-builder.Services.AddScoped<OrderEventService>();
 builder.Services.AddAuthorization();
 builder.Services.AddSignalR();
-builder.Services.AddScoped<OrderHubService>();
 
 var app = builder.Build();
 
@@ -85,11 +85,11 @@ static void SeedData(WebApplication app)
     service!.SeedAsync().Wait();
 }
 
-app.UseCors("BlazorClient");
+app.UseCors("CorsPolicy");
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.MapHub<OrderHub>("/OrderHub");
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.Run();

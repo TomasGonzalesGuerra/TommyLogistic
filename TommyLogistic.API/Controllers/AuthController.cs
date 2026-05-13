@@ -1,27 +1,31 @@
-﻿using System.Text;
-using System.Security.Claims;
-using TommyLogistic.API.Data;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TommyLogistic.Api.Helpers;
-using TommyLogistic.Shared.Entities;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using TommyLogistic.Shared.DTOs.Auth;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.Security.Claims;
+using System.Text;
+using TommyLogistic.Api.Helpers;
+using TommyLogistic.API.Data;
+using TommyLogistic.API.Hubs;
+using TommyLogistic.Shared.DTOs.Auth;
+using TommyLogistic.Shared.Entities;
+using TommyLogistic.Shared.Enums;
 
 namespace TommyLogistic.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController(LogisticDataContext datacontext, IUserHelper userHelper, IConfiguration configuration, IFileStorage fileStorage) : ControllerBase
+public class AuthController(LogisticDataContext datacontext, IUserHelper userHelper, IConfiguration configuration, IHubContext<NotificationHub> hubContext, IFileStorage fileStorage) : ControllerBase
 {
     private readonly string _container = "users";
     private readonly IUserHelper _userHelper = userHelper;
     private readonly IFileStorage _fileStorage = fileStorage;
     private readonly IConfiguration _configuration = configuration;
     private readonly LogisticDataContext _dataContext = datacontext;
+    private readonly IHubContext<NotificationHub> _hubContext = hubContext;
 
     [HttpPost("CreateUser")]
     public async Task<ActionResult> CreateUser([FromBody] UserDTO model)
@@ -39,6 +43,20 @@ public class AuthController(LogisticDataContext datacontext, IUserHelper userHel
         if (result.Succeeded)
         {
             await _userHelper.AddUserToRoleAsync(user, user.UserType.ToString());
+
+            // 🔔 Si el nuevo usuario es Driver, notificar a todos los drivers
+            if (user.UserType == UserEnum.Driver)
+            {
+                await _hubContext.Clients
+                    .Group("Drivers")
+                    .SendAsync("NewDriverJoined", new
+                    {
+                        Message = $"¡Tienes un nuevo compañero! {user.FullName} se unió al equipo.",
+                        DriverName = user.FullName,
+                        Timestamp = DateTime.Now
+                    });
+            }
+
             return Ok(BuildToken(user));
         }
 

@@ -40,6 +40,6 @@ public class SesionService(AuthenticationStateProvider authProvider)
     }
 
     public async Task<bool> EsAdminAsync() => (await GetRolAsync()) == "Admin";
-    public async Task<bool> EsRepartidorAsync() => (await GetRolAsync()) == "Repartidor";
+    public async Task<bool> EsRepartidorAsync() => (await GetRolAsync()) == "Driver";
     public async Task<bool> EsClienteEmpresaAsync() => (await GetRolAsync()) == "ClienteEmpresa";
 }

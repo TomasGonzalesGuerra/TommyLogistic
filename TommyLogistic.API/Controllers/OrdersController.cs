@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Collections;
 using TommyLogistic.API.Data;
+using TommyLogistic.API.Hubs;
 using TommyLogistic.Shared.DTOs.Orders;
 using TommyLogistic.Shared.Entities;
 using TommyLogistic.Shared.Enums;
@@ -10,9 +12,10 @@ namespace TommyLogistic.API.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class OrdersController(LogisticDataContext dataContext) : ControllerBase
+public class OrdersController(LogisticDataContext dataContext, IHubContext<NotificationHub> hubContext) : ControllerBase
 {
     private readonly LogisticDataContext _dataContext = dataContext;
+    private readonly IHubContext<NotificationHub> _hubContext = hubContext;
 
     // GET: api/Orders/GetAllOrders
     [HttpGet("GetAllOrders")]
@@ -150,6 +153,19 @@ public class OrdersController(LogisticDataContext dataContext) : ControllerBase
                 {
                     order.DriverID = currentDriver.UserID;
                     order.OrderStatus = OrderStatus.Assigned;
+
+                    // 🔔 Notificar SOLO a ese driver
+                    await _hubContext.Clients
+                            .Group($"Driver_{currentDriver.UserID}")   // grupo exclusivo por ID
+                            .SendAsync("NewOrderAssigned", new
+                            {
+                                Message = $"¡Tienes un nuevo pedido asignado! Destinatario: {order.RecipientName}",
+                                OrderId = order.Id,
+                                Tracking = order.TrackingCode,
+                                Address = order.RecipientAddress,
+                                Timestamp = DateTime.Now
+                            });
+
                     totalAssigned++;
                 }
 
