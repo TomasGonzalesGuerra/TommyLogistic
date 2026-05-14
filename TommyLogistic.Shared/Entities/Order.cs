@@ -20,11 +20,9 @@ public class Order
     public string RecipientDistrict { get; set; } = null!;
     public string PackageDescription { get; set; } = null!;
 
-    // Company Dueña
+    // Navigation
     public int CompanyID { get; set; }
-    public Company Company { get; set; } = null!;
-
-    // Driver Asignado
+    public Company? Company { get; set; }
     public string? DriverID { get; set; }
     public Driver? Driver { get; set; }
 

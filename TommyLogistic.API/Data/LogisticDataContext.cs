@@ -17,7 +17,6 @@ public class LogisticDataContext(DbContextOptions<LogisticDataContext> options) 
 
         modelBuilder.Entity<Driver>()
             .HasKey(d => d.UserID);
-
         modelBuilder.Entity<User>()
             .HasOne(u => u.Driver)
             .WithOne(d => d.User)
@@ -28,7 +27,6 @@ public class LogisticDataContext(DbContextOptions<LogisticDataContext> options) 
             .WithMany(d => d.Orders)
             .HasForeignKey(o => o.DriverID)
             .OnDelete(DeleteBehavior.Restrict);
-
         modelBuilder.Entity<Order>()
             .HasOne(o => o.Company)
             .WithMany(c => c.Orders)
@@ -40,11 +38,15 @@ public class LogisticDataContext(DbContextOptions<LogisticDataContext> options) 
             .WithMany(o => o.Events)
             .HasForeignKey(e => e.OrderID)
             .OnDelete(DeleteBehavior.Cascade);
-
         modelBuilder.Entity<OrderEvent>()
             .HasOne(e => e.User)
             .WithMany(o => o.Events)
             .HasForeignKey(e => e.UserID)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<OrderEvent>()
+            .HasOne(e => e.AssignedDriver)
+            .WithMany()
+            .HasForeignKey(e => e.AssignedDriverID)
             .OnDelete(DeleteBehavior.Restrict);
     }
 
