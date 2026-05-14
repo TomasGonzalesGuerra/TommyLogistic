@@ -5,7 +5,6 @@ namespace TommyLogistic.Shared.DTOs.Orders;
 public class OrderEventDTO
 {
     public int Id { get; set; }
-    public OrderEventType EventType { get; set; }
     public string EventLabel { get; set; } = "";
     public string EventIcon { get; set; } = "";
     public string EventColor { get; set; } = "";
