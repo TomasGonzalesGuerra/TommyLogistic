@@ -150,6 +150,16 @@ else
     </div>
 }
 
+<GenericModal Title="Detalle del pedido"
+              IsVisible="_mostrarPreview"
+              OnCancel="CerrarPreview"
+              Size="lg">
+    <BodyContent>
+        <OrderDetailsPreview OrderId="_pedidoSeleccionadoId" OnClose="CerrarPreview" />
+    </BodyContent>
+</GenericModal>
+
+
 @code {
     private int _nuevos;
     private bool _loading = true;
@@ -174,6 +184,9 @@ else
 
             return matchBusqueda && matchEstado && matchTipo;
         });
+    private bool _mostrarPreview;
+    private int _pedidoSeleccionadoId;
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -218,29 +231,32 @@ else
     //     _SignalRService.OnNuevoPedido += OnNuevoPedido;
     // }
 
-    private void OnActualizacion(OrderSummaryDTO DTO)
-        => InvokeAsync(() =>
-        {
-            var idx = _orders.FindIndex(p => p.Id == DTO.Id);
-            if (idx >= 0) _orders[idx] = DTO;
-            _newsIds.Add(DTO.Id);
-            StateHasChanged();
-        });
+    private void OnActualizacion(OrderSummaryDTO DTO) => InvokeAsync(() =>
+    {
+        var idx = _orders.FindIndex(p => p.Id == DTO.Id);
+        if (idx >= 0) _orders[idx] = DTO;
+        _newsIds.Add(DTO.Id);
+        StateHasChanged();
+    });
 
-    private void OnNuevoPedido(OrderSummaryDTO DTO)
-        => InvokeAsync(() =>
+    private void OnNuevoPedido(OrderSummaryDTO DTO) => InvokeAsync(() =>
+    {
+        if (!_orders.Any(p => p.Id == DTO.Id))
         {
-            if (!_orders.Any(p => p.Id == DTO.Id))
-            {
-                _orders.Insert(0, DTO);
-                _newsIds.Add(DTO.Id);
-                _nuevos++;
-            }
-            StateHasChanged();
-        });
+            _orders.Insert(0, DTO);
+            _newsIds.Add(DTO.Id);
+            _nuevos++;
+        }
+        StateHasChanged();
+    });
 
     private void IrADetalle(int id)
-        => _NavigationManager.NavigateTo($"/OrderDetails/{id}");
+    {
+        _pedidoSeleccionadoId = id;
+        _mostrarPreview = true;
+    }
+
+    private async Task CerrarPreview() => _mostrarPreview = false;
 
     private static string NombreEstado(OrderStatus e) => e switch
     {

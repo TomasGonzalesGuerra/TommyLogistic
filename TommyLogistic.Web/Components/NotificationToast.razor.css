@@ -26,7 +26,7 @@
     animation: slideIn .3s ease;
 }
 
-@@keyframes slideIn {
+@keyframes slideIn {
     from {
         transform: translateX(120%);
         opacity: 0;
@@ -65,4 +65,22 @@
     font-size: .85rem;
     padding: 0;
     line-height: 1;
+}
+
+.toast-item { 
+    overflow: hidden;
+    position: relative; 
+}
+.toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    width: 100%;
+    background: var(--color-text-info);
+    animation: progress linear forwards;
+}
+@keyframes progress {
+    from { width: 100%; }
+    to   { width: 0%; }
 }

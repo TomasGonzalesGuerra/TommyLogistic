@@ -1,0 +1,146 @@
+@page "/OrderDetails/{OrderID:int}"
+@layout MainLayout
+@inject IRepository _Repository
+@inject NavigationManager _NavigationManager
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>Detalle del pedido — Tommy Logistic</PageTitle>
+
+@if (_loading)
+{
+    <div class="loading-overlay">
+        <div class="spinner"></div>
+        <span>Cargando pedido...</span>
+    </div>
+}
+else if (_preview is null)
+{
+    <div class="empty-state">
+        <span class="empty-icon">📭</span>
+        <p class="text-bold">Pedido no encontrado</p>
+        <button class="btn btn-ghost mt-4" @onclick="@(() => _NavigationManager.NavigateTo("/Orders"))">← Volver</button>
+    </div>
+}
+else
+{
+    <!-- Breadcrumb -->
+    <div class="detail-breadcrumb">
+        <button class="btn btn-ghost btn-sm" @onclick='() => _NavigationManager.NavigateTo("/Orders")'>
+            ← Pedidos
+        </button>
+        <span class="text-muted">/</span>
+        <span class="codigo-seguimiento">@_preview.TrackingCode</span>
+    </div>
+
+    <!-- Header -->
+    <div class="detail-header">
+        <div>
+            <h1 class="page-title" style="margin-bottom: var(--space-2)">
+                @_preview.RecipientName
+            </h1>
+            <div class="detail-header-meta">
+                <BadgeEstado Estado="@_preview.OrderStatus" />
+                <span class="badge @(_preview.DeliveryType == DeliveryType.ToDay ? "badge-encamino" : "badge-asignado")">
+                    @(_preview.DeliveryType == DeliveryType.ToDay ? "⚡ 4h" : "📅 24h")
+                </span>
+                @if (_preview.DeliveryAttempts > 0)
+                {
+                    <span class="badge badge-ausente">⚠️ @_preview.DeliveryAttempts intento(s)</span>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-grid">
+        <div class="detail-left">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <span class="card-title">📍 Destinatario</span>
+                </div>
+                <div class="detail-fields">
+                    <div class="detail-field">
+                        <span class="detail-field-label">Nombre</span>
+                        <span class="detail-field-value">@_preview.RecipientName</span>
+                    </div>
+                    <div class="detail-field">
+                        <span class="detail-field-label">Teléfono</span>
+                        <span class="detail-field-value">@_preview.RecipientPhone</span>
+                    </div>
+                    <div class="detail-field">
+                        <span class="detail-field-label">Distrito</span>
+                        <span class="detail-field-value">@_preview.RecipientDistrict</span>
+                    </div>
+                    <div class="detail-field detail-field--full">
+                        <span class="detail-field-label">Dirección completa</span>
+                        <span class="detail-field-value">@_preview.RecipientAddress</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <span class="card-title">📦 Paquete</span>
+                </div>
+                <div class="detail-fields">
+                    <div class="detail-field">
+                        <span class="detail-field-label">Descripción</span>
+                        <span class="detail-field-value">@_preview.PackageDescription</span>
+                    </div>
+                    <div class="detail-field">
+                        <span class="detail-field-label">Cantidad</span>
+                        <span class="detail-field-value">@_preview.Quantity unidades</span>
+                    </div>
+                    <div class="detail-field">
+                        <span class="detail-field-label">Empresa</span>
+                        <span class="detail-field-value">@(_preview.CompanyName ?? "—")</span>
+                    </div>
+                    <div class="detail-field">
+                        <span class="detail-field-label">Repartidor</span>
+                        <span class="detail-field-value">@(_preview.DriverName ?? "Sin asignar")</span>
+                    </div>
+                    <div class="detail-field">
+                        <span class="detail-field-label">Registrado</span>
+                        <span class="detail-field-value">
+                            @_preview.RegistrationDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                        </span>
+                    </div>
+                    @if (_preview.EstimatedDeliveryDate.HasValue)
+                    {
+                        <div class="detail-field">
+                            <span class="detail-field-label">Estimado</span>
+                            <span class="detail-field-value">
+                                @_preview.EstimatedDeliveryDate.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                            </span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+        </div>
+
+        <div class="detail-right">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">📋 Historial de trazabilidad</span>
+                </div>
+                @* <OrderTimeline OrderId="Id" /> *@
+            </div>
+        </div>
+
+    </div>
+}
+
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private OrderPreviewDTO? _preview;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var response = await _Repository.GetAsync<OrderPreviewDTO>($"api/Orders/Preview/{Id}");
+        _preview = response.Error ? null : response.Response;
+        _loading = false;
+    }
+}

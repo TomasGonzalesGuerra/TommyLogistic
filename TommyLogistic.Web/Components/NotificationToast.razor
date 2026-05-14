@@ -13,50 +13,16 @@
                 <span class="toast-time">@toast.Time.ToShortTimeString()</span>
             </div>
             <button class="toast-close" @onclick="() => Remove(toast)">✕</button>
+            <div class="toast-progress" style="animation-duration: @(_durationMs)ms"></div>
         </div>
     }
 </div>
 
-@* <style>
-    .toast-container {
-        position: fixed;
-        bottom: 1.5rem;
-        right: 1.5rem;
-        z-index: 9999;
-        display: flex;
-        flex-direction: column;
-        gap: .6rem;
-    }
-    .toast-item {
-        display: flex;
-        align-items: flex-start;
-        gap: .75rem;
-        background: var(--color-background-secondary);
-        border: 1px solid var(--color-border-secondary);
-        border-radius: 12px;
-        padding: .85rem 1rem;
-        min-width: 280px;
-        max-width: 360px;
-        box-shadow: 0 4px 16px rgba(0,0,0,.12);
-        animation: slideIn .3s ease;
-    }
-    @@keyframes slideIn {
-        from { transform: translateX(120%); opacity: 0; }
-        to   { transform: translateX(0);    opacity: 1; }
-    }
-    .toast-icon { font-size: 1.4rem; }
-    .toast-body { flex: 1; }
-    .toast-message { margin: 0 0 2px; font-size: .9rem; color: var(--color-text-primary); }
-    .toast-time { font-size: .75rem; color: var(--color-text-secondary); }
-    .toast-close {
-        background: none; border: none; cursor: pointer;
-        color: var(--color-text-secondary); padding: 0; line-height: 1;
-    }
-</style> *@
 
 @code {
-    private readonly List<ToastItem> _toasts = [];
     private bool _inicializado;
+    private readonly List<ToastItem> _toasts = [];
+    private const int _durationMs = 5000;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -100,7 +66,7 @@
         InvokeAsync(StateHasChanged);
 
         // Auto-cerrar a los 5 segundos
-        _ = Task.Delay(5000).ContinueWith(_ =>
+        _ = Task.Delay(_durationMs).ContinueWith(_ =>
         {
             Remove(toast);
             InvokeAsync(StateHasChanged);

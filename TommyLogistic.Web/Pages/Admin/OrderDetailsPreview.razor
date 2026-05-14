@@ -1,0 +1,147 @@
+@inject IRepository _Repository
+@inject NavigationManager _NavigationManager
+
+@if (_loading)
+{
+    <div class="adm-modal__body">
+        <div class="loading-overlay" style="padding: var(--space-8)">
+            <div class="spinner"></div>
+            <span>Cargando...</span>
+        </div>
+    </div>
+}
+else if (_preview is not null)
+{
+    <div class="adm-modal__body">
+
+        <!-- Header del pedido -->
+        <div class="preview-top">
+            <div>
+                <span class="codigo-seguimiento">@_preview.TrackingCode</span>
+                <p class="preview-fecha text-xs text-muted mt-2">
+                    Registrado el @_preview.RegistrationDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                </p>
+            </div>
+            <div class="preview-badges">
+                <BadgeEstado Estado="@_preview.OrderStatus" />
+                <span class="badge @(_preview.DeliveryType == DeliveryType.ToDay ? "badge-encamino" : "badge-asignado")">
+                    @(_preview.DeliveryType == DeliveryType.ToDay ? "⚡ 4h" : "📅 24h")
+                </span>
+            </div>
+        </div>
+
+        <div class="preview-divider"></div>
+
+        <!-- Destinatario -->
+        <p class="preview-section-label">Destinatario</p>
+        <div class="preview-grid">
+            <div class="preview-field">
+                <span class="preview-field-icon">👤</span>
+                <div>
+                    <p class="preview-field-label">Nombre</p>
+                    <p class="preview-field-value">@_preview.RecipientName</p>
+                </div>
+            </div>
+            <div class="preview-field">
+                <span class="preview-field-icon">📞</span>
+                <div>
+                    <p class="preview-field-label">Teléfono</p>
+                    <p class="preview-field-value">@_preview.RecipientPhone</p>
+                </div>
+            </div>
+            <div class="preview-field preview-field--full">
+                <span class="preview-field-icon">📍</span>
+                <div>
+                    <p class="preview-field-label">Dirección</p>
+                    <p class="preview-field-value">@_preview.RecipientAddress, @_preview.RecipientDistrict</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="preview-divider"></div>
+
+        <!-- Paquete -->
+        <p class="preview-section-label">Paquete</p>
+        <div class="preview-grid">
+            <div class="preview-field">
+                <span class="preview-field-icon">📦</span>
+                <div>
+                    <p class="preview-field-label">Descripción</p>
+                    <p class="preview-field-value">@_preview.PackageDescription</p>
+                </div>
+            </div>
+            <div class="preview-field">
+                <span class="preview-field-icon">🔢</span>
+                <div>
+                    <p class="preview-field-label">Cantidad</p>
+                    <p class="preview-field-value">@_preview.Quantity unidades</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="preview-divider"></div>
+
+        <!-- Repartidor y empresa -->
+        <p class="preview-section-label">Asignación</p>
+        <div class="preview-grid">
+            <div class="preview-field">
+                <span class="preview-field-icon">🏢</span>
+                <div>
+                    <p class="preview-field-label">Empresa</p>
+                    <p class="preview-field-value">@(_preview.CompanyName ?? "—")</p>
+                </div>
+            </div>
+            <div class="preview-field">
+                <span class="preview-field-icon">🛵</span>
+                <div>
+                    <p class="preview-field-label">Repartidor</p>
+                    <p class="preview-field-value">@(_preview.DriverName ?? "Sin asignar")</p>
+                </div>
+            </div>
+            @if (_preview.DeliveryAttempts > 0)
+            {
+                <div class="preview-field preview-field--full">
+                    <span class="preview-field-icon">⚠️</span>
+                    <div>
+                        <p class="preview-field-label">Intentos fallidos</p>
+                        <p class="preview-field-value" style="color: var(--estado-ausente)">
+                            @_preview.DeliveryAttempts intento(s)
+                        </p>
+                    </div>
+                </div>
+            }
+        </div>
+
+    </div>
+
+    <!-- Footer con acciones -->
+    <div class="adm-modal__footer">
+        <button class="btn btn-ghost btn-sm" @onclick="OnClose">
+            Cerrar
+        </button>
+        <button class="btn btn-primary btn-sm" @onclick="IrADetalle">
+            Ver detalle completo →
+        </button>
+    </div>
+}
+
+
+@code {
+    [Parameter] public int OrderId { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private OrderPreviewDTO? _preview;
+    private bool _loading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (OrderId <= 0) return;
+        _loading = true;
+        var response = await _Repository.GetAsync<OrderPreviewDTO>($"api/Orders/Preview/{OrderId}");
+        _preview = response.Error ? null : response.Response;
+        _loading = false;
+    }
+
+    private void IrADetalle()
+        => _NavigationManager.NavigateTo($"/pedidos/{OrderId}");
+}

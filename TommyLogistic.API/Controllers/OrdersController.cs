@@ -187,7 +187,39 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
         });
     }
 
+    [HttpGet("Preview/{id}")]
+    public async Task<ActionResult> GetPreview(int id)
+    {
+        var order = await _dataContext.Orders
+            .Include(o => o.Company).ThenInclude(c => c!.User)
+            .Include(o => o.Driver).ThenInclude(d => d!.User)
+            .FirstOrDefaultAsync(o => o.Id == id);
+
+        if (order is null) return NotFound();
+
+        return Ok(new OrderPreviewDTO
+        {
+            Id                    = order.Id,
+            TrackingCode          = order.TrackingCode,
+            OrderStatus           = order.OrderStatus,
+            DeliveryType          = order.DeliveryType,
+            DeliveryAttempts      = order.DeliveryAttempts,
+            RegistrationDate      = order.RegistrationDate,
+            EstimatedDeliveryDate = order.DeliveryDate,
+            RecipientName         = order.RecipientName,
+            RecipientPhone        = order.RecipientPhone,
+            RecipientAddress      = order.RecipientAddress,
+            RecipientDistrict     = order.RecipientDistrict,
+            PackageDescription    = order.PackageDescription,
+            Quantity              = order.Quantity,
+            CompanyName           = order.Company.User.FullName,
+            DriverName            = order.Driver?.User.FullName,
+            DriverPhone           = order.Driver?.User.PhoneNumber,
+        });
+    }
+
 }
+
 
 //[HttpGet]
 //public async Task<ActionResult<IEnumerable<Order>>> GetOrders(

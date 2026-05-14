@@ -1,24 +1,29 @@
 ﻿@if (IsVisible)
 {
     <div class="adm-overlay" @onclick="HandleCancel">
-        <div class="adm-modal" @onclick:stopPropagation>
-
+        <div class="adm-modal @SizeClass" @onclick:stopPropagation>
             <div class="adm-modal__header">
                 <h2 class="adm-modal__title">@Title</h2>
                 <button @onclick="HandleCancel" class="adm-modal__close">✕</button>
             </div>
-
             @BodyContent
         </div>
     </div>
 }
-
 
 @code {
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
     [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
     [Parameter, EditorRequired] public RenderFragment BodyContent { get; set; } = null!;
+    [Parameter] public string Size { get; set; } = "md"; // sm | md | lg
+
+    private string SizeClass => Size switch
+    {
+        "sm" => "adm-modal--sm",
+        "lg" => "adm-modal--lg",
+        _    => ""
+    };
 
     private async Task HandleCancel() => await OnCancel.InvokeAsync();
 }
