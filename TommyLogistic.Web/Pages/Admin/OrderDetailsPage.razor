@@ -123,7 +123,7 @@ else
                 <div class="card-header">
                     <span class="card-title">📋 Historial de trazabilidad</span>
                 </div>
-                @* <OrderTimeline OrderId="Id" /> *@
+                <OrderTimeline OrderId="@OrderID" />
             </div>
         </div>
 
@@ -132,14 +132,14 @@ else
 
 
 @code {
-    [Parameter] public int Id { get; set; }
+    [Parameter] public int OrderID { get; set; }
 
     private OrderPreviewDTO? _preview;
     private bool _loading = true;
 
     protected override async Task OnInitializedAsync()
     {
-        var response = await _Repository.GetAsync<OrderPreviewDTO>($"api/Orders/Preview/{Id}");
+        var response = await _Repository.GetAsync<OrderPreviewDTO>($"api/Orders/Preview/{OrderID}");
         _preview = response.Error ? null : response.Response;
         _loading = false;
     }

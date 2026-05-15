@@ -1,14 +1,12 @@
-﻿/* ── OrderTimeline.razor.css ─────────────────────────────────── */
-
-/* ── Raíz ── */
-.tl-root {
+﻿/* ── Raíz ── */
+/*.tl-root {
     display: flex;
     flex-direction: column;
     gap: var(--space-6);
-}
+}*/
 
 /* ── Fase ── */
-.tl-phase {
+/*.tl-phase {
 }
 
 .tl-phase-label {
@@ -26,24 +24,24 @@
 
 .tl-phase-icon {
     font-size: 0.875rem;
-}
+}*/
 
 /* ── Lista de eventos ── */
-.tl-events {
+/*.tl-events {
     display: flex;
     flex-direction: column;
-}
+}*/
 
 /* ── Evento individual ── */
-.tl-event {
+/*.tl-event {
     display: grid;
     grid-template-columns: 1.5rem 1fr;
     gap: 0 var(--space-4);
     position: relative;
-}
+}*/
 
 /* ── Conector (dot + línea vertical) ── */
-.tl-connector {
+/*.tl-connector {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -70,10 +68,10 @@
     background: var(--color-border);
     margin: 0.25rem 0;
     min-height: 1.5rem;
-}
+}*/
 
 /* ── Card del evento ── */
-.tl-event-card {
+/*.tl-event-card {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
@@ -91,10 +89,10 @@
 
 .tl-event--last .tl-event-card {
     margin-bottom: 0;
-}
+}*/
 
 /* ── Header del evento ── */
-.tl-event-header {
+/*.tl-event-header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -127,10 +125,10 @@
     color: var(--color-text-light);
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
-}
+}*/
 
 /* Badge de intento */
-.tl-attempt-badge {
+/*.tl-attempt-badge {
     font-size: var(--font-size-xs);
     font-weight: 700;
     color: var(--color-warning);
@@ -138,10 +136,10 @@
     padding: 0.125rem 0.375rem;
     border-radius: var(--radius-full);
     white-space: nowrap;
-}
+}*/
 
 /* ── Actor ── */
-.tl-actor {
+/*.tl-actor {
     display: flex;
     align-items: center;
     gap: var(--space-2);
@@ -175,10 +173,10 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-full);
     padding: 0.0625rem 0.375rem;
-}
+}*/
 
 /* ── Meta rows (Baglok, fecha, etc.) ── */
-.tl-meta-row {
+/*.tl-meta-row {
     display: flex;
     align-items: center;
     gap: var(--space-2);
@@ -209,10 +207,10 @@
     padding: 0.0625rem 0.375rem;
     border-radius: var(--radius-sm);
     letter-spacing: 0.03em;
-}
+}*/
 
 /* ── Notas ── */
-.tl-notes {
+/*.tl-notes {
     display: flex;
     align-items: flex-start;
     gap: var(--space-2);
@@ -227,10 +225,10 @@
 
 .tl-notes-icon {
     flex-shrink: 0;
-}
+}*/
 
 /* ── Empty state ── */
-.tl-empty {
+/*.tl-empty {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -243,10 +241,10 @@
 
     .tl-empty span {
         font-size: 2rem;
-    }
+    }*/
 
 /* ── Responsive ── */
-@media (max-width: 480px) {
+/*@media (max-width: 480px) {
     .tl-event {
         grid-template-columns: 1.25rem 1fr;
         gap: 0 var(--space-3);
@@ -260,4 +258,139 @@
         flex-direction: column;
         gap: var(--space-1);
     }
+}*/
+
+.timeline {
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-2) 0;
+}
+
+.timeline-item {
+    display: flex;
+    gap: var(--space-4);
+    min-height: 4rem;
+}
+
+/* Track izquierdo: dot + línea */
+.timeline-track {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    width: 2rem;
+}
+
+.timeline-dot {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform var(--transition-fast);
+    z-index: 1;
+}
+
+.timeline-dot-icon {
+    font-size: 0.75rem;
+    line-height: 1;
+}
+
+.timeline-line {
+    width: 2px;
+    flex: 1;
+    background: var(--color-border);
+    margin: var(--space-1) 0;
+    min-height: 1.5rem;
+}
+
+/* Contenido derecho */
+.timeline-content {
+    flex: 1;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-3);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow var(--transition-fast);
+}
+
+    .timeline-content:hover {
+        box-shadow: var(--shadow-md);
+    }
+
+/* Último evento — destacado */
+.timeline-content--last {
+    border-color: var(--color-primary);
+    background: var(--color-primary-light);
+}
+
+.timeline-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-2);
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.timeline-time {
+    white-space: nowrap;
+}
+
+.timeline-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+}
+
+.timeline-actor {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.timeline-avatar {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.625rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    letter-spacing: -0.02em;
+}
+
+.timeline-actor-name {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text);
+    line-height: 1.2;
+}
+
+.timeline-driver {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    padding: 0.2rem var(--space-3);
+}
+
+.timeline-note {
+    margin-top: var(--space-2);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    background: var(--color-surface-2);
+    border-left: 3px solid var(--color-border-dark);
+    padding: var(--space-2) var(--space-3);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }

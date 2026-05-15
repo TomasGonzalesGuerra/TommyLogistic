@@ -8,9 +8,12 @@ public class OrderEventDTO
     public string EventLabel { get; set; } = "";
     public string EventIcon { get; set; } = "";
     public string EventColor { get; set; } = "";
-    public OrderStatus StatusAfter { get; set; }
-    public DateTime OccurredAt { get; set; }
+    public string Status { get; set; } = null!;
+    public DateTime Timestamp { get; set; }
     public int DeliveryAttempt { get; set; }
+    public string ExecutedBy { get; set; } = null!;
+    public string ExecutedRole { get; set; } = null!;
+    public string? AssignedDriver { get; set; }
 
     // Actor
     public string ActorName { get; set; } = null!;

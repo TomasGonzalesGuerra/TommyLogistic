@@ -1,4 +1,4 @@
-﻿@if (Events is null || !Events.Any())
+﻿@* @if (Events is null || !Events.Any())
 {
     <div class="tl-empty">
         <span>📡</span>
@@ -101,9 +101,9 @@ else
             </div>
         }
     </div>
-}
+} *@
 
-@code {
+@* @code {
     [Parameter, EditorRequired]
     public List<OrderEventDTO> Events { get; set; } = [];
 
@@ -156,4 +156,217 @@ else
         TimelinePhase.Closed     => "🏁",
         _                        => "•",
     };
+} *@
+
+
+@inject IRepository _Repository
+
+@if (_loading)
+{
+    <div class="loading-overlay">
+        <div class="spinner"></div>
+        <span>Cargando historial...</span>
+    </div>
+}
+else if (_error is not null)
+{
+    <div class="alert alert-danger">
+        <span>⚠️</span><span>@_error</span>
+    </div>
+}
+else if (!_events.Any())
+{
+    <div class="empty-state">
+        <span class="empty-icon">📋</span>
+        <p class="text-bold">Sin historial aún</p>
+        <p class="text-muted">Los eventos del pedido aparecerán aquí</p>
+    </div>
+}
+else
+{
+    <div class="timeline">
+        @foreach (var (ev, index) in _events.Select((e, i) => (e, i)))
+        {
+            bool isLast = index == _events.Count - 1;
+
+            <div class="timeline-item">
+
+                <!-- Línea vertical conectora -->
+                <div class="timeline-track">
+                    <div class="timeline-dot" style="background: @GetStatusColor(ev.Status); box-shadow: 0 0 0 4px @GetStatusColorLight(ev.Status)">
+                        <span class="timeline-dot-icon">@GetStatusIcon(ev.Status.ToString())</span>
+                    </div>
+                    @if (!isLast)
+                    {
+                        <div class="timeline-line"></div>
+                    }
+                </div>
+
+                <!-- Contenido del evento -->
+                <div class="timeline-content @(isLast ? "timeline-content--last" : "")">
+                    <div class="timeline-header">
+                        <span class="badge @GetBadgeClass(ev.Status)">@GetStatusLabel(ev.Status)</span>
+                        <span class="timeline-time text-xs text-muted">
+                            @ev.Timestamp.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                        </span>
+                    </div>
+
+                    <div class="timeline-meta">
+                        <!-- Quién lo hizo -->
+                        <div class="timeline-actor">
+                            <div class="timeline-avatar" style="background: @GetRoleColor(ev.ExecutedRole)">
+                                @Initials(ev.ExecutedBy)
+                            </div>
+                            <div>
+                                <p class="timeline-actor-name">@ev.ExecutedBy</p>
+                                <p class="text-xs text-muted">@GetRoleLabel(ev.ExecutedRole)</p>
+                            </div>
+                        </div>
+
+                        <!-- Driver asignado (si aplica) -->
+                        @if (!string.IsNullOrEmpty(ev.AssignedDriver))
+                        {
+                            <div class="timeline-driver">
+                                <span class="text-xs text-muted">🚗 Repartidor:</span>
+                                <span class="text-sm text-bold">@ev.AssignedDriver</span>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Nota opcional -->
+                    @if (!string.IsNullOrEmpty(ev.Notes))
+                    {
+                        <p class="timeline-note">💬 @ev.Notes</p>
+                    }
+                </div>
+
+            </div>
+        }
+    </div>
+}
+
+
+@code {
+    [Parameter] public int OrderId { get; set; }
+
+    private List<OrderEventDTO> _events = [];
+    private bool _loading = true;
+    private string? _error;
+
+    protected override async Task OnParametersSetAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+        var response = await _Repository.GetAsync<List<OrderEventDTO>>($"api/Orders/History/{OrderId}");
+        if (response.Error)
+            _error = await response.GetErrorMessageAsync();
+        else
+            _events = response.Response!;
+        _loading = false;
+    }
+
+    // ── Helpers de estado ─────────────────────────────────────────────────
+
+    private static string GetStatusColor(string status) => status switch
+    {
+        "Registered" => "var(--estado-registrado)",
+        "Assigned" => "var(--estado-asignado)",
+        "PickedUp" => "var(--estado-retirado)",
+        "OnTheWay" => "var(--estado-encamino)",
+        "Delivered" => "var(--estado-entregado)",
+        "RecipientAbsent" => "var(--estado-ausente)",
+        "Rescheduled" => "var(--estado-reprogramado)",
+        "Returning" => "var(--estado-retorno)",
+        "OnStorage" => "var(--estado-almacen)",
+        "Failed" => "var(--estado-fallido)",
+        _ => "var(--color-text-muted)"
+    };
+
+    private static string GetStatusColorLight(string status) => status switch
+    {
+        "Registered" => "rgba(100,116,139,.15)",
+        "Assigned" => "rgba(6,148,162,.15)",
+        "PickedUp" => "rgba(124,58,237,.15)",
+        "OnTheWay" => "rgba(26,86,219,.15)",
+        "Delivered" => "rgba(14,159,110,.15)",
+        "RecipientAbsent" => "rgba(227,160,8,.15)",
+        "Rescheduled" => "rgba(217,119,6,.15)",
+        "Returning" => "rgba(234,88,12,.15)",
+        "OnStorage" => "rgba(99,102,241,.15)",
+        "Failed" => "rgba(224,36,36,.15)",
+        _ => "rgba(100,116,139,.15)"
+    };
+
+    private static string GetStatusIcon(string status) => status switch
+    {
+        "Registered" => "📋",
+        "Assigned" => "🎯",
+        "PickedUp" => "📦",
+        "OnTheWay" => "🚗",
+        "Delivered" => "✅",
+        "RecipientAbsent" => "🚪",
+        "Rescheduled" => "📅",
+        "Returning" => "↩️",
+        "OnStorage" => "🏭",
+        "Failed" => "❌",
+        _ => "•"
+    };
+
+    private static string GetStatusLabel(string status) => status switch
+    {
+        "Registered" => "Registrado",
+        "Assigned" => "Asignado",
+        "PickedUp" => "Retirado",
+        "OnTheWay" => "En camino",
+        "Delivered" => "Entregado",
+        "RecipientAbsent" => "Destinatario ausente",
+        "Rescheduled" => "Reprogramado",
+        "Returning" => "En retorno",
+        "OnStorage" => "En almacén",
+        "Failed" => "Fallido",
+        _ => status
+    };
+
+    private static string GetBadgeClass(string status) => status switch
+    {
+        "Registered" => "badge-registrado",
+        "Assigned" => "badge-asignado",
+        "PickedUp" => "badge-retirado",
+        "OnTheWay" => "badge-encamino",
+        "Delivered" => "badge-entregado",
+        "RecipientAbsent" => "badge-ausente",
+        "Rescheduled" => "badge-reprogramado",
+        "Returning" => "badge-retorno",
+        "OnStorage" => "badge-almacen",
+        "Failed" => "badge-fallido",
+        _ => "badge-registrado"
+    };
+
+    private static string GetRoleColor(string role) => role switch
+    {
+        "Admin" => "var(--color-danger)",
+        "Supervisor" => "var(--color-warning)",
+        "Operator" => "var(--color-info)",
+        "Driver" => "var(--color-success)",
+        _ => "var(--color-text-muted)"
+    };
+
+    private static string GetRoleLabel(string role) => role switch
+    {
+        "Admin" => "Administrador",
+        "Supervisor" => "Supervisor",
+        "Operator" => "Operador",
+        "Driver" => "Repartidor",
+        _ => role
+    };
+
+    private static string Initials(string name)
+    {
+        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{parts[0][0]}{parts[1][0]}"
+            : name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
+    }
 }

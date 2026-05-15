@@ -1,21 +1,26 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Collections;
+using System.Security.Claims;
 using TommyLogistic.API.Data;
 using TommyLogistic.API.Hubs;
+using TommyLogistic.API.Services;
 using TommyLogistic.Shared.DTOs.Orders;
 using TommyLogistic.Shared.Entities;
 using TommyLogistic.Shared.Enums;
 
 namespace TommyLogistic.API.Controllers;
 
-[Route("api/[controller]")]
 [ApiController]
-public class OrdersController(LogisticDataContext dataContext, IHubContext<NotificationHub> hubContext) : ControllerBase
+[Route("api/[controller]")]
+public class OrdersController(LogisticDataContext dataContext, IHubContext<NotificationHub> hubContext, OrderEventService eventService) : ControllerBase
 {
     private readonly LogisticDataContext _dataContext = dataContext;
+    private readonly OrderEventService _eventService = eventService;
     private readonly IHubContext<NotificationHub> _hubContext = hubContext;
+    private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("Anonymous")!;
 
     // GET: api/Orders/GetAllOrders
     [HttpGet("GetAllOrders")]
@@ -64,6 +69,15 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
     {
         _dataContext.Orders.Add(order);
         await _dataContext.SaveChangesAsync();
+
+        // 📋 Registrar evento: pedido creado
+        await _eventService.RegisterAsync(
+            orderId: order.Id,
+            newStatus: OrderStatus.Registered,
+            userId: CurrentUserId,
+            assignedDriverId: order.DriverID,
+            note: "Pedido registrado"
+        );
 
         return CreatedAtAction("GetOrder", new { id = order.Id }, order);
     }
@@ -154,9 +168,18 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
                     order.DriverID = currentDriver.UserID;
                     order.OrderStatus = OrderStatus.Assigned;
 
+                    // 📋 Registrar evento: asignación
+                    await _eventService.RegisterAsync(
+                        orderId: order.Id,
+                        newStatus: OrderStatus.Assigned,
+                        userId: CurrentUserId,
+                        assignedDriverId: currentDriver.UserID,
+                        note: "Pedido asignado al repartidor"
+                    );
+
                     // 🔔 Notificar SOLO a ese driver
                     await _hubContext.Clients
-                            .Group($"Driver_{currentDriver.UserID}")   // grupo exclusivo por ID
+                            .Group($"Driver_{currentDriver.UserID}")
                             .SendAsync("NewOrderAssigned", new
                             {
                                 Message = $"¡Tienes un nuevo pedido asignado! Destinatario: {order.RecipientName}",
@@ -187,13 +210,14 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
         });
     }
 
-    [HttpGet("Preview/{id}")]
-    public async Task<ActionResult> GetPreview(int id)
+    // GET: api/Orders/Preview/#
+    [HttpGet("Preview/{OrderID:int}")]
+    public async Task<ActionResult> GetPreview(int OrderID)
     {
         var order = await _dataContext.Orders
             .Include(o => o.Company).ThenInclude(c => c!.User)
             .Include(o => o.Driver).ThenInclude(d => d!.User)
-            .FirstOrDefaultAsync(o => o.Id == id);
+            .FirstOrDefaultAsync(o => o.Id == OrderID);
 
         if (order is null) return NotFound();
 
@@ -212,10 +236,76 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
             RecipientDistrict     = order.RecipientDistrict,
             PackageDescription    = order.PackageDescription,
             Quantity              = order.Quantity,
-            CompanyName           = order.Company.User.FullName,
+            CompanyName           = order.Company?.User.FullName,
             DriverName            = order.Driver?.User.FullName,
             DriverPhone           = order.Driver?.User.PhoneNumber,
         });
+    }
+
+    // ── Cambiar estado del pedido ─────────────────────────────────────────
+    [HttpPut("UpdateStatus/{OrderID:int}")]
+    public async Task<ActionResult> UpdateStatus(int OrderID, [FromBody] OrderUpdateStatusDTO DTO)
+    {
+        Order? order = await _dataContext.Orders.FindAsync(OrderID);
+        if (order is null) return NotFound("Pedido no Encontrado");
+
+        var previousDriverId = order.DriverID;
+        order.OrderStatus = DTO.NewStatus;
+
+        // Si se está reasignando a un nuevo driver
+        if (!string.IsNullOrEmpty(DTO.NewDriverID) && DTO.NewDriverID != previousDriverId) order.DriverID = DTO.NewDriverID;
+
+        await _dataContext.SaveChangesAsync();
+
+        // 📋 Registrar el evento con toda la info
+        await _eventService.RegisterAsync(
+            orderId: OrderID,
+            newStatus: DTO.NewStatus,
+            userId: CurrentUserId,
+            assignedDriverId: DTO.NewDriverID ?? order.DriverID,
+            note: DTO.Note
+        );
+
+        // 🔔 Notificar al driver si fue Reasignado
+        if (!string.IsNullOrEmpty(DTO.NewDriverID) && DTO.NewDriverID != previousDriverId)
+        {
+            await _hubContext.Clients
+                .Group($"Driver_{DTO.NewDriverID}")
+                .SendAsync("NewOrderAssigned", new
+                {
+                    Message = $"¡Te Reasignaron un Pedido! Destinatario: {order.RecipientName}",
+                    OrderId = order.Id,
+                    Tracking = order.TrackingCode,
+                    Address = order.RecipientAddress,
+                });
+        }
+
+        return Ok();
+    }
+
+    // ── Historial completo de un pedido ───────────────────────────────────
+    [HttpGet("History/{OrderID:int}")]
+    public async Task<IActionResult> GetHistory(int OrderID)
+    {
+        bool orderExists = await _dataContext.Orders.AnyAsync(o => o.Id == OrderID);
+        if (!orderExists) return NotFound($"La Orden con ID {OrderID} no Existe.");
+    
+        var events = await _dataContext.OrderEvents
+            .AsNoTracking()
+            .Where(o => o.OrderID == OrderID)
+            .OrderBy(o => o.Timestamp)
+            .Select(o => new 
+            {
+                o.Id,
+                o.Timestamp,
+                Status = o.NewStatus.ToString(),
+                o.Note,
+                ExecutedBy = o.User!.FullName,
+                ExecutedRole = o.User.UserType.ToString(),
+                AssignedDriver = o.AssignedDriver != null ? o.AssignedDriver.User.FullName : null
+            }).ToListAsync();
+
+        return Ok(events);
     }
 
 }
