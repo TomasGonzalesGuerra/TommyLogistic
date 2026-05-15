@@ -1,11 +1,12 @@
 ﻿
 @page "/AdminDashboard"
+@using TommyLogistic.Web.Helpers
 @layout MainLayout
 @inject IJSRuntime _IJSRuntime
-@inject HttpClient _HttpClient
 @inject SweetAlertService _Swal
 @inject OrderService _OrderService
 @inject NavigationManager _NavigationManager
+@inject HttpClient _HttpClient
 @attribute [Authorize(Roles = nameof(UserEnum.Admin))]
 
 <PageTitle>Dashboard — Tommy Logistic</PageTitle>
@@ -136,12 +137,16 @@ else
     public DashboardAdminDTO Data { get; set; } = null!;
     public List<OrderSummaryDTO> UltimosMovimientos { get; set; } = [];
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        var token = await _IJSRuntime.GetLocalStorage("TOKEN_KEY");
+        var header = _HttpClient.DefaultRequestHeaders.Authorization;
+        Console.WriteLine($"TOKEN EN LS: {token}");
+        Console.WriteLine($"HEADER AUTH: {header}");
+    
         Data ??= new DashboardAdminDTO();
         _loading = false;
     }
-
     private async Task SimularRecepcionMasiva()
     {
         Random random = new();
@@ -184,27 +189,21 @@ else
 
     private async Task ExecuteAutoAssign()
     {
-        var response = await _HttpClient.PostAsync("api/Orders/AutoRouteAndAssign", null);
+        var result = await _OrderService.AutoRouteAndAssignAsync();
 
-        if (!response.IsSuccessStatusCode)
+        if (result is null)
         {
-            var errorContent = await response.Content.ReadAsStringAsync();
-            await _Swal.FireAsync("Atención", errorContent, SweetAlertIcon.Warning);
+            await _Swal.FireAsync("Atención", "No se pudo realizar la asignación", SweetAlertIcon.Warning);
             return;
         }
 
-        var datos = await response.Content.ReadFromJsonAsync<AssignmentResponse>();
-
-        if (datos != null)
+        await _Swal.FireAsync(new SweetAlertOptions
         {
-            await _Swal.FireAsync(new SweetAlertOptions
-            {
-                Title = "¡Asignación exitosa!",
-                Text = $"{datos.Message} — Conductores usados: {datos.DriversUsed}",
-                Icon = SweetAlertIcon.Success,
-                ConfirmButtonText = "Entendido"
-            });
-        }
+            Title = "¡Asignación exitosa!",
+            Text = $"{result.Message} — Conductores usados: {result.DriversUsed}",
+            Icon = SweetAlertIcon.Success,
+            ConfirmButtonText = "Entendido"
+        });
     }
 
     public class AssignmentResponse

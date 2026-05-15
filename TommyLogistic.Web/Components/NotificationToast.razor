@@ -35,8 +35,7 @@
 
         // El userId viene del ClaimTypes.NameIdentifier (el "sub" del JWT = IdentityUser.Id)
         var user = await _SesionService.ObtenerUsuarioAsync();
-        var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-                  ?? user.FindFirst("sub")?.Value;
+        var userId = user.FindFirst("uid")?.Value;
 
         if (userId is null) return;
 

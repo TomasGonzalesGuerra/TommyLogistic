@@ -14,15 +14,18 @@ public class LogisticWebProvider(IJSRuntime jSRuntime, HttpClient httpClient) : 
     private readonly HttpClient _httpClient = httpClient;
     private readonly AuthenticationState _anonimous = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
 
+    public async Task InitializeAsync()
+    {
+        var token = await _jSRuntime.GetLocalStorage(_tokenKey);
+        if (token is not null)
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("bearer", token.ToString()!);
+    }
+
     public async override Task<AuthenticationState> GetAuthenticationStateAsync()
     {
         var token = await _jSRuntime.GetLocalStorage(_tokenKey);
-
-        if (token is null)
-        {
-            return _anonimous;
-        }
-
+        if (token is null) return _anonimous;
         return BuildAuthenticationState(token.ToString()!);
     }
 

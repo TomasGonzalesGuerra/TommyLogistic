@@ -1,7 +1,7 @@
 ﻿using CurrieTechnologies.Razor.SweetAlert2;
-using TommyLogistic.Shared.DTOs.Drivers;
 using TommyLogistic.Shared.DTOs.Orders;
 using TommyLogistic.Web.Repositories;
+using static TommyLogistic.Web.Pages.Dashboards.AdminDashboard;
 
 namespace TommyLogistic.Web.Services;
 
@@ -54,6 +54,13 @@ public class OrderService(IRepository repository, SweetAlertService sweetAlertSe
             return false;
         }
 
+    }
+
+    // En OrderService.cs
+    public async Task<AssignmentResponse?> AutoRouteAndAssignAsync()
+    {
+        var r = await _repository.PostAsync<object, AssignmentResponse>("api/Orders/AutoRouteAndAssign", null!);
+        return r.Error ? null : r.Response;
     }
 
 

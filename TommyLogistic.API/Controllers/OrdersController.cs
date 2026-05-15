@@ -15,12 +15,13 @@ namespace TommyLogistic.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class OrdersController(LogisticDataContext dataContext, IHubContext<NotificationHub> hubContext, OrderEventService eventService) : ControllerBase
 {
     private readonly LogisticDataContext _dataContext = dataContext;
     private readonly OrderEventService _eventService = eventService;
     private readonly IHubContext<NotificationHub> _hubContext = hubContext;
-    private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("Anonymous")!;
+    private string CurrentUserId => User.FindFirstValue("uid")!;
 
     // GET: api/Orders/GetAllOrders
     [HttpGet("GetAllOrders")]
@@ -148,7 +149,7 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
 
         List<Driver> availableDrivers = await _dataContext.Drivers.Where(d => d.Available).ToListAsync();
 
-        if (registeredOrders is [] || availableDrivers is []) return BadRequest("No se pudo Realizar la Asignación []");
+        if (registeredOrders is [] || availableDrivers is []) return BadRequest($"Pedidos registrados: {registeredOrders.Count} | Drivers disponibles: {availableDrivers.Count}");
 
         var ordersByDistrict = registeredOrders.GroupBy(o => o.RecipientDistrict);
         int driverIndex = 0;
