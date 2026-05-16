@@ -18,6 +18,7 @@ namespace TommyLogistic.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class AuthController(LogisticDataContext datacontext, IUserHelper userHelper, IConfiguration configuration, IHubContext<NotificationHub> hubContext, IFileStorage fileStorage) : ControllerBase
 {
     private readonly string _container = "users";
@@ -26,6 +27,49 @@ public class AuthController(LogisticDataContext datacontext, IUserHelper userHel
     private readonly IConfiguration _configuration = configuration;
     private readonly LogisticDataContext _dataContext = datacontext;
     private readonly IHubContext<NotificationHub> _hubContext = hubContext;
+
+    [AllowAnonymous]
+    [HttpPost("Login")]
+    public async Task<ActionResult> Login([FromBody] LoginDTO model)
+    {
+        var result = await _userHelper.LoginAsync(model);
+
+        if (result.Succeeded)
+        {
+            var user = await _userHelper.GetUserAsync(model.Email!);
+            return Ok(BuildToken(user));
+        }
+
+        return BadRequest("Email o Contraseña Incorrectos.");
+    }
+
+    private TokenDTO BuildToken(User user)
+    {
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Name, user.Email!),
+            new(ClaimTypes.Role, user.UserType.ToString()),
+            new(ClaimTypes.NameIdentifier, user.Id),
+            new("FullName", user.FullName!.ToString()),
+            new("Photo", user.Photo  ??  string.Empty),
+        };
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["jwtKey"]!));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var expiration = DateTime.UtcNow.AddDays(30);
+         var token = new JwtSecurityToken(
+                issuer: null,
+                audience: null,
+                claims: claims,
+                expires: expiration,
+                signingCredentials: credentials);
+
+        return new TokenDTO
+        {
+            Token = new JwtSecurityTokenHandler().WriteToken(token),
+            Expiration = expiration
+        };
+    }
 
     [HttpPost("CreateUser")]
     public async Task<ActionResult> CreateUser([FromBody] UserDTO model)
@@ -63,51 +107,7 @@ public class AuthController(LogisticDataContext datacontext, IUserHelper userHel
         return BadRequest(result.Errors.FirstOrDefault());
     }
 
-    [HttpPost("Login")]
-    public async Task<ActionResult> Login([FromBody] LoginDTO model)
-    {
-        var result = await _userHelper.LoginAsync(model);
-
-        if (result.Succeeded)
-        {
-            var user = await _userHelper.GetUserAsync(model.Email!);
-            return Ok(BuildToken(user));
-        }
-
-        return BadRequest("Email o Contraseña Incorrectos.");
-    }
-
-    private TokenDTO BuildToken(User user)
-    {
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.Name, user.Email!),
-            new(ClaimTypes.Role, user.UserType.ToString()),
-            new("uid", user.Id),
-            new("FullName", user.FullName!.ToString()),
-            new("Photo", user.Photo  ??  string.Empty),
-        };
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["jwtKey"]!));
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var expiration = DateTime.UtcNow.AddDays(30);
-         var token = new JwtSecurityToken(
-                issuer: null,
-                audience: null,
-                claims: claims,
-                expires: expiration,
-                signingCredentials: credentials);
-
-        return new TokenDTO
-        {
-            Token = new JwtSecurityTokenHandler().WriteToken(token),
-            Expiration = expiration
-        };
-    }
-
-
     [HttpGet("Profile")]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public async Task<ActionResult> GetProfile()
     {
         var user = await _userHelper.GetUserAsync(User.Identity!.Name!);
@@ -126,7 +126,6 @@ public class AuthController(LogisticDataContext datacontext, IUserHelper userHel
     }
 
     [HttpPut]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public async Task<ActionResult> Put(User user)
     {
         try
@@ -155,7 +154,6 @@ public class AuthController(LogisticDataContext datacontext, IUserHelper userHel
     }
 
     [HttpPost("ChangePassword")]
-    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public async Task<ActionResult> ChangePasswordAsync(ChangePasswordDTO model)
     {
         try

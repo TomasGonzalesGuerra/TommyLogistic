@@ -58,8 +58,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
             var path = context.HttpContext.Request.Path;
 
             // Solo aplicar para las rutas del Hub
-            if (!string.IsNullOrEmpty(accessToken) &&
-                path.StartsWithSegments("/hubs/notifications"))
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/notifications"))
             {
                 context.Token = accessToken;
             }

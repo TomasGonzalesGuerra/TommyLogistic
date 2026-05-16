@@ -2,11 +2,10 @@
 @page "/AdminDashboard"
 @using TommyLogistic.Web.Helpers
 @layout MainLayout
-@inject IJSRuntime _IJSRuntime
 @inject SweetAlertService _Swal
 @inject OrderService _OrderService
+@inject SesionService _SesionService
 @inject NavigationManager _NavigationManager
-@inject HttpClient _HttpClient
 @attribute [Authorize(Roles = nameof(UserEnum.Admin))]
 
 <PageTitle>Dashboard — Tommy Logistic</PageTitle>
@@ -26,7 +25,7 @@ else
             <button class="btn btn-ghost" @onclick="SimularRecepcionMasiva">
                 📥 Simular comandas
             </button>
-            <button class="btn btn-success" @onclick="ExecuteAutoAssign">
+            <button class="btn btn-success" @onclick="AutoRouteAndAssignAsync">
                 ⚡ Armar cargas
             </button>
             <button class="btn btn-outline" @onclick="@(() => _NavigationManager.NavigateTo("/Orders"))">
@@ -138,12 +137,7 @@ else
     public List<OrderSummaryDTO> UltimosMovimientos { get; set; } = [];
 
     protected override async Task OnInitializedAsync()
-    {
-        var token = await _IJSRuntime.GetLocalStorage("TOKEN_KEY");
-        var header = _HttpClient.DefaultRequestHeaders.Authorization;
-        Console.WriteLine($"TOKEN EN LS: {token}");
-        Console.WriteLine($"HEADER AUTH: {header}");
-    
+    {    
         Data ??= new DashboardAdminDTO();
         _loading = false;
     }
@@ -187,13 +181,13 @@ else
         });
     }
 
-    private async Task ExecuteAutoAssign()
+    private async Task AutoRouteAndAssignAsync()
     {
         var result = await _OrderService.AutoRouteAndAssignAsync();
 
         if (result is null)
         {
-            await _Swal.FireAsync("Atención", "No se pudo realizar la asignación", SweetAlertIcon.Warning);
+            await _Swal.FireAsync("Atención", "El Servicio Entrego un Error", SweetAlertIcon.Warning);
             return;
         }
 

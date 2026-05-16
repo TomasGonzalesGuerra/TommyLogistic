@@ -1,5 +1,4 @@
-﻿@* TommyLogistic.Web/Components/Shared/NotificationToast.razor *@
-@implements IAsyncDisposable
+﻿@implements IAsyncDisposable
 @inject NotificationService _NotificationService
 @inject SesionService _SesionService
 
@@ -29,27 +28,22 @@
         if (!firstRender || _inicializado) return;
         _inicializado = true;
 
-        // Usamos SesionService tal cual lo tienes
         var rol = await _SesionService.GetRolAsync();
-        if (rol is null) return; // no hay sesión activa, no conectar
+        if (rol is null) return;
 
-        // El userId viene del ClaimTypes.NameIdentifier (el "sub" del JWT = IdentityUser.Id)
         var user = await _SesionService.ObtenerUsuarioAsync();
-        var userId = user.FindFirst("uid")?.Value;
+        var userId = await _SesionService.GetUserIdAsync();
 
         if (userId is null) return;
 
-        // Suscribir eventos ANTES de llamar StartAsync
         _NotificationService.OnNewDriver += HandleNewDriver;
         _NotificationService.OnNewOrder  += HandleNewOrder;
 
-        // Iniciar la conexión pasando rol y userId
         await _NotificationService.StartAsync(rol, userId);
     }
 
     private void HandleNewDriver(string _)
     {
-        // Mostramos un mensaje fijo; el payload JSON viene en _ si lo necesitas parsear
         AddToast("🛵", "¡Tienes un nuevo compañero repartidor!");
     }
 

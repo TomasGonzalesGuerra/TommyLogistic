@@ -13,10 +13,10 @@ public class SesionService(AuthenticationStateProvider authProvider)
         return state.User;
     }
 
-    public async Task<string?> GetRolAsync()
+    public async Task<string?> GetUserIdAsync()
     {
         var user = await ObtenerUsuarioAsync();
-        return user.FindFirst(ClaimTypes.Role)?.Value;
+        return user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     }
 
     public async Task<string?> GetNameAsync()
@@ -25,18 +25,10 @@ public class SesionService(AuthenticationStateProvider authProvider)
         return user.FindFirst(ClaimTypes.Name)?.Value;
     }
 
-    public async Task<int?> ObtenerEmpresaIdAsync()
+    public async Task<string?> GetRolAsync()
     {
         var user = await ObtenerUsuarioAsync();
-        var val = user.FindFirst("EmpresaId")?.Value;
-        return int.TryParse(val, out var id) ? id : null;
-    }
-
-    public async Task<int?> ObtenerRepartidorIdAsync()
-    {
-        var user = await ObtenerUsuarioAsync();
-        var val = user.FindFirst("RepartidorId")?.Value;
-        return int.TryParse(val, out var id) ? id : null;
+        return user.FindFirst(ClaimTypes.Role)?.Value;
     }
 
     public async Task<bool> EsAdminAsync() => (await GetRolAsync()) == "Admin";

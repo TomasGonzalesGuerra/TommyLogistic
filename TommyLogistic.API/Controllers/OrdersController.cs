@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using System.Collections;
 using System.Security.Claims;
 using TommyLogistic.API.Data;
 using TommyLogistic.API.Hubs;
@@ -15,13 +15,13 @@ namespace TommyLogistic.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class OrdersController(LogisticDataContext dataContext, IHubContext<NotificationHub> hubContext, OrderEventService eventService) : ControllerBase
 {
     private readonly LogisticDataContext _dataContext = dataContext;
     private readonly OrderEventService _eventService = eventService;
     private readonly IHubContext<NotificationHub> _hubContext = hubContext;
-    private string CurrentUserId => User.FindFirstValue("uid")!;
+    private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
     // GET: api/Orders/GetAllOrders
     [HttpGet("GetAllOrders")]
@@ -137,7 +137,7 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
 
     // POST: api/Orders/AutoRouteAndAssign
     [HttpPost("AutoRouteAndAssign")]
-    public async Task<IActionResult> AutoRouteAndAssign()
+    public async Task<IActionResult> AutoRouteAndAssignAsync()
     {
         DateTime todayUtc = DateTime.UtcNow.Date;
         DateTime tomorrowUtc = todayUtc.AddDays(1);
@@ -224,22 +224,22 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
 
         return Ok(new OrderPreviewDTO
         {
-            Id                    = order.Id,
-            TrackingCode          = order.TrackingCode,
-            OrderStatus           = order.OrderStatus,
-            DeliveryType          = order.DeliveryType,
-            DeliveryAttempts      = order.DeliveryAttempts,
-            RegistrationDate      = order.RegistrationDate,
+            Id = order.Id,
+            TrackingCode = order.TrackingCode,
+            OrderStatus = order.OrderStatus,
+            DeliveryType = order.DeliveryType,
+            DeliveryAttempts = order.DeliveryAttempts,
+            RegistrationDate = order.RegistrationDate,
             EstimatedDeliveryDate = order.DeliveryDate,
-            RecipientName         = order.RecipientName,
-            RecipientPhone        = order.RecipientPhone,
-            RecipientAddress      = order.RecipientAddress,
-            RecipientDistrict     = order.RecipientDistrict,
-            PackageDescription    = order.PackageDescription,
-            Quantity              = order.Quantity,
-            CompanyName           = order.Company?.User.FullName,
-            DriverName            = order.Driver?.User.FullName,
-            DriverPhone           = order.Driver?.User.PhoneNumber,
+            RecipientName = order.RecipientName,
+            RecipientPhone = order.RecipientPhone,
+            RecipientAddress = order.RecipientAddress,
+            RecipientDistrict = order.RecipientDistrict,
+            PackageDescription = order.PackageDescription,
+            Quantity = order.Quantity,
+            CompanyName = order.Company?.User.FullName,
+            DriverName = order.Driver?.User.FullName,
+            DriverPhone = order.Driver?.User.PhoneNumber,
         });
     }
 
@@ -290,12 +290,12 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
     {
         bool orderExists = await _dataContext.Orders.AnyAsync(o => o.Id == OrderID);
         if (!orderExists) return NotFound($"La Orden con ID {OrderID} no Existe.");
-    
+
         var events = await _dataContext.OrderEvents
             .AsNoTracking()
             .Where(o => o.OrderID == OrderID)
             .OrderBy(o => o.Timestamp)
-            .Select(o => new 
+            .Select(o => new
             {
                 o.Id,
                 o.Timestamp,

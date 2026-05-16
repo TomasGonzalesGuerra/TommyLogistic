@@ -56,7 +56,6 @@ public class OrderService(IRepository repository, SweetAlertService sweetAlertSe
 
     }
 
-    // En OrderService.cs
     public async Task<AssignmentResponse?> AutoRouteAndAssignAsync()
     {
         var r = await _repository.PostAsync<object, AssignmentResponse>("api/Orders/AutoRouteAndAssign", null!);
