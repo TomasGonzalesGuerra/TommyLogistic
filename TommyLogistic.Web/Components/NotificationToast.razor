@@ -1,6 +1,6 @@
 ﻿@implements IAsyncDisposable
-@inject NotificationService _NotificationService
 @inject SesionService _SesionService
+@inject NotificationService _NotificationService
 
 <div class="toast-container">
     @foreach (var toast in _toasts)
@@ -20,8 +20,8 @@
 
 @code {
     private bool _inicializado;
-    private readonly List<ToastItem> _toasts = [];
     private const int _durationMs = 5000;
+    private readonly List<ToastItem> _toasts = [];
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -58,7 +58,6 @@
         _toasts.Add(toast);
         InvokeAsync(StateHasChanged);
 
-        // Auto-cerrar a los 5 segundos
         _ = Task.Delay(_durationMs).ContinueWith(_ =>
         {
             Remove(toast);

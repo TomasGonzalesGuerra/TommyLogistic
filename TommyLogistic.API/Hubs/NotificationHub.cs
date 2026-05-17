@@ -4,16 +4,9 @@ namespace TommyLogistic.API.Hubs;
 
 public class NotificationHub : Hub
 {
-    // Cuando un cliente Driver se conecta, se une al grupo "Drivers"
-    // Así podemos hacer broadcast a todos los drivers de una sola vez
-    public async Task JoinDriversGroup()
-    {
-        await Groups.AddToGroupAsync(Context.ConnectionId, "Drivers");
-    }
-
-    // En NotificationHub.cs, agrega este método:
-    public async Task JoinPersonalGroup(string userId)
-    {
-        await Groups.AddToGroupAsync(Context.ConnectionId, $"Driver_{userId}");
-    }
+    // Driver ──────────────────────────────────────────────────
+    public async Task JoinDriversGroup() => await Groups.AddToGroupAsync(Context.ConnectionId, "Drivers");
+    public async Task LeaveDriversGroup() => await Groups.RemoveFromGroupAsync(Context.ConnectionId, "Drivers");
+    public async Task JoinPersonalGroup(string userID) => await Groups.AddToGroupAsync(Context.ConnectionId, $"Driver_{userID}");
+    public async Task LeavePersonalGroup(string userID) => await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"Driver_{userID}");
 }

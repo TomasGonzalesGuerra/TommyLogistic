@@ -13,8 +13,6 @@
 else if (_preview is not null)
 {
     <div class="adm-modal__body">
-
-        <!-- Header del pedido -->
         <div class="preview-top">
             <div>
                 <span class="codigo-seguimiento">@_preview.TrackingCode</span>
@@ -54,27 +52,6 @@ else if (_preview is not null)
                 <div>
                     <p class="preview-field-label">Dirección</p>
                     <p class="preview-field-value">@_preview.RecipientAddress, @_preview.RecipientDistrict</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="preview-divider"></div>
-
-        <!-- Paquete -->
-        <p class="preview-section-label">Paquete</p>
-        <div class="preview-grid">
-            <div class="preview-field">
-                <span class="preview-field-icon">📦</span>
-                <div>
-                    <p class="preview-field-label">Descripción</p>
-                    <p class="preview-field-value">@_preview.PackageDescription</p>
-                </div>
-            </div>
-            <div class="preview-field">
-                <span class="preview-field-icon">🔢</span>
-                <div>
-                    <p class="preview-field-label">Cantidad</p>
-                    <p class="preview-field-value">@_preview.Quantity unidades</p>
                 </div>
             </div>
         </div>

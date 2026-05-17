@@ -10,6 +10,18 @@
 
 <PageTitle>Dashboard — Tommy Logistic</PageTitle>
 
+<div class="dashboard-header">
+    <h1 class="page-title">Dashboard</h1>
+    <div class="dashboard-actions">
+        <button class="btn btn-ghost" @onclick="SimularRecepcionMasiva">
+            📥 Simular comandas
+        </button>
+        <button class="btn btn-success" @onclick="AutoRouteAndAssignAsync">
+            ⚡ Armar cargas
+        </button>
+    </div>
+</div>
+
 @if (_loading)
 {
     <div class="loading-overlay">
@@ -19,21 +31,6 @@
 }
 else
 {
-    <div class="dashboard-header">
-        <h1 class="page-title">Dashboard</h1>
-        <div class="dashboard-actions">
-            <button class="btn btn-ghost" @onclick="SimularRecepcionMasiva">
-                📥 Simular comandas
-            </button>
-            <button class="btn btn-success" @onclick="AutoRouteAndAssignAsync">
-                ⚡ Armar cargas
-            </button>
-            <button class="btn btn-outline" @onclick="@(() => _NavigationManager.NavigateTo("/Orders"))">
-                📦 Ver pedidos
-            </button>
-        </div>
-    </div>
-
     <div class="dashboard-grid">
         <div class="stat-card-v2" style="--sc-color:#1a56db; --sc-bg:#e8f0fe">
             <div class="stat-card-v2__icon">📦</div>

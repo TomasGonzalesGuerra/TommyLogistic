@@ -21,7 +21,7 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
     private readonly LogisticDataContext _dataContext = dataContext;
     private readonly OrderEventService _eventService = eventService;
     private readonly IHubContext<NotificationHub> _hubContext = hubContext;
-    private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+    private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Yop";
 
     // GET: api/Orders/GetAllOrders
     [HttpGet("GetAllOrders")]
@@ -71,7 +71,7 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
         _dataContext.Orders.Add(order);
         await _dataContext.SaveChangesAsync();
 
-        // 📋 Registrar evento: pedido creado
+        // 📋 Registrar evento: Pedido Creado
         await _eventService.RegisterAsync(
             orderId: order.Id,
             newStatus: OrderStatus.Registered,
@@ -80,7 +80,30 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
             note: "Pedido registrado"
         );
 
-        return CreatedAtAction("GetOrder", new { id = order.Id }, order);
+        // 🔔 Notificar al driver si fue asignado
+        if (!string.IsNullOrEmpty(order.DriverID))
+        {
+            // 📋 Registrar evento: Asignación
+            await _eventService.RegisterAsync(
+                orderId: order.Id,
+                newStatus: OrderStatus.Assigned,
+                userId: CurrentUserId,
+                assignedDriverId: order.DriverID,
+                note: "Pedido asignado al repartidor"
+            );
+
+            await _hubContext.Clients
+                .Group($"Driver_{order.DriverID}")
+                .SendAsync("NewOrderAssigned", new
+                {
+                    Message = $"¡Tienes un Nuevo Pedido! Destinatario: {order.RecipientName}",
+                    OrderId = order.Id,
+                    Tracking = order.TrackingCode,
+                    Address = order.RecipientAddress,
+                });
+        }
+
+        return Ok(order.Id);
     }
 
     // DELETE: api/Orders/#
@@ -211,7 +234,7 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
         });
     }
 
-    // GET: api/Orders/Preview/#
+    // GET: api/Orders/Preview/OrderID:int
     [HttpGet("Preview/{OrderID:int}")]
     public async Task<ActionResult> GetPreview(int OrderID)
     {
@@ -244,11 +267,12 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
     }
 
     // ── Cambiar estado del pedido ─────────────────────────────────────────
+    // PUT: api/Orders/UpdateStatus/OrderID:int
     [HttpPut("UpdateStatus/{OrderID:int}")]
     public async Task<ActionResult> UpdateStatus(int OrderID, [FromBody] OrderUpdateStatusDTO DTO)
     {
         Order? order = await _dataContext.Orders.FindAsync(OrderID);
-        if (order is null) return NotFound("Pedido no Encontrado");
+        if (order is null) return NotFound("Pedido NO Encontrado");
 
         var previousDriverId = order.DriverID;
         order.OrderStatus = DTO.NewStatus;
@@ -285,11 +309,12 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
     }
 
     // ── Historial completo de un pedido ───────────────────────────────────
+    // GET: api/Orders/History/OrderID:int
     [HttpGet("History/{OrderID:int}")]
     public async Task<IActionResult> GetHistory(int OrderID)
     {
         bool orderExists = await _dataContext.Orders.AnyAsync(o => o.Id == OrderID);
-        if (!orderExists) return NotFound($"La Orden con ID {OrderID} no Existe.");
+        if (!orderExists) return NotFound($"La Orden con ID {OrderID} NO Existe.");
 
         var events = await _dataContext.OrderEvents
             .AsNoTracking()

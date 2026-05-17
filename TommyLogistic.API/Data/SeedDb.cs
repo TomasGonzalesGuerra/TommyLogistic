@@ -37,8 +37,6 @@ public class SeedDb(LogisticDataContext datacontext, IUserHelper userHelper)
         await CheckCompaniesAsync(angelina);
         await CheckCompaniesAsync(ino);
         await CheckCompaniesAsync(sarada);
-
-        await CheckOrdersAsync();
     }
 
     private async Task CheckRolesAsync()
@@ -127,47 +125,4 @@ public class SeedDb(LogisticDataContext datacontext, IUserHelper userHelper)
         }
     }
 
-    private async Task CheckOrdersAsync()
-    {
-        if (await _datacontext.Orders.AnyAsync()) return;
-
-        var companies = await _datacontext.Companies.ToListAsync();
-        var drivers = await _datacontext.Drivers.ToListAsync();
-        if (companies is [] || drivers is []) return;
-
-        Random random = new();
-
-        string[] nombres = { "Kakashi Hatake", "Sakura Haruno", "Sasuke Uchiha", "Shikamaru Nara", "Jiraiya Sama" };
-        string[] direcciones = { "Calle Ninja 123", "Av. Hokage 456", "Barrio Uchiha 789", "Torre Administrativa 10", "Bosque de la Muerte 5" };
-        string[] distritos = { "Konoha", "Suna", "Kiri", "Kumo", "Iwa" };
-        string[] descripciones = { "Set de Kunais", "Pergaminos de Invocación", "Ramen Instantáneo", "Botiquín Médico", "Capa de Akatsuki" };
-        OrderStatus[] estados = { OrderStatus.OnStorage, OrderStatus.PickedUp };
-
-        for (int i = 1; i <= 20; i++)
-        {
-            var company = companies[random.Next(companies.Count)];
-            var driver = drivers[random.Next(drivers.Count)];
-            var estado = estados[random.Next(estados.Length)];
-
-            _datacontext.Orders.Add(new Order
-            {
-                CompanyID = company.Id,
-                DriverID = driver.UserID,
-                Quantity = random.Next(1, 10),
-                RegistrationDate = DateTime.UtcNow.Date.AddDays(-random.Next(1, 30)),
-                TrackingCode = $"TL-{1000 + i}",
-                RecipientName = nombres[random.Next(nombres.Length)],
-                RecipientAddress = direcciones[random.Next(direcciones.Length)],
-                RecipientDistrict = distritos[random.Next(distritos.Length)],
-                RecipientPhone = $"9{random.Next(10000000, 99999999)}",
-                OrderStatus = estado,
-                DeliveryType = DeliveryType.ToDay,
-                PackageDescription = descripciones[random.Next(descripciones.Length)],
-                Invoiced = random.Next(0, 2) == 1,
-                DeliveryAttempts = estado == OrderStatus.Delivered ? 1 : 0
-            });
-        }
-
-        await _datacontext.SaveChangesAsync();
-    }
 }

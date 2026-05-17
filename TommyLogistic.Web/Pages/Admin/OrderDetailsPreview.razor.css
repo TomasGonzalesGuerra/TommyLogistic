@@ -1,4 +1,8 @@
-﻿.preview-top {
+﻿.adm-modal__body, .adm-modal__footer {
+    padding: 1rem 3rem;
+}
+
+.preview-top {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;

@@ -1,151 +1,4 @@
-﻿@* @if (Events is null || !Events.Any())
-{
-    <div class="tl-empty">
-        <span>📡</span>
-        <p>Sin eventos registrados aún</p>
-    </div>
-}
-else
-{
-    <div class="tl-root">
-        @foreach (var group in GroupedEvents)
-        {
-            <div class="tl-phase">
-                <div class="tl-phase-label">
-                    <span class="tl-phase-icon">@PhaseIcon(group.Key)</span>
-                    @PhaseLabel(group.Key)
-                </div>
-
-                <div class="tl-events">
-                    @foreach (var ev in group.Value)
-                    {
-                        <div class="tl-event @(IsLast(ev) ? "tl-event--last" : "")">
-
-                            <!-- Línea vertical + dot -->
-                            <div class="tl-connector">
-                                <div class="tl-dot" style="background:@ev.EventColor;
-                                     box-shadow: 0 0 0 3px @(ev.EventColor)22">
-                                </div>
-                                @if (!IsLast(ev))
-                                {
-                                    <div class="tl-line"></div>
-                                }
-                            </div>
-
-                            <!-- Contenido del evento -->
-                            <div class="tl-event-card">
-                                <div class="tl-event-header">
-                                    <div class="tl-event-title-row">
-                                        <span class="tl-event-icon">@ev.EventIcon</span>
-                                        <span class="tl-event-label">@ev.EventLabel</span>
-                                        @if (ev.DeliveryAttempt > 0)
-                                        {
-                                            <span class="tl-attempt-badge">
-                                                Intento #@ev.DeliveryAttempt
-                                            </span>
-                                        }
-                                    </div>
-                                    <span class="tl-event-time" title="@ev.OccurredAt.ToString("dd/MM/yyyy HH:mm:ss")">
-                                        @FormatTime(ev.OccurredAt)
-                                    </span>
-                                </div>
-
-                                <!-- Actor -->
-                                @if (!string.IsNullOrEmpty(ev.ActorName))
-                                {
-                                    <div class="tl-actor">
-                                        <span class="tl-actor-avatar">
-                                            @Initials(ev.ActorName)
-                                        </span>
-                                        <span class="tl-actor-name">@ev.ActorName</span>
-                                        @if (!string.IsNullOrEmpty(ev.ActorRole))
-                                        {
-                                            <span class="tl-actor-role">@ev.ActorRole</span>
-                                        }
-                                    </div>
-                                }
-
-                                <!-- Datos contextuales extra -->
-                                @if (!string.IsNullOrEmpty(ev.BaglokLocation))
-                                {
-                                    <div class="tl-meta-row">
-                                        <span class="tl-meta-icon">📍</span>
-                                        <span class="tl-meta-label">Ubicación Baglok:</span>
-                                        <span class="tl-meta-value tl-baglok">@ev.BaglokLocation</span>
-                                    </div>
-                                }
-
-                                @if (ev.RescheduledFor.HasValue)
-                                {
-                                    <div class="tl-meta-row">
-                                        <span class="tl-meta-icon">📅</span>
-                                        <span class="tl-meta-label">Nueva fecha:</span>
-                                        <span class="tl-meta-value">
-                                            @ev.RescheduledFor.Value.ToString("dd/MM/yyyy")
-                                        </span>
-                                    </div>
-                                }
-
-                                @if (!string.IsNullOrEmpty(ev.Notes))
-                                {
-                                    <div class="tl-notes">
-                                        <span class="tl-notes-icon">💬</span>
-                                        <span>@ev.Notes</span>
-                                    </div>
-                                }
-                            </div>
-
-                        </div>
-                    }
-                </div>
-            </div>
-        }
-    </div>
-} *@
-
-@* @code {
-    [Parameter, EditorRequired]
-    public List<OrderEventDTO> Events { get; set; } = [];
-
-    private Dictionary<TimelinePhase, List<OrderEventDTO>> GroupedEvents =>
-        Events
-            .GroupBy(e => e.Phase)
-            .OrderBy(g => (int)g.Key)
-            .ToDictionary(g => g.Key, g => g.OrderBy(e => e.OccurredAt).ToList());
-
-    private bool IsLast(OrderEventDTO ev) =>
-        ev.Id == Events.LastOrDefault()?.Id;
-
-    private static string FormatTime(DateTime dt)
-    {
-        var now = DateTime.UtcNow;
-        var diff = now - dt;
-        return diff.TotalMinutes < 1   ? "Hace un momento"
-             : diff.TotalHours   < 1   ? $"Hace {(int)diff.TotalMinutes} min"
-             : diff.TotalDays    < 1   ? $"Hoy {dt.ToLocalTime():HH:mm}"
-             : diff.TotalDays    < 2   ? $"Ayer {dt.ToLocalTime():HH:mm}"
-             : dt.ToLocalTime().ToString("dd MMM, HH:mm");
-    }
-
-    private static string Initials(string name)
-    {
-        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return parts.Length >= 2
-            ? $"{parts[0][0]}{parts[1][0]}".ToUpper()
-            : name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
-    }
-
-    private static string PhaseLabel(TimelinePhase phase) => phase switch
-    {
-        TimelinePhase.Entry      => "Recepción",
-        TimelinePhase.Dispatch   => "Asignación y salida",
-        TimelinePhase.Delivery   => "Intento de entrega",
-        TimelinePhase.Return     => "Retorno al almacén",
-        TimelinePhase.Reschedule => "Reprogramación",
-        TimelinePhase.Closed     => "Cierre",
-        _                        => "Eventos",
-    };
-
+﻿@* 
     private static string PhaseIcon(TimelinePhase phase) => phase switch
     {
         TimelinePhase.Entry      => "🏭",
@@ -156,10 +9,10 @@ else
         TimelinePhase.Closed     => "🏁",
         _                        => "•",
     };
-} *@
+*@
 
 
-@inject IRepository _Repository
+@inject IRepository _IRepository
 
 @if (_loading)
 {
@@ -234,9 +87,9 @@ else
                     </div>
 
                     <!-- Nota opcional -->
-                    @if (!string.IsNullOrEmpty(ev.Notes))
+                    @if (!string.IsNullOrEmpty(ev.Note))
                     {
-                        <p class="timeline-note">💬 @ev.Notes</p>
+                        <p class="timeline-note">💬 @ev.Note</p>
                     }
                 </div>
 
@@ -247,11 +100,10 @@ else
 
 
 @code {
-    [Parameter] public int OrderId { get; set; }
-
-    private List<OrderEventDTO> _events = [];
-    private bool _loading = true;
+    [Parameter] public int OrderID { get; set; }
     private string? _error;
+    private bool _loading = true;
+    private List<OrderEventDTO> _events = [];
 
     protected override async Task OnParametersSetAsync() => await LoadAsync();
 
@@ -259,7 +111,7 @@ else
     {
         _loading = true;
         _error = null;
-        var response = await _Repository.GetAsync<List<OrderEventDTO>>($"api/Orders/History/{OrderId}");
+        var response = await _IRepository.GetAsync<List<OrderEventDTO>>($"api/Orders/History/{OrderID}");
         if (response.Error)
             _error = await response.GetErrorMessageAsync();
         else
