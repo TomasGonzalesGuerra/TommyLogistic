@@ -25,6 +25,8 @@ public class Order
     public Company? Company { get; set; }
     public string? DriverID { get; set; }
     public Driver? Driver { get; set; }
+    public int? CargaID { get; set; }
+    public Carga? Carga { get; set; }
 
     public ICollection<OrderEvent>? Events { get; set; }
     public void UpdateStatus(OrderStatus s) => OrderStatus = s;

@@ -1,0 +1,23 @@
+﻿<span class="badge @CssClass">@Label</span>
+
+@code {
+    [Parameter] public CargaStatus Status { get; set; }
+
+    private string CssClass => Status switch
+    {
+        CargaStatus.Activa => "badge-encamino",
+        CargaStatus.PendienteConclusion => "badge-ausente",
+        CargaStatus.Concluida => "badge-entregado",
+        CargaStatus.Facturada => "badge-asignado",
+        _ => "badge-registrado"
+    };
+
+    private string Label => Status switch
+    {
+        CargaStatus.Activa => "🟢 Activa",
+        CargaStatus.PendienteConclusion => "⏳ Pendiente",
+        CargaStatus.Concluida => "✅ Concluida",
+        CargaStatus.Facturada => "💰 Facturada",
+        _ => Status.ToString()
+    };
+}

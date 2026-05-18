@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TommyLogistic.API.Data;
 
@@ -11,9 +12,11 @@ using TommyLogistic.API.Data;
 namespace TommyLogistic.API.Migrations
 {
     [DbContext(typeof(LogisticDataContext))]
-    partial class LogisticDataContextModelSnapshot : ModelSnapshot
+    [Migration("20260518185708_AdsCargaEntity")]
+    partial class AdsCargaEntity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

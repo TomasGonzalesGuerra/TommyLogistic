@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using TommyLogistic.Api.Helpers;
 using TommyLogistic.API.Data;
 using TommyLogistic.API.Hubs;
 using TommyLogistic.API.Services;
@@ -139,7 +138,7 @@ public class DriversController(LogisticDataContext dadaContext, IHubContext<Noti
             userId: userID,
             note: model.Note
         );
-        
+
         await _hubContext.Clients.Group("Admins").SendAsync("DashboardUpdate");
 
         return Ok();

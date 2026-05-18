@@ -21,6 +21,9 @@ public class NotificationHub(LogisticDataContext context) : Hub
     public async Task JoinAdminGroup() => await Groups.AddToGroupAsync(Context.ConnectionId, "Admins");
     public async Task LeaveAdminGroup() => await Groups.RemoveFromGroupAsync(Context.ConnectionId, "Admins");
 
+    // Operators ────────────────────────────────────────────────
+    public async Task JoinOperatorGroup() => await Groups.AddToGroupAsync(Context.ConnectionId, "Operators");
+    public async Task JoinSupervisorGroup() => await Groups.AddToGroupAsync(Context.ConnectionId, "Supervisors");
 
     // 👇 Driver anuncia que está online
     public async Task DriverOnline(string userID)

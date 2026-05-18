@@ -21,6 +21,7 @@ public class NotificationService(IJSRuntime jsRuntime) : IAsyncDisposable
     public event Action<string>? OnNewOrder;
     public event Action? OnDashboardUpdate;
     public event Action? OnNotificacionCambiada;
+    public event Action<string>? OnCargaConcluida;
 
     public async Task StartAsync(string rol, string userId)
     {
@@ -82,6 +83,18 @@ public class NotificationService(IJSRuntime jsRuntime) : IAsyncDisposable
 
             OnDriversChanged?.Invoke();
         });
+        _hubConnection.On<object>("CargaConcluida", data =>
+        {
+            AgregarNotificacion("🎉", "Carga concluida", "Tu carga fue aprobada. ¡Ya puedes recibir nuevas!");
+            OnCargaConcluida?.Invoke(data.ToString()!);
+        });
+
+        _hubConnection.On<object>("CargaPendienteConclusion", data =>
+        {
+            AgregarNotificacion("📋", "Solicitud de conclusión", "Un driver solicita concluir su carga.");
+            OnNewOrder?.Invoke(data.ToString()!); // reusa el evento para el toast
+        });
+
 
         await _hubConnection.StartAsync();
         _started = true;
@@ -92,12 +105,18 @@ public class NotificationService(IJSRuntime jsRuntime) : IAsyncDisposable
             await _hubConnection.InvokeAsync("GetDriversConectados");
         }
 
+        if (rol == nameof(UserEnum.Supervisor))
+            await _hubConnection.InvokeAsync("JoinSupervisorGroup");
+
         if (rol == nameof(UserEnum.Driver))
         {
             await _hubConnection.InvokeAsync("JoinDriversGroup");
             await _hubConnection.InvokeAsync("JoinPersonalGroup", userId);
             await _hubConnection.InvokeAsync("DriverOnline", userId);
         }
+
+        if (rol == nameof(UserEnum.Operator))
+            await _hubConnection.InvokeAsync("JoinOperatorGroup");
     }
 
     public async Task StopAsync()

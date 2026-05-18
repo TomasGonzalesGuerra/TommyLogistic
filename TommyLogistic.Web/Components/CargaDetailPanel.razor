@@ -1,0 +1,117 @@
+﻿<div class="carga-detail">
+
+    <!-- Header -->
+    <div class="preview-top">
+        <div>
+            <p class="text-xs text-muted">Creada el @Carga.FechaCreacion.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
+            <p class="text-xs text-muted">Por: @Carga.SupervisorName</p>
+        </div>
+        <BadgeCarga Status="@Carga.Status" />
+    </div>
+
+    <div class="preview-divider"></div>
+
+    <!-- Driver -->
+    <p class="preview-section-label">Repartidor</p>
+    <div class="preview-grid">
+        <div class="preview-field">
+            <span class="preview-field-icon">🛵</span>
+            <div>
+                <p class="preview-field-label">Nombre</p>
+                <p class="preview-field-value">@Carga.DriverName</p>
+            </div>
+        </div>
+        <div class="preview-field">
+            <span class="preview-field-icon">🚗</span>
+            <div>
+                <p class="preview-field-label">Placa</p>
+                <p class="preview-field-value">@Carga.DriverPlaca</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="preview-divider"></div>
+
+    <!-- Stats -->
+    <p class="preview-section-label">Progreso</p>
+    <div class="preview-grid">
+        <div class="preview-field">
+            <span class="preview-field-icon">📦</span>
+            <div>
+                <p class="preview-field-label">Total</p>
+                <p class="preview-field-value">@Carga.TotalPedidos pedidos</p>
+            </div>
+        </div>
+        <div class="preview-field">
+            <span class="preview-field-icon">⏳</span>
+            <div>
+                <p class="preview-field-label">Pendientes</p>
+                <p class="preview-field-value" style="color:var(--estado-encamino)">@Carga.Pendientes</p>
+            </div>
+        </div>
+        <div class="preview-field">
+            <span class="preview-field-icon">✅</span>
+            <div>
+                <p class="preview-field-label">Entregados</p>
+                <p class="preview-field-value" style="color:var(--estado-entregado)">@Carga.Entregados</p>
+            </div>
+        </div>
+        <div class="preview-field">
+            <span class="preview-field-icon">🏭</span>
+            <div>
+                <p class="preview-field-label">En almacén</p>
+                <p class="preview-field-value" style="color:var(--estado-almacen)">@Carga.EnOnStorage</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="preview-divider"></div>
+
+    <!-- Pedidos -->
+    <p class="preview-section-label">Pedidos (@Carga.Pedidos.Count)</p>
+    <div class="carga-detail-pedidos">
+        @foreach (var p in Carga.Pedidos)
+        {
+            <div class="carga-detail-pedido">
+                <span class="codigo-seguimiento">@p.TrackingCode</span>
+                <span class="text-sm">@p.RecipientName</span>
+                <BadgeEstado Estado="@p.OrderStatus" />
+            </div>
+        }
+    </div>
+
+    @if (!string.IsNullOrEmpty(Carga.NotaConclusion))
+    {
+        <div class="preview-divider"></div>
+        <p class="preview-section-label">Nota de conclusión</p>
+        <p class="timeline-note">@Carga.NotaConclusion</p>
+        <p class="text-xs text-muted mt-2">Por: @Carga.ConcluidaPorName</p>
+    }
+</div>
+
+<style>
+    .carga-detail-pedidos {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+    }
+
+    .carga-detail-pedido {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        padding: var(--space-2) var(--space-3);
+        background: var(--color-surface-2);
+        border-radius: var(--radius-md);
+        font-size: var(--font-size-sm);
+    }
+
+        .carga-detail-pedido span:nth-child(2) {
+            flex: 1;
+            font-weight: 600;
+        }
+</style>
+
+@code {
+    [Parameter, EditorRequired] public CargaDetailDTO Carga { get; set; } = null!;
+}

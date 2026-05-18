@@ -10,6 +10,7 @@ public class LogisticDataContext(DbContextOptions<LogisticDataContext> options) 
     public DbSet<Company> Companies { get; set; }
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderEvent> OrderEvents { get; set; }
+    public DbSet<Carga> Cargas { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -47,6 +48,32 @@ public class LogisticDataContext(DbContextOptions<LogisticDataContext> options) 
             .HasOne(e => e.AssignedDriver)
             .WithMany()
             .HasForeignKey(e => e.AssignedDriverID)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Carga>()
+            .HasOne(c => c.Driver)
+            .WithMany(d => d.Cargas)
+            .HasForeignKey(c => c.DriverID)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<Carga>()
+            .HasOne(c => c.Supervisor)
+            .WithMany()
+            .HasForeignKey(c => c.SupervisorID)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<Carga>()
+            .HasOne(c => c.ConcluidaPor)
+            .WithMany()
+            .HasForeignKey(c => c.ConcluidaPorID)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<Carga>()
+            .HasOne(c => c.FacturadaPor)
+            .WithMany()
+            .HasForeignKey(c => c.FacturadaPorID)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<Carga>()
+            .HasMany(c => c.Orders)
+            .WithOne(o => o.Carga)
+            .HasForeignKey(o => o.CargaID)
             .OnDelete(DeleteBehavior.Restrict);
     }
 

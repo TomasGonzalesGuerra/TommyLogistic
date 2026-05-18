@@ -9,9 +9,9 @@ public class Driver
     public string Placa { get; set; } = null!;
     public bool Available { get; set; }
 
-    // Navegación a User
+    // Navegation
     public User User { get; set; } = null!;
 
-    // Navegación a Orders
     public ICollection<Order>? Orders { get; set; }
+    public ICollection<Carga>? Cargas { get; set; }
 }

@@ -1,10 +1,309 @@
 ﻿@page "/OperatorDashboard"
 @layout MainLayout
+@implements IDisposable
+@inject IRepository _Repository
 @inject NavigationManager _NavigationManager
+@inject NotificationService _NotificationService
 @attribute [Authorize(Roles = $"{nameof(UserEnum.Admin)},{nameof(UserEnum.Operator)}")]
 
-<h3>OperatorDashboard</h3>
+<PageTitle>Panel Operador — Tommy Logistic</PageTitle>
+
+<div class="list-header">
+    <h1 class="page-title">Panel de Operaciones</h1>
+    @if (_pendientesConclusion > 0)
+    {
+        <span class="badge badge-ausente" style="font-size:var(--font-size-sm); padding: var(--space-2) var(--space-3)">
+            ⏳ @_pendientesConclusion carga(s) pendiente(s) de conclusión
+        </span>
+    }
+</div>
+
+<!-- Tabs -->
+<div class="super-tabs">
+    <button class="super-tab @(_vistaActiva == "retornos" ? "super-tab--active" : "")"
+            @onclick='() => _vistaActiva = "retornos"'>
+        ↩️ Retornos por recibir
+        @if (_retornos.Any())
+        {
+            <span class="badge badge-retorno">@_retornos.Count</span>
+        }
+    </button>
+    <button class="super-tab @(_vistaActiva == "cargas" ? "super-tab--active" : "")"
+            @onclick='() => _vistaActiva = "cargas"'>
+        📦 Cargas pendientes
+        @if (_cargasPendientes.Any())
+        {
+            <span class="badge badge-ausente">@_cargasPendientes.Count</span>
+        }
+    </button>
+</div>
+
+@if (_loading)
+{
+    <div class="loading-overlay"><div class="spinner"></div></div>
+}
+else if (_vistaActiva == "retornos")
+{
+    <!-- Pedidos en retorno -->
+    @if (!_retornos.Any())
+    {
+        <div class="empty-state">
+            <span class="empty-icon">✅</span>
+            <p class="text-bold">Sin retornos pendientes</p>
+            <p class="text-muted">Todos los pedidos están al día</p>
+        </div>
+    }
+    else
+    {
+        <div class="driver-orders-list">
+            @foreach (var p in _retornos)
+            {
+                <div class="driver-order-card">
+                    <div class="driver-order-top">
+                        <span class="codigo-seguimiento">@p.TrackingCode</span>
+                        <BadgeEstado Estado="@p.OrderStatus" />
+                    </div>
+                    <div class="driver-order-nombre">@p.RecipientName</div>
+                    <div class="driver-order-meta">
+                        <span>📍 @p.RecipientAddress, @p.RecipientDistrict</span>
+                        <span>🏢 @p.CompanyName</span>
+                        <span>📦 @p.PackageDescription (@p.Quantity u.)</span>
+                    </div>
+                    <div class="driver-order-actions mt-4">
+                        <button class="btn btn-primary btn-sm"
+                                @onclick="() => AbrirRecibirRetorno(p)">
+                            🏭 Recibir en almacén
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
+else
+{
+    <!-- Cargas pendientes de conclusión -->
+    @if (!_cargasPendientes.Any())
+    {
+        <div class="empty-state">
+            <span class="empty-icon">😴</span>
+            <p class="text-bold">Sin cargas pendientes</p>
+        </div>
+    }
+    else
+    {
+        <div class="cargas-grid">
+            @foreach (var c in _cargasPendientes)
+            {
+                <div class="carga-card carga-card--pendienteconclusion">
+                    <div class="carga-card-header">
+                        <div class="carga-card-driver">
+                            <div class="timeline-avatar"
+                                 style="background:var(--color-primary); width:2rem; height:2rem; font-size:.65rem">
+                                @Initials(c.DriverName)
+                            </div>
+                            <div>
+                                <p class="text-bold text-sm">@c.DriverName</p>
+                                <p class="text-xs text-muted">🚗 @c.DriverPlaca</p>
+                            </div>
+                        </div>
+                        <BadgeCarga Status="@c.Status" />
+                    </div>
+
+                    <div class="carga-card-meta">
+                        <span class="text-xs text-muted">📍 @c.Distrito</span>
+                        <span class="text-xs" style="color:var(--estado-entregado)">
+                            ✅ @c.Entregados entregados
+                        </span>
+                        <span class="text-xs" style="color:var(--estado-almacen)">
+                            🏭 @c.EnOnStorage en almacén
+                        </span>
+                    </div>
+
+                    <button class="btn btn-success btn-sm w-full mt-4"
+                            @onclick="() => AbrirConcluir(c.Id)">
+                        ✅ Concluir carga
+                    </button>
+                </div>
+            }
+        </div>
+    }
+}
+
+<!-- Modal recibir retorno -->
+<GenericModal Title="Recibir pedido en almacén"
+              IsVisible="_mostrarRecibirRetorno"
+              OnCancel="() => _mostrarRecibirRetorno = false">
+    <BodyContent>
+        <div class="adm-modal__body">
+            @if (_pedidoRetorno is not null)
+            {
+                <p class="text-sm mb-4">
+                    Confirma que recibiste el pedido de
+                    <strong>@_pedidoRetorno.RecipientName</strong>
+                    (<span class="codigo-seguimiento">@_pedidoRetorno.TrackingCode</span>)
+                </p>
+            }
+            <div class="form-group">
+                <label class="form-label">Nota (opcional)</label>
+                <textarea @bind="_notaRetorno"
+                          class="form-control"
+                          rows="2"
+                          placeholder="Observaciones del retorno..."></textarea>
+            </div>
+        </div>
+        <div class="adm-modal__footer">
+            <button class="btn btn-ghost btn-sm"
+                    @onclick="() => _mostrarRecibirRetorno = false">
+                Cancelar
+            </button>
+            <button class="btn btn-primary btn-sm"
+                    disabled="@_guardando"
+                    @onclick="ConfirmarRetornoAsync">
+                @if (_guardando) { <span class="spinner spinner-sm"></span> }
+                else { <span>Confirmar recepción</span> }
+            </button>
+        </div>
+    </BodyContent>
+</GenericModal>
+
+<!-- Modal concluir carga -->
+<GenericModal Title="Concluir carga"
+              IsVisible="_mostrarConcluir"
+              OnCancel="() => _mostrarConcluir = false">
+    <BodyContent>
+        <div class="adm-modal__body">
+            <p class="text-sm mb-4">
+                Verificaste los detalles de la carga y das el OK para concluirla.
+                El driver quedará libre para nuevas cargas.
+            </p>
+            <div class="form-group">
+                <label class="form-label">Nota de conclusión (opcional)</label>
+                <textarea @bind="_notaConclusion"
+                          class="form-control"
+                          rows="2"
+                          placeholder="Observaciones..."></textarea>
+            </div>
+        </div>
+        <div class="adm-modal__footer">
+            <button class="btn btn-ghost btn-sm"
+                    @onclick="() => _mostrarConcluir = false">
+                Cancelar
+            </button>
+            <button class="btn btn-success btn-sm"
+                    disabled="@_guardando"
+                    @onclick="ConfirmarConclusionAsync">
+                @if (_guardando) { <span class="spinner spinner-sm"></span> }
+                else { <span>✅ Dar OK y concluir</span> }
+            </button>
+        </div>
+    </BodyContent>
+</GenericModal>
 
 @code {
+    private List<DriverOrderDTO> _retornos = [];
+    private List<CargaSummaryDTO> _cargasPendientes = [];
+    private bool _loading = true;
+    private string _vistaActiva = "retornos";
+    private int _pendientesConclusion;
 
+    // Modal retorno
+    private bool _mostrarRecibirRetorno;
+    private DriverOrderDTO? _pedidoRetorno;
+    private string _notaRetorno = string.Empty;
+
+    // Modal concluir
+    private bool _mostrarConcluir;
+    private int _cargaAConcluirId;
+    private string _notaConclusion = string.Empty;
+    private bool _guardando;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        _NotificationService.OnNewOrder += OnNuevaNotificacion;
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+
+        // Pedidos en retorno
+        var r1 = await _Repository
+            .GetAsync<List<DriverOrderDTO>>("api/Orders/GetByStatus?status=Returning");
+        if (!r1.Error) _retornos = r1.Response!;
+
+        // Cargas pendientes de conclusión
+        var r2 = await _Repository
+            .GetAsync<List<CargaSummaryDTO>>("api/Cargas/GetAll?status=PendienteConclusion");
+        if (!r2.Error) _cargasPendientes = r2.Response!;
+
+        _pendientesConclusion = _cargasPendientes.Count;
+        _loading = false;
+    }
+
+    private void AbrirRecibirRetorno(DriverOrderDTO pedido)
+    {
+        _pedidoRetorno         = pedido;
+        _notaRetorno           = string.Empty;
+        _mostrarRecibirRetorno = true;
+    }
+
+    private async Task ConfirmarRetornoAsync()
+    {
+        if (_pedidoRetorno is null) return;
+        _guardando = true;
+
+        var r = await _Repository.PostAsync(
+            $"api/Cargas/RecibirRetorno/{_pedidoRetorno.Id}",
+            new CargaConcluirDTO { Nota = _notaRetorno });
+
+        if (!r.Error)
+        {
+            _mostrarRecibirRetorno = false;
+            await LoadAsync();
+        }
+
+        _guardando = false;
+    }
+
+    private void AbrirConcluir(int cargaId)
+    {
+        _cargaAConcluirId = cargaId;
+        _notaConclusion   = string.Empty;
+        _mostrarConcluir  = true;
+    }
+
+    private async Task ConfirmarConclusionAsync()
+    {
+        _guardando = true;
+
+        var r = await _Repository.PostAsync(
+            $"api/Cargas/Concluir/{_cargaAConcluirId}",
+            new CargaConcluirDTO { Nota = _notaConclusion });
+
+        if (!r.Error)
+        {
+            _mostrarConcluir = false;
+            await LoadAsync();
+        }
+
+        _guardando = false;
+    }
+
+    private void OnNuevaNotificacion(string _)
+        => InvokeAsync(async () => { await LoadAsync(); StateHasChanged(); });
+
+    private static string Initials(string name)
+    {
+        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{parts[0][0]}{parts[1][0]}"
+            : name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
+    }
+
+    public void Dispose()
+    {
+        _NotificationService.OnNewOrder -= OnNuevaNotificacion;
+    }
 }
