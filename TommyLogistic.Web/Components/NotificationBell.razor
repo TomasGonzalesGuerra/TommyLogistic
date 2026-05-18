@@ -1,0 +1,108 @@
+﻿@implements IDisposable
+@inject NotificationService _NotificationService
+
+<div class="notif-bell-wrapper">
+
+    <!-- Botón campana -->
+    <button class="notif-bell-btn" @onclick="TogglePanel">
+        🔔
+        @if (_NotificationService.NoLeidas > 0)
+        {
+            <span class="notif-badge">
+                @(_NotificationService.NoLeidas > 9 ? "9+" : _NotificationService.NoLeidas.ToString())
+            </span>
+        }
+    </button>
+
+    <!-- Panel dropdown -->
+    @if (_abierto)
+    {
+        <!-- Overlay para cerrar al hacer clic afuera -->
+        <div class="notif-overlay" @onclick="CerrarPanel"></div>
+
+        <div class="notif-panel">
+            <div class="notif-panel-header">
+                <span class="notif-panel-title">Notificaciones</span>
+                @if (_NotificationService.Historial.Any())
+                {
+                    <button class="notif-mark-all" @onclick="MarcarTodasLeidas">
+                        ✓ Marcar todas leídas
+                    </button>
+                }
+            </div>
+
+            @if (!_NotificationService.Historial.Any())
+            {
+                <div class="notif-empty">
+                    <span>🔕</span>
+                    <p>Sin notificaciones</p>
+                </div>
+            }
+            else
+            {
+                <div class="notif-list">
+                    @foreach (var n in _NotificationService.Historial)
+                    {
+                        <div class="notif-item @(n.Leida ? "" : "notif-item--nueva")">
+                            <span class="notif-item-icono">@n.Icono</span>
+                            <div class="notif-item-body">
+                                <p class="notif-item-titulo">@n.Titulo</p>
+                                <p class="notif-item-mensaje">@n.Mensaje</p>
+                                <p class="notif-item-tiempo">
+                                    @TiempoRelativo(n.Tiempo)
+                                </p>
+                            </div>
+                            @if (!n.Leida)
+                            {
+                                <span class="notif-item-dot"></span>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+
+@code {
+    private bool _abierto;
+
+    protected override void OnInitialized()
+    {
+        _NotificationService.OnNotificacionCambiada += Actualizar;
+    }
+
+    private void TogglePanel()
+    {
+        _abierto = !_abierto;
+        if (_abierto) StateHasChanged();
+    }
+
+    private void CerrarPanel() => _abierto = false;
+
+    private void MarcarTodasLeidas()
+    {
+        _NotificationService.MarcarTodasLeidas();
+        StateHasChanged();
+    }
+
+    private void Actualizar()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private static string TiempoRelativo(DateTime tiempo)
+    {
+        var diff = DateTime.Now - tiempo;
+        if (diff.TotalSeconds < 60) return "Ahora mismo";
+        if (diff.TotalMinutes < 60) return $"Hace {(int)diff.TotalMinutes} min";
+        if (diff.TotalHours < 24) return $"Hace {(int)diff.TotalHours}h";
+        return tiempo.ToString("dd/MM HH:mm");
+    }
+
+    public void Dispose()
+    {
+        _NotificationService.OnNotificacionCambiada -= Actualizar;
+    }
+}

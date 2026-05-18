@@ -12,9 +12,14 @@ public class NotificationService(IJSRuntime jsRuntime) : IAsyncDisposable
     private readonly string _tokenKey = "TOKEN_KEY";
     private readonly IJSRuntime _jsRuntime = jsRuntime;
 
+    // 👇 Historial en memoria (máximo 20)
+    public List<NotificationItem> Historial { get; } = [];
+    public int NoLeidas => Historial.Count(n => !n.Leida);
+
     public event Action<string>? OnNewDriver;
     public event Action<string>? OnNewOrder;
     public event Action? OnDashboardUpdate;
+    public event Action? OnNotificacionCambiada;
 
     public async Task StartAsync(string rol, string userId)
     {
@@ -59,7 +64,15 @@ public class NotificationService(IJSRuntime jsRuntime) : IAsyncDisposable
         {
             await _hubConnection.StopAsync();
             _started = false;
+            OnNotificacionCambiada?.Invoke();
         }
+    }
+
+    public void MarcarTodasLeidas()
+    {
+        foreach (var n in Historial)
+            n.Leida = true;
+        OnNotificacionCambiada?.Invoke();
     }
 
     public async ValueTask DisposeAsync()
@@ -67,4 +80,32 @@ public class NotificationService(IJSRuntime jsRuntime) : IAsyncDisposable
         if (_hubConnection is not null)
             await _hubConnection.DisposeAsync();
     }
+
+    private void AgregarNotificacion(string icono, string titulo, string mensaje)
+    {
+        Historial.Insert(0, new NotificationItem
+        {
+            Icono = icono,
+            Titulo = titulo,
+            Mensaje = mensaje,
+            Tiempo = DateTime.Now,
+            Leida = false
+        });
+
+        // Máximo 20 notificaciones
+        if (Historial.Count > 20)
+            Historial.RemoveAt(Historial.Count - 1);
+
+        OnNotificacionCambiada?.Invoke();
+    }
+
+}
+
+public record NotificationItem
+{
+    public string Icono { get; set; } = null!;
+    public string Titulo { get; set; } = null!;
+    public string Mensaje { get; set; } = null!;
+    public DateTime Tiempo { get; set; }
+    public bool Leida { get; set; }
 }
