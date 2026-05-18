@@ -1,0 +1,52 @@
+public class ClientDashboardDto
+{
+    public ClientDashboardStats Stats { get; set; } = new();
+    public List<OrderSummaryDto> Activos { get; set; } = new();
+    public List<OrderSummaryDto> Historial { get; set; } = new();
+}
+
+public class ClientDashboardStats
+{
+    public int Total { get; set; }
+    public int EnTransito { get; set; }
+    public int Entregados { get; set; }
+    public int Pendientes { get; set; }
+}
+
+Endpoint api/orders/client-dashboard en OrdersController
+[HttpGet("client-dashboard")]
+[Authorize(Roles = "Client")]
+public async Task<IActionResult> GetClientDashboard()
+{
+    var userId = User.FindFirstValue("uid")!;
+    var orders = await _context.Orders
+        .Include(o => o.Driver).ThenInclude(d => d!.User)
+        .Where(o => o.ClientId == userId)
+        .OrderByDescending(o => o.CreatedAt)
+        .ToListAsync();
+
+    var activos = orders
+        .Where(o => o.Status is not ("Delivered" or "Failed"))
+        .Select(o => o.ToSummaryDto())
+        .ToList();
+
+    var historial = orders
+        .Where(o => o.Status is "Delivered" or "Failed")
+        .Take(10)
+        .Select(o => o.ToSummaryDto())
+        .ToList();
+
+    return Ok(new ClientDashboardDto
+    {
+        Stats = new ClientDashboardStats
+        {
+            Total = orders.Count,
+            EnTransito = orders.Count(o => o.Status is "OnTheWay" or "PickedUp"),
+            Entregados = orders.Count(o => o.Status == "Delivered"),
+            Pendientes = orders.Count(o => o.Status is "Registered" or "Assigned")
+        },
+        Activos = activos,
+        Historial = historial
+    });
+}
+

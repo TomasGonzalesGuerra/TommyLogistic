@@ -1,9 +1,172 @@
 ﻿@page "/ClientDashboard"
 @layout MainLayout
+@inject IRepository _IRepository
+@inject NavigationManager _NavigationManager
+@inject NotificationService _NotificationService
 @attribute [Authorize(Roles = nameof(UserEnum.Client))]
 
-<h3>ClientDashboard</h3>
+<PageTitle>Dashboard Cliente</PageTitle>
+
+@if (loading)
+{
+    <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Cargando tus pedidos...</p>
+    </div>
+}
+else
+{
+    <!-- Stats Cards -->
+    <section class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: var(--color-primary-light);">📦</div>
+            <div class="stat-info">
+                <span class="stat-value">@stats.Total</span>
+                <span class="stat-label">Total Pedidos</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: #e8f5e9;">🚚</div>
+            <div class="stat-info">
+                <span class="stat-value">@stats.EnTransito</span>
+                <span class="stat-label">En Tránsito</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: #e3f2fd;">✅</div>
+            <div class="stat-info">
+                <span class="stat-value">@stats.Entregados</span>
+                <span class="stat-label">Entregados</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background: #fff3e0;">⏳</div>
+            <div class="stat-info">
+                <span class="stat-value">@stats.Pendientes</span>
+                <span class="stat-label">Pendientes</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pedidos Activos -->
+    <section class="section-card">
+        <div class="section-header">
+            <h2>Pedidos Activos</h2>
+            <a href="/client/pedidos" class="btn btn-ghost btn-sm">Ver todos →</a>
+        </div>
+
+        @if (!pedidosActivos.Any())
+        {
+            <div class="empty-state">
+                <span class="empty-icon">📭</span>
+                <p>No tienes pedidos activos en este momento</p>
+                <a href="/client/pedidos/nuevo" class="btn btn-primary">Crear Pedido</a>
+            </div>
+        }
+        else
+        {
+            <div class="orders-list">
+                @foreach (var order in pedidosActivos)
+                {
+                    <div class="order-card-client" @onclick="() => VerDetalle(order.Id)">
+                        <div class="order-card-header">
+                            <div class="order-id">#@order.Id.ToString().Substring(0, 8).ToUpper()</div>
+                            <BadgeCarga Status="@order.Status" />
+                        </div>
+                        <div class="order-card-body">
+                            <div class="order-route">
+                                <span class="route-point origin">📍 @order.OriginDistrict</span>
+                                <span class="route-arrow">→</span>
+                                <span class="route-point dest">🎯 @order.DestinationDistrict</span>
+                            </div>
+                            @if (order.Driver != null)
+                            {
+                                <div class="order-driver">
+                                    <span class="driver-avatar">🧑‍✈️</span>
+                                    <span>@order.Driver.FullName</span>
+                                </div>
+                            }
+                        </div>
+                        <div class="order-card-footer">
+                            <span class="order-date">@order.CreatedAt.ToString("dd/MM/yyyy")</span>
+                            <span class="order-items">@order.Items paquetes</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    <!-- Historial reciente -->
+    <section class="section-card">
+        <div class="section-header">
+            <h2>Historial Reciente</h2>
+        </div>
+        <div class="history-list">
+            @foreach (var order in historial.Take(5))
+            {
+                <div class="history-item">
+                    <div class="history-status-dot @GetStatusClass(order.Status)"></div>
+                    <div class="history-info">
+                        <span class="history-id">#@order.Id.ToString().Substring(0, 8).ToUpper()</span>
+                        <span class="history-route">@order.OriginDistrict → @order.DestinationDistrict</span>
+                    </div>
+                    <div class="history-meta">
+                        <span class="history-date">@order.UpdatedAt?.ToString("dd/MM")</span>
+                        <BadgeCarga Status="@order.Status" />
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+}
 
 @code {
+    private bool loading = true;
+    private ClientDashboardStats stats = new();
+    private List<OrderSummaryDto> pedidosActivos = new();
+    private List<OrderSummaryDto> historial = new();
 
+    protected override async Task OnInitializedAsync()
+    {
+        // Suscribir a updates en tiempo real
+        NotificationService.OnDashboardUpdate += HandleDashboardUpdate;
+
+        await LoadDashboard();
+    }
+
+    private async Task LoadDashboard()
+    {
+        loading = true;
+        var response = await Repository.GetAsync<ClientDashboardDto>("api/orders/client-dashboard");
+        if (response.IsSuccess && response.Result != null)
+        {
+            stats = response.Result.Stats;
+            pedidosActivos = response.Result.Activos;
+            historial = response.Result.Historial;
+        }
+        loading = false;
+    }
+
+    private async void HandleDashboardUpdate()
+    {
+        await LoadDashboard();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void VerDetalle(Guid orderId) =>
+        Navigation.NavigateTo($"/pedidos/{orderId}");
+
+    private string GetStatusClass(string status) => status switch
+    {
+        "Delivered" => "status-dot--delivered",
+        "OnTheWay" => "status-dot--transit",
+        "Failed" => "status-dot--failed",
+        _ => "status-dot--default"
+    };
+
+    public void Dispose()
+    {
+        NotificationService.OnDashboardUpdate -= HandleDashboardUpdate;
+    }
 }

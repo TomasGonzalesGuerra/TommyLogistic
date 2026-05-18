@@ -73,6 +73,7 @@ builder.Services.AddScoped<IFileStorage, FileStorage>();
 builder.Services.AddAuthorization();
 builder.Services.AddSignalR();
 builder.Services.AddScoped<OrderEventService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
 var app = builder.Build();
 

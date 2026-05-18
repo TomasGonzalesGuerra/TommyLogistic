@@ -8,4 +8,6 @@ public interface IRepository
     Task<HttpResponseWrapper<object>> DeleteAsync(string url);
     Task<HttpResponseWrapper<object>> PutAsync<T>(string url, T model);
     Task<HttpResponseWrapper<TResponse>> PutAsync<T, TResponse>(string url, T model);
+    // En IRepository
+    Task<HttpResponseWrapper<byte[]>> GetBytesAsync(string url);
 }

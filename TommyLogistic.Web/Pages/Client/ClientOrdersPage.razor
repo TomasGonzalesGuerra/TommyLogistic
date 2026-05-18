@@ -1,0 +1,115 @@
+﻿@page "/Client/Orders"
+@layout MainLayout
+@inject IRepository _IRepository
+@inject NavigationManager _NavigationManager
+@inject NotificationService _NotificationService
+@attribute [Authorize(Roles = nameof(UserEnum.Client))]
+
+<PageTitle>Mis Pedidos</PageTitle>
+
+<!-- Filtros -->
+<div class="filters-bar">
+    <input class="filter-input" placeholder="Buscar por ID o distrito..."
+            @bind="searchTerm" @bind:event="oninput" @oninput="FiltrarPedidos" />
+
+    <select class="filter-select" @bind="statusFilter" @bind:after="FiltrarPedidos">
+        <option value="">Todos los estados</option>
+        <option value="Registered">Registrado</option>
+        <option value="Assigned">Asignado</option>
+        <option value="PickedUp">Recogido</option>
+        <option value="OnTheWay">En Camino</option>
+        <option value="Delivered">Entregado</option>
+        <option value="Failed">Fallido</option>
+        <option value="Rescheduled">Reprogramado</option>
+    </select>
+
+    <input type="date" class="filter-input" @bind="fechaDesde" @bind:after="FiltrarPedidos" />
+    <input type="date" class="filter-input" @bind="fechaHasta" @bind:after="FiltrarPedidos" />
+</div>
+
+@if (loading)
+{
+    <div class="loading-state"><div class="spinner"></div></div>
+}
+else if (!pedidosFiltrados.Any())
+{
+    <div class="empty-state">
+        <span class="empty-icon">🔍</span>
+        <p>No se encontraron pedidos con esos filtros</p>
+    </div>
+}
+else
+{
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Origen</th>
+                    <th>Destino</th>
+                    <th>Driver</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var order in pedidosFiltrados)
+                {
+                    <tr @onclick="() => VerDetalle(order.Id)" class="table-row-clickable">
+                        <td class="font-mono">#@order.Id.ToString().Substring(0, 8).ToUpper()</td>
+                        <td>@order.OriginDistrict</td>
+                        <td>@order.DestinationDistrict</td>
+                        <td>@(order.Driver?.FullName ?? "—")</td>
+                        <td>@order.CreatedAt.ToString("dd/MM/yyyy")</td>
+                        <td><BadgeCarga Status="@order.Status" /></td>
+                        <td>
+                            <button class="btn btn-ghost btn-sm"
+                                    @onclick:stopPropagation="true"
+                                    @onclick="() => VerDetalle(order.Id)">
+                                Ver →
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+
+@code {
+    private bool loading = true;
+    private List<OrderSummaryDto> pedidos = new();
+    private List<OrderSummaryDto> pedidosFiltrados = new();
+    private string searchTerm = "";
+    private string statusFilter = "";
+    private DateTime? fechaDesde;
+    private DateTime? fechaHasta;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var response = await Repository.GetAsync<List<OrderSummaryDto>>("api/orders/my-orders");
+        if (response.IsSuccess && response.Result != null)
+        {
+            pedidos = response.Result;
+            pedidosFiltrados = pedidos;
+        }
+        loading = false;
+    }
+
+    private void FiltrarPedidos()
+    {
+        pedidosFiltrados = pedidos.Where(o =>
+            (string.IsNullOrEmpty(searchTerm) ||
+             o.Id.ToString().Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+             o.OriginDistrict.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+             o.DestinationDistrict.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrEmpty(statusFilter) || o.Status == statusFilter) &&
+            (!fechaDesde.HasValue || o.CreatedAt.Date >= fechaDesde.Value.Date) &&
+            (!fechaHasta.HasValue || o.CreatedAt.Date <= fechaHasta.Value.Date)
+        ).ToList();
+    }
+
+    private void VerDetalle(Guid id) => Navigation.NavigateTo($"/pedidos/{id}");
+}

@@ -1,0 +1,311 @@
+﻿@page "/reports"
+@attribute [Authorize(Roles = "Admin,Supervisor,Operator,Client")]
+@inject IRepository Repository
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthProvider
+
+<div class="dashboard-layout">
+    <aside class="dashboard-sidebar">
+        <nav class="sidebar-nav">
+            <div class="sidebar-brand">
+                <span class="brand-icon">📦</span>
+                <span>TommyLogistic</span>
+            </div>
+            <NavLink href="/reports">
+                <span class="nav-icon">📊</span> Reportes
+            </NavLink>
+        </nav>
+    </aside>
+
+    <main class="dashboard-main">
+        <header class="dashboard-header">
+            <div>
+                <h1 class="page-title">Reportes</h1>
+                <p class="page-subtitle">Exporta datos en Excel o PDF</p>
+            </div>
+        </header>
+
+        <!-- Filtros globales -->
+        <div class="section-card" style="margin-bottom: var(--space-4);">
+            <h3 style="margin-bottom: var(--space-3);">Filtros de Fecha</h3>
+            <div style="display: flex; gap: var(--space-3); align-items: center;">
+                <div class="form-group" style="margin: 0;">
+                    <label class="form-label">Desde</label>
+                    <input type="date" class="form-input" @bind="desde" />
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label class="form-label">Hasta</label>
+                    <input type="date" class="form-input" @bind="hasta" />
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label class="form-label">Estado (pedidos)</label>
+                    <select class="form-input" @bind="statusFilter">
+                        <option value="">Todos</option>
+                        <option value="Registered">Registrado</option>
+                        <option value="Delivered">Entregado</option>
+                        <option value="OnTheWay">En Camino</option>
+                        <option value="Failed">Fallido</option>
+                    </select>
+                </div>
+                <button class="btn btn-ghost" @onclick="LimpiarFiltros"
+                        style="align-self: flex-end;">
+                    Limpiar
+                </button>
+            </div>
+        </div>
+
+        <!-- Cards de reportes -->
+        <div class="reports-grid">
+
+            @* — PEDIDOS (Admin/Supervisor/Operator) *@
+            <AuthorizeView Roles="Admin,Supervisor,Operator">
+                <div class="report-card">
+                    <div class="report-card-icon">📋</div>
+                    <div class="report-card-content">
+                        <h3>Reporte de Pedidos</h3>
+                        <p>Todos los pedidos con filtros de fecha y estado.</p>
+                        <div class="report-actions">
+                            <button class="btn btn-success btn-sm" @onclick='() => Descargar("orders/excel")'
+                                    disabled="@descargando">
+                                @if (descargando && tipoActivo == "orders/excel")
+                                {
+                                    <span class="spinner-sm"></span>
+                                }
+                                else
+                                {
+
+                                    <span>📥</span>
+                                }
+                                Excel
+                            </button>
+                            <button class="btn btn-danger btn-sm" @onclick='() => Descargar("orders/pdf")'
+                                    disabled="@descargando">
+                                @if (descargando && tipoActivo == "orders/pdf")
+                                {
+                                    <span class="spinner-sm"></span>
+                                }
+                                else
+                                {
+
+                                    <span>📄</span>
+                                }
+                                PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </AuthorizeView>
+
+            @* — CARGAS (Admin/Supervisor) *@
+            <AuthorizeView Roles="Admin,Supervisor">
+                <div class="report-card">
+                    <div class="report-card-icon">🚛</div>
+                    <div class="report-card-content">
+                        <h3>Reporte de Cargas</h3>
+                        <p>Todas las cargas con estadísticas de efectividad.</p>
+                        <div class="report-actions">
+                            <button class="btn btn-success btn-sm" @onclick='() => Descargar("cargas/excel")'
+                                    disabled="@descargando">
+                                <span>📥</span> Excel
+                            </button>
+                            <button class="btn btn-danger btn-sm" @onclick='() => Descargar("cargas/pdf")'
+                                    disabled="@descargando">
+                                <span>📄</span> PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </AuthorizeView>
+
+            @* — DRIVERS (Admin) *@
+            <AuthorizeView Roles="Admin">
+                <div class="report-card">
+                    <div class="report-card-icon">🧑‍✈️</div>
+                    <div class="report-card-content">
+                        <h3>Reporte de Drivers</h3>
+                        <p>Performance de todos los conductores.</p>
+                        <div class="report-actions">
+                            <button class="btn btn-success btn-sm" @onclick='() => Descargar("drivers/excel")'
+                                    disabled="@descargando">
+                                <span>📥</span> Excel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </AuthorizeView>
+
+            @* — MIS PEDIDOS (Client) *@
+            <AuthorizeView Roles="Client">
+                <div class="report-card">
+                    <div class="report-card-icon">📦</div>
+                    <div class="report-card-content">
+                        <h3>Mis Pedidos</h3>
+                        <p>Exporta el historial de todos tus envíos.</p>
+                        <div class="report-actions">
+                            <button class="btn btn-success btn-sm" @onclick='() => Descargar("my-orders/excel")'
+                                    disabled="@descargando">
+                                <span>📥</span> Excel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </AuthorizeView>
+
+        </div>
+
+        @if (!string.IsNullOrEmpty(mensajeError))
+        {
+            <div class="alert alert-error" style="margin-top: var(--space-4);">
+                ⚠️ @mensajeError
+            </div>
+        }
+    </main>
+</div>
+
+<style>
+    .reports-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: var(--space-4);
+    }
+
+    .report-card {
+        background: white;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-5);
+        display: flex;
+        gap: var(--space-4);
+        align-items: flex-start;
+        transition: box-shadow 0.2s;
+    }
+
+        .report-card:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+    .report-card-icon {
+        font-size: 2rem;
+        width: 48px;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    .report-card-content h3 {
+        margin: 0 0 var(--space-1);
+        font-size: var(--text-base);
+        font-weight: 600;
+    }
+
+    .report-card-content p {
+        margin: 0 0 var(--space-3);
+        font-size: var(--text-sm);
+        color: var(--color-text-secondary);
+    }
+
+    .report-actions {
+        display: flex;
+        gap: var(--space-2);
+    }
+
+    .btn-success {
+        background: #057a55;
+        color: white;
+    }
+
+        .btn-success:hover {
+            background: #046c4e;
+        }
+
+    .btn-danger {
+        background: #c81e1e;
+        color: white;
+    }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+    .spinner-sm {
+        width: 14px;
+        height: 14px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        display: inline-block;
+    }
+</style>
+
+@code {
+    private DateTime? desde;
+    private DateTime? hasta;
+    private string statusFilter = "";
+    private bool descargando = false;
+    private string tipoActivo = "";
+    private string mensajeError = "";
+
+    private async Task Descargar(string tipo)
+    {
+        descargando = true;
+        tipoActivo = tipo;
+        mensajeError = "";
+        StateHasChanged();
+
+        try
+        {
+            var query = BuildQueryString(tipo);
+            var url = $"api/reports/{tipo}{query}";
+
+            var response = await Repository.GetBytesAsync(url);
+            if (response.IsSuccess && response.Result != null)
+            {
+                var ext = tipo.Contains("pdf") ? "pdf" : "xlsx";
+                var fileName = $"reporte_{tipo.Replace("/", "_")}_{DateTime.Now:yyyyMMdd}.{ext}";
+                await JS.InvokeVoidAsync("downloadFile", response.Result, fileName, GetMimeType(ext));
+            }
+            else
+            {
+                mensajeError = "Error al generar el reporte. Intenta nuevamente.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            descargando = false;
+            tipoActivo = "";
+            StateHasChanged();
+        }
+    }
+
+    private string BuildQueryString(string tipo)
+    {
+        // Drivers no usa filtros de fecha/status
+        if (tipo == "drivers/excel" || tipo == "my-orders/excel") return "";
+
+        var parts = new List<string>();
+        if (desde.HasValue) parts.Add($"desde={desde.Value:yyyy-MM-dd}");
+        if (hasta.HasValue) parts.Add($"hasta={hasta.Value:yyyy-MM-dd}");
+        if (!string.IsNullOrEmpty(statusFilter) && tipo.StartsWith("orders"))
+            parts.Add($"status={statusFilter}");
+
+        return parts.Any() ? "?" + string.Join("&", parts) : "";
+    }
+
+    private void LimpiarFiltros()
+    {
+        desde = null;
+        hasta = null;
+        statusFilter = "";
+    }
+
+    private static string GetMimeType(string ext) => ext switch
+    {
+        "pdf" => "application/pdf",
+        "xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        _ => "application/octet-stream"
+    };
+}

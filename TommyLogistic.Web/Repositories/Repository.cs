@@ -71,4 +71,17 @@ public class Repository(HttpClient httpClient) : IRepository
         }
         return new HttpResponseWrapper<TResponse>(default, !responseHttp.IsSuccessStatusCode, responseHttp);
     }
+
+    // En Repository
+    public async Task<HttpResponseWrapper<byte[]>> GetBytesAsync(string url)
+    {
+        var response = await _httpClient.GetAsync(url);
+        if (response.IsSuccessStatusCode)
+        {
+            var bytes = await response.Content.ReadAsByteArrayAsync();
+            return new HttpResponseWrapper<byte[]>(bytes, true, response);
+        }
+        return new HttpResponseWrapper<byte[]>(null, false, response);
+    }
+
 }
