@@ -1,7 +1,6 @@
 ﻿using CurrieTechnologies.Razor.SweetAlert2;
 using TommyLogistic.Shared.DTOs.Orders;
 using TommyLogistic.Web.Repositories;
-using static TommyLogistic.Web.Pages.Dashboards.AdminDashboard;
 
 namespace TommyLogistic.Web.Services;
 
@@ -62,5 +61,11 @@ public class OrderService(IRepository repository, SweetAlertService sweetAlertSe
         return r.Error ? null : r.Response;
     }
 
+    public class AssignmentResponse
+    {
+        public string Message { get; set; } = "";
+        public int DriversUsed { get; set; }
+        public int OrdersPending { get; set; }
+    }
 
 }

@@ -1,142 +1,292 @@
-﻿
-@page "/AdminDashboard"
+﻿@page "/AdminDashboard"
 @layout MainLayout
+@implements IDisposable
 @inject SweetAlertService _Swal
+@inject IRepository _IRepository
 @inject OrderService _OrderService
 @inject SesionService _SesionService
 @inject NavigationManager _NavigationManager
+@inject NotificationService _NotificationService
 @attribute [Authorize(Roles = nameof(UserEnum.Admin))]
 
 <PageTitle>Dashboard — Tommy Logistic</PageTitle>
 
-<div class="dashboard-header">
-    <h1 class="page-title">Dashboard</h1>
-    <div class="dashboard-actions">
-        <button class="btn btn-ghost" @onclick="SimularRecepcionMasiva">
-            📥 Simular comandas
-        </button>
-        <button class="btn btn-success" @onclick="AutoRouteAndAssignAsync">
-            ⚡ Armar cargas
-        </button>
-    </div>
-</div>
-
-@if (_loading)
+@if (_loading && _dashboard is null)
 {
     <div class="loading-overlay">
         <div class="spinner"></div>
         <span>Cargando dashboard...</span>
     </div>
 }
-else
+else if (_dashboard is not null)
 {
-    <div class="dashboard-grid">
-        <div class="stat-card-v2" style="--sc-color:#1a56db; --sc-bg:#e8f0fe">
-            <div class="stat-card-v2__icon">📦</div>
-            <div class="stat-card-v2__body">
-                <span class="stat-card-v2__label">Pedidos hoy</span>
-                <span class="stat-card-v2__value">@Data.TotalToday</span>
-            </div>
+    <!-- Header -->
+    <div class="dash-header">
+        <div>
+            <h1 class="page-title" style="margin-bottom: var(--space-1)">Dashboard</h1>
+            <p class="text-muted text-sm">
+                @DateTime.Now.ToString("dddd, dd 'de' MMMM yyyy", new System.Globalization.CultureInfo("es-PE"))
+            </p>
+        </div>
+        
+        <div class="dashboard-actions">
+            <button class="btn btn-ghost" @onclick="SimularRecepcionMasiva">
+                📥 Simular comandas
+            </button>
+            <button class="btn btn-success" @onclick="AutoRouteAndAssignAsync">
+                ⚡ Armar cargas
+            </button>
         </div>
 
-        <div class="stat-card-v2" style="--sc-color:#0e9f6e; --sc-bg:#def7ec">
-            <div class="stat-card-v2__icon">✅</div>
-            <div class="stat-card-v2__body">
-                <span class="stat-card-v2__label">Entregados</span>
-                <span class="stat-card-v2__value">@Data.Delivered</span>
+        <div class="dash-header-right">
+            @if (_loading)
+            {
+                <div class="spinner spinner-sm"></div>
+            }
+            <span class="live-dot">En vivo</span>
+        </div>
+    </div>
+
+    <!-- Stats pedidos -->
+    <div class="dash-stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:var(--color-primary-light)">📦</div>
+            <div class="stat-info">
+                <div class="stat-value" style="color:var(--color-primary)">
+                    @_dashboard.TotalPedidosHoy
+                </div>
+                <div class="stat-label">Pedidos hoy</div>
             </div>
         </div>
-
-        <div class="stat-card-v2" style="--sc-color:#7c3aed; --sc-bg:#f3e8ff">
-            <div class="stat-card-v2__icon">🚚</div>
-            <div class="stat-card-v2__body">
-                <span class="stat-card-v2__label">En camino</span>
-                <span class="stat-card-v2__value">@Data.OnTheWay</span>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:var(--color-primary-light)">🚗</div>
+            <div class="stat-info">
+                <div class="stat-value" style="color:var(--estado-encamino)">
+                    @_dashboard.EnCaminoHoy
+                </div>
+                <div class="stat-label">En camino</div>
             </div>
         </div>
-
-        <div class="stat-card-v2" style="--sc-color:#6366f1; --sc-bg:#eef2ff">
-            <div class="stat-card-v2__icon">🏭</div>
-            <div class="stat-card-v2__body">
-                <span class="stat-card-v2__label">En almacén</span>
-                <span class="stat-card-v2__value">@Data.OnStorage</span>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:var(--color-success-light)">✅</div>
+            <div class="stat-info">
+                <div class="stat-value" style="color:var(--estado-entregado)">
+                    @_dashboard.EntregadosHoy
+                </div>
+                <div class="stat-label">Entregados</div>
             </div>
         </div>
-
-        <div class="stat-card-v2" style="--sc-color:#d97706; --sc-bg:#fef3c7">
-            <div class="stat-card-v2__icon">🔄</div>
-            <div class="stat-card-v2__body">
-                <span class="stat-card-v2__label">Reprogramados</span>
-                <span class="stat-card-v2__value">@Data.Rescheduled</span>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:var(--color-danger-light)">❌</div>
+            <div class="stat-info">
+                <div class="stat-value" style="color:var(--estado-fallido)">
+                    @_dashboard.FallidosHoy
+                </div>
+                <div class="stat-label">Fallidos</div>
             </div>
         </div>
-
-        <div class="stat-card-v2" style="--sc-color:#e02424; --sc-bg:#fde8e8">
-            <div class="stat-card-v2__icon">❌</div>
-            <div class="stat-card-v2__body">
-                <span class="stat-card-v2__label">Fallidos</span>
-                <span class="stat-card-v2__value">@Data.Failed</span>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:var(--color-warning-light)">⏳</div>
+            <div class="stat-info">
+                <div class="stat-value" style="color:var(--estado-ausente)">
+                    @_dashboard.PendientesAsignar
+                </div>
+                <div class="stat-label">Sin asignar</div>
             </div>
         </div>
     </div>
 
-    <div class="card">
-        <div class="movimientos-header">
-            <h2 class="card-title">Movimientos en tiempo real</h2>
-            <span class="live-dot">EN VIVO</span>
+    <!-- Stats drivers -->
+    <div class="dash-section-header">
+        <span class="section-title">🛵 Repartidores</span>
+        <button class="btn btn-ghost btn-sm"
+                @onclick='() => _NavigationManager.NavigateTo("/Drivers")'>
+            Ver todos →
+        </button>
+    </div>
+    <div class="dash-drivers-stats">
+        <div class="dash-driver-stat">
+            <span class="dash-driver-stat-value">@_dashboard.TotalDrivers</span>
+            <span class="text-xs text-muted">Total</span>
+        </div>
+        <div class="dash-driver-divider"></div>
+        <div class="dash-driver-stat">
+            <span class="dash-driver-stat-value" style="color:var(--color-success)">
+                @_dashboard.DriversDisponibles
+            </span>
+            <span class="text-xs text-muted">Disponibles</span>
+        </div>
+        <div class="dash-driver-divider"></div>
+        <div class="dash-driver-stat">
+            <span class="dash-driver-stat-value" style="color:var(--color-warning)">
+                @_dashboard.DriversOcupados
+            </span>
+            <span class="text-xs text-muted">Ocupados</span>
+        </div>
+    </div>
+
+    <!-- Grid inferior: dos columnas -->
+    <div class="dash-bottom-grid">
+
+        <!-- Últimos pedidos -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">📋 Últimos pedidos</span>
+                <button class="btn btn-ghost btn-sm"
+                        @onclick='() => _NavigationManager.NavigateTo("/Orders")'>
+                    Ver todos →
+                </button>
+            </div>
+
+            @if (!_dashboard.UltimosPedidos.Any())
+            {
+                <div class="empty-state" style="padding: var(--space-8)">
+                    <span class="empty-icon">📭</span>
+                    <p class="text-muted">Sin pedidos aún</p>
+                </div>
+            }
+            else
+            {
+                <div class="dash-feed">
+                    @foreach (var p in _dashboard.UltimosPedidos)
+                    {
+                        <div class="dash-feed-item"
+                             @onclick="@(() => _NavigationManager.NavigateTo($"/pedidos/{p.Id}"))">
+                            <div class="dash-feed-left">
+                                <span class="codigo-seguimiento">@p.TrackingCode</span>
+                                <span class="dash-feed-name">@p.RecipientName</span>
+                                <span class="text-xs text-muted">
+                                    📍 @p.RecipientDistrict
+                                    @if (p.DriverName is not null)
+                                    {
+                                        <span> · 🛵 @p.DriverName</span>
+                                    }
+                                </span>
+                            </div>
+                            <div class="dash-feed-right">
+                                <BadgeEstado Estado="@(Enum.Parse<OrderStatus>(p.OrderStatus))" />
+                                <span class="text-xs text-muted">
+                                    @p.RegistrationDate.ToLocalTime().ToString("HH:mm")
+                                </span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
         </div>
 
-        @if (!UltimosMovimientos.Any())
-        {
-            <div class="empty-state">
-                <span class="empty-icon">📡</span>
-                <p class="text-bold">Sin movimientos aún</p>
-                <p class="text-muted">Los eventos aparecerán aquí en tiempo real</p>
+        <!-- Actividad reciente -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">⚡ Actividad reciente</span>
             </div>
-        }
-        else
-        {
-            <div class="table-wrapper">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Código</th>
-                            <th>Destinatario</th>
-                            <th class="hide-mobile">Distrito</th>
-                            <th>Estado</th>
-                            <th class="hide-mobile">Repartidor</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var p in UltimosMovimientos)
-                        {
-                            <tr @onclick="@(() => _NavigationManager.NavigateTo($"/pedidos/{p.Id}"))">
-                                <td>
-                                    <span class="codigo-seguimiento">@p.TrackingCode</span>
-                                </td>
-                                <td class="text-bold">@p.RecipientName</td>
-                                <td class="hide-mobile text-muted">@p.RecipientDistrict</td>
-                                <td><BadgeEstado Estado="@p.OrderStatus" /></td>
-                                <td class="hide-mobile text-muted">@(p.DeliveryPersonName ?? "—")</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        }
+
+            @if (!_dashboard.ActividadReciente.Any())
+            {
+                <div class="empty-state" style="padding: var(--space-8)">
+                    <span class="empty-icon">💤</span>
+                    <p class="text-muted">Sin actividad aún</p>
+                </div>
+            }
+            else
+            {
+                <div class="dash-feed">
+                    @foreach (var ev in _dashboard.ActividadReciente)
+                    {
+                        <div class="dash-feed-item">
+                            <div class="dash-activity-avatar"
+                                 style="background:@GetRoleColor(ev.ExecutedRole)">
+                                @Initials(ev.ExecutedBy)
+                            </div>
+                            <div class="dash-feed-left">
+                                <span class="dash-feed-name">@ev.ExecutedBy</span>
+                                <span class="text-xs text-muted">
+                                    <span class="codigo-seguimiento">@ev.TrackingCode</span>
+                                    → @GetStatusLabel(ev.OrderStatus)
+                                </span>
+                            </div>
+                            <div class="dash-feed-right">
+                                <span class="text-xs text-muted">
+                                    @ev.Timestamp.ToLocalTime().ToString("HH:mm")
+                                </span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
     </div>
 }
 
+
 @code {
+    private AdminDashboardDTO? _dashboard;
     private bool _loading = true;
-    public DashboardAdminDTO Data { get; set; } = null!;
-    public List<OrderSummaryDTO> UltimosMovimientos { get; set; } = [];
 
     protected override async Task OnInitializedAsync()
-    {    
-        Data ??= new DashboardAdminDTO();
+    {
+        await LoadAsync();
+        _NotificationService.OnDashboardUpdate += OnDashboardUpdate;
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        var r = await _IRepository.GetAsync<AdminDashboardDTO>("api/Admins/AdminDashboard");
+        if (!r.Error) _dashboard = r.Response;
         _loading = false;
     }
+
+    // Cuando SignalR notifica un cambio, recargamos silenciosamente
+    // _loading queda en true brevemente para mostrar el spinner pequeño
+    private void OnDashboardUpdate()
+    {
+        InvokeAsync(async () =>
+        {
+            await LoadAsync();
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        _NotificationService.OnDashboardUpdate -= OnDashboardUpdate;
+    }
+
+    private static string GetRoleColor(string role) => role switch
+    {
+        "Admin"      => "var(--color-danger)",
+        "Supervisor" => "var(--color-warning)",
+        "Operator"   => "var(--color-info)",
+        "Driver"     => "var(--color-success)",
+        _            => "var(--color-text-muted)"
+    };
+
+    private static string GetStatusLabel(string status) => status switch
+    {
+        "Registered"      => "Registrado",
+        "Assigned"        => "Asignado",
+        "PickedUp"        => "Retirado",
+        "OnTheWay"        => "En camino",
+        "Delivered"       => "Entregado",
+        "RecipientAbsent" => "Dest. ausente",
+        "Rescheduled"     => "Reprogramado",
+        "Returning"       => "En retorno",
+        "OnStorage"       => "En almacén",
+        "Failed"          => "Fallido",
+        _                 => status
+    };
+
+    private static string Initials(string name)
+    {
+        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{parts[0][0]}{parts[1][0]}"
+            : name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
+    }
+
+    
     private async Task SimularRecepcionMasiva()
     {
         Random random = new();

@@ -155,6 +155,7 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
 
         _dataContext.Orders.AddRange(newOrders);
         await _dataContext.SaveChangesAsync();
+        await _hubContext.Clients.Group("Admins").SendAsync("DashboardUpdate");
         return Ok();
     }
 
@@ -224,6 +225,7 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
         }
 
         await _dataContext.SaveChangesAsync();
+        await _hubContext.Clients.Group("Admins").SendAsync("DashboardUpdate");
         int ordersLeft = registeredOrders.Count - totalAssigned;
 
         return Ok(new

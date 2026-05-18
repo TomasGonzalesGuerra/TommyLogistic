@@ -8,6 +8,7 @@ using TommyLogistic.Api.Helpers;
 using TommyLogistic.API.Data;
 using TommyLogistic.API.Hubs;
 using TommyLogistic.API.Services;
+using TommyLogistic.Shared.DTOs.Admin;
 using TommyLogistic.Shared.DTOs.Drivers;
 using TommyLogistic.Shared.Entities;
 using TommyLogistic.Shared.Enums;
@@ -25,12 +26,81 @@ public class AdminsController(LogisticDataContext dadaContext, IUserHelper userH
     private readonly IHubContext<NotificationHub> _hubContext = hubContext;
     private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Yop";
 
+    // GET: api/Admins/AdminDashboard
+    [HttpGet("AdminDashboard")]
+    public async Task<ActionResult> GetAdminDashboardAsync()
+    {
+        var hoy = DateTime.UtcNow.Date;
+
+        // Pedidos de hoy
+        var pedidosHoy = await _dadaContext.Orders
+            .Where(o => o.RegistrationDate.Date == hoy)
+            .Include(o => o.Driver).ThenInclude(d => d!.User)
+            .Include(o => o.Company).ThenInclude(d => d!.User)
+            .ToListAsync();
+
+        // Últimos 10 pedidos registrados
+        var ultimosPedidos = await _dadaContext.Orders
+            .OrderByDescending(o => o.RegistrationDate)
+            .Take(10)
+            .Include(o => o.Driver).ThenInclude(d => d!.User)
+            .Include(o => o.Company).ThenInclude(d => d!.User)
+            .Select(o => new AdminOrderFeedDTO
+            {
+                Id = o.Id,
+                TrackingCode = o.TrackingCode,
+                RecipientName = o.RecipientName,
+                RecipientDistrict = o.RecipientDistrict,
+                OrderStatus = o.OrderStatus.ToString(),
+                DriverName = o.Driver!.User.FullName,
+                CompanyName = o.Company!.User.FullName,
+                RegistrationDate = o.RegistrationDate,
+            })
+            .ToListAsync();
+
+        // Últimos 10 eventos de actividad
+        var actividad = await _dadaContext.OrderEvents
+            .OrderByDescending(e => e.Timestamp)
+            .Take(10)
+            .Include(e => e.User)
+            .Include(e => e.Order)
+            .Select(e => new AdminActivityDTO
+            {
+                TrackingCode = e.Order!.TrackingCode,
+                OrderStatus = e.NewStatus.ToString(),
+                ExecutedBy = e.User!.FullName,
+                ExecutedRole = e.User!.UserType.ToString(),
+                EventDescription = $"{e.User.FullName} marcó el pedido como {e.NewStatus}",
+                Timestamp = e.Timestamp,
+            })
+            .ToListAsync();
+
+        // Drivers
+        var drivers = await _dadaContext.Drivers.ToListAsync();
+
+        return Ok(new AdminDashboardDTO
+        {
+            TotalPedidosHoy = pedidosHoy.Count,
+            EnCaminoHoy = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.OnTheWay),
+            EntregadosHoy = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.Delivered),
+            FallidosHoy = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.Failed),
+            PendientesAsignar = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.Registered && o.DriverID == null),
+            TotalDrivers = drivers.Count,
+            DriversDisponibles = drivers.Count(d => d.Available),
+            DriversOcupados = drivers.Count(d => !d.Available),
+            UltimosPedidos = ultimosPedidos,
+            ActividadReciente = actividad,
+        });
+    }
+
+
+    // DRIVERS ==========================================================================
     // GET: api/Admins/GetAllDrivers
     [HttpGet("GetAllDrivers")]
     public async Task<ActionResult<IEnumerable<DriverDTO>>> GetAllDriversAsync()
     {
         List<User> users = await _dadaContext.Users
-            .Include(u => u.Driver).ThenInclude(d => d.Orders)
+            .Include(u => u.Driver).ThenInclude(d => d!.Orders)
             .Where(u => u.UserType == UserEnum.Driver)
             .ToListAsync();
 
@@ -117,5 +187,9 @@ public class AdminsController(LogisticDataContext dadaContext, IUserHelper userH
         await _dadaContext.SaveChangesAsync();
         return Ok();
     }
+
+
+    // ORDERS ==========================================================================
+    
 
 }

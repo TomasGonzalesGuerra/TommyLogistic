@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
+using TommyLogistic.Shared.Enums;
 using TommyLogistic.Web.Helpers;
 
 namespace TommyLogistic.Web.Services;
@@ -13,6 +14,7 @@ public class NotificationService(IJSRuntime jsRuntime) : IAsyncDisposable
 
     public event Action<string>? OnNewDriver;
     public event Action<string>? OnNewOrder;
+    public event Action? OnDashboardUpdate;
 
     public async Task StartAsync(string rol, string userId)
     {
@@ -29,28 +31,25 @@ public class NotificationService(IJSRuntime jsRuntime) : IAsyncDisposable
             .WithAutomaticReconnect()
             .Build();
 
-        // Escuchar evento: nuevo compañero driver
-        _hubConnection.On<object>("NewDriverJoined", data =>
-        {
-            OnNewDriver?.Invoke(data.ToString()!);
-        });
-
-        // Escuchar evento: pedido asignado
-        _hubConnection.On<object>("NewOrderAssigned", data =>
-        {
-            OnNewOrder?.Invoke(data.ToString()!);
-        });
+        _hubConnection.On<object>("NewDriverJoined", data => OnNewDriver?.Invoke(data.ToString()!));
+        _hubConnection.On<object>("NewOrderAssigned", data => OnNewOrder?.Invoke(data.ToString()!));
+        _hubConnection.On("DashboardUpdate", () => OnDashboardUpdate?.Invoke());
 
         await _hubConnection.StartAsync();
         _started = true;
 
-        if (rol == "Driver")
+        if (rol == nameof(UserEnum.Driver))
         {
             // Grupo general: broadcast cuando llega un nuevo compañero
             await _hubConnection.InvokeAsync("JoinDriversGroup");
 
             // Grupo personal: solo este driver recibe sus pedidos
             await _hubConnection.InvokeAsync("JoinPersonalGroup", userId);
+        }
+
+        if (rol == nameof(UserEnum.Admin))
+        {
+            await _hubConnection.InvokeAsync("JoinAdminGroup");
         }
     }
 

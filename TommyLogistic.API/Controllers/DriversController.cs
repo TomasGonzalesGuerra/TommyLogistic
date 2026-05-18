@@ -139,6 +139,8 @@ public class DriversController(LogisticDataContext dadaContext, IHubContext<Noti
             userId: userID,
             note: model.Note
         );
+        
+        await _hubContext.Clients.Group("Admins").SendAsync("DashboardUpdate");
 
         return Ok();
     }
