@@ -29,21 +29,13 @@ public class CargasController(LogisticDataContext context, IHubContext<Notificat
     [HttpPost("Create")]
     public async Task<ActionResult> CreateCarga([FromBody] CargaCreateDTO model)
     {
-        if (model.OrderIds.Count > 10)
-            return BadRequest("Una carga no puede tener más de 10 pedidos");
+        if (model.OrderIds.Count > 10)return BadRequest("Una carga no puede tener más de 10 pedidos");
+        if (model.OrderIds.Count == 0)return BadRequest("Debes seleccionar al menos un pedido");
 
-        if (model.OrderIds.Count == 0)
-            return BadRequest("Debes seleccionar al menos un pedido");
+        Driver? driver = await _dadaContext.Drivers.Include(d => d.User).FirstOrDefaultAsync(d => d.UserID == model.DriverID);
+        if (driver is null) return NotFound("Driver no Encontrado");
+        if (!driver.Available) return BadRequest("El Driver no está Disponible");
 
-        // Validar que el driver existe y está disponible
-        var driver = await _dadaContext.Drivers
-            .Include(d => d.User)
-            .FirstOrDefaultAsync(d => d.UserID == model.DriverID);
-
-        if (driver is null) return NotFound("Driver no encontrado");
-        if (!driver.Available) return BadRequest("El driver no está disponible");
-
-        // Validar pedidos
         var orders = await _dadaContext.Orders
             .Where(o => model.OrderIds.Contains(o.Id))
             .ToListAsync();
@@ -106,9 +98,7 @@ public class CargasController(LogisticDataContext context, IHubContext<Notificat
             });
 
         // Notificar al dashboard admin
-        await _hubContext.Clients.Group("Admins")
-            .SendAsync("DashboardUpdate");
-
+        await _hubContext.Clients.Group("Admins").SendAsync("DashboardUpdate");
         return Ok(carga.Id);
     }
 
