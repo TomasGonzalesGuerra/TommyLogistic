@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 using System.Security.Claims;
 using TommyLogistic.API.Data;
 using TommyLogistic.API.Hubs;
@@ -274,7 +275,6 @@ public class CargasController(LogisticDataContext context, IHubContext<Notificat
 
     // ── Supervisor/Admin: facturar ────────────────────────────────────────
     [HttpPost("Facturar/{id}")]
-    [Authorize(Roles = "Supervisor,Admin")]
     public async Task<ActionResult> Facturar(int id, [FromBody] CargaFacturarDTO model)
     {
         var carga = await _dadaContext.Cargas
@@ -325,6 +325,69 @@ public class CargasController(LogisticDataContext context, IHubContext<Notificat
         await _hubContext.Clients.Group("Admins").SendAsync("DashboardUpdate");
 
         return Ok();
+    }
+
+    // ── Drivers disponibles para asignar carga ────────────────────────────
+    [HttpGet("DriversDisponibles")]
+    public async Task<ActionResult> GetDriversDisponibles()
+    {
+        var drivers = await _dadaContext.Drivers
+            .Include(d => d.User)
+            .Where(d => d.Available)
+            .Select(d => new
+            {
+                Id = d.UserID,
+                FullName = d.User.FullName,
+                Placa = d.Placa,
+                Photo = d.User.Photo,
+                Phone = d.User.PhoneNumber,
+            })
+            .ToListAsync();
+
+        return Ok(drivers);
+    }
+
+    // ── Pedidos disponibles filtrados por distrito ────────────────────────
+    [HttpGet("PedidosDisponibles")]
+    public async Task<ActionResult> GetPedidosDisponibles([FromQuery] string? distrito = null)
+    {
+        var query = _dadaContext.Orders
+            .Include(o => o.Company)
+            .Where(o => o.OrderStatus == OrderStatus.Registered && o.CargaID == null);
+
+        if (!string.IsNullOrEmpty(distrito))
+            query = query.Where(o => o.RecipientDistrict == distrito);
+
+        var pedidos = await query
+            .OrderBy(o => o.RecipientDistrict)
+            .ThenBy(o => o.RegistrationDate)
+            .Select(o => new
+            {
+                o.Id,
+                o.TrackingCode,
+                o.RecipientName,
+                o.RecipientAddress,
+                o.RecipientDistrict,
+                o.PackageDescription,
+                o.Quantity,
+                CompanyName = o.Company!.User.FullName,
+                o.RegistrationDate,
+            })
+            .ToListAsync();
+
+        // Agrupar por distrito para el selector
+        var agrupados = pedidos
+            .GroupBy(p => p.RecipientDistrict)
+            .Select(g => new
+            {
+                Distrito = g.Key,
+                Count = g.Count(),
+                Pedidos = g.ToList()
+            })
+            .OrderBy(g => g.Distrito)
+            .ToList();
+
+        return Ok(agrupados);
     }
 
     // ── Helper ────────────────────────────────────────────────────────────

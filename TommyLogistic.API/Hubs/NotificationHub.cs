@@ -108,4 +108,26 @@ public class NotificationHub(LogisticDataContext context) : Hub
 
         await Clients.Caller.SendAsync("ListaDriversConectados", drivers);
     }
+
+    public async Task SolicitarConclusion(int cargaId, string driverName, int totalPedidos)
+    {
+        // Notificar a todos los Operators en tiempo real
+        await Clients.Group("Operators").SendAsync("CargaPendienteConclusion", new
+        {
+            CargaId = cargaId,
+            DriverName = driverName,
+            Total = totalPedidos,
+            Message = $"{driverName} solicita concluir la carga #{cargaId} ({totalPedidos} pedidos)"
+        });
+
+        // También notificar a Admins y Supervisors
+        await Clients.Group("Admins").SendAsync("CargaPendienteConclusion", new
+        {
+            CargaId = cargaId,
+            DriverName = driverName,
+            Total = totalPedidos,
+            Message = $"{driverName} solicita concluir la carga #{cargaId}"
+        });
+    }
+
 }

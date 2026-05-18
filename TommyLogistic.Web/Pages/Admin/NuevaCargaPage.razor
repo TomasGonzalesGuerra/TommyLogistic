@@ -1,0 +1,364 @@
+﻿@page "/CargaNueva"
+@layout MainLayout
+@inject IRepository _Repository
+@inject NavigationManager _NavigationManager
+@inject NotificationService _NotificationService
+@attribute [Authorize(Roles = $"{nameof(UserEnum.Admin)}, {nameof(UserEnum.Supervisor)}")]
+
+<PageTitle>Nueva carga — Tommy Logistic</PageTitle>
+
+<!-- Breadcrumb -->
+<div class="detail-breadcrumb">
+    <button class="btn btn-ghost btn-sm"
+            @onclick='() => _NavigationManager.NavigateTo("/supervisor/dashboard")'>
+        ← Dashboard
+    </button>
+    <span class="text-muted">/</span>
+    <span class="text-muted">Nueva carga</span>
+</div>
+
+<h1 class="page-title">Nueva carga</h1>
+
+<!-- Stepper -->
+<div class="stepper">
+    <div class="step @(_paso >= 1 ? "step--active" : "") @(_paso > 1 ? "step--done" : "")">
+        <div class="step-circle">@(_paso > 1 ? "✓" : "1")</div>
+        <span class="step-label">Elegir driver</span>
+    </div>
+    <div class="step-line @(_paso > 1 ? "step-line--done" : "")"></div>
+    <div class="step @(_paso >= 2 ? "step--active" : "") @(_paso > 2 ? "step--done" : "")">
+        <div class="step-circle">@(_paso > 2 ? "✓" : "2")</div>
+        <span class="step-label">Elegir distrito</span>
+    </div>
+    <div class="step-line @(_paso > 2 ? "step-line--done" : "")"></div>
+    <div class="step @(_paso >= 3 ? "step--active" : "")">
+        <div class="step-circle">3</div>
+        <span class="step-label">Seleccionar pedidos</span>
+    </div>
+</div>
+
+@if (_error is not null)
+{
+    <div class="alert alert-danger mb-4">
+        <span>⚠️</span><span>@_error</span>
+    </div>
+}
+
+<!-- ── PASO 1: Elegir Driver ─────────────────────────────────────── -->
+@if (_paso == 1)
+{
+    @if (_loadingDrivers)
+    {
+        <div class="loading-overlay"><div class="spinner"></div></div>
+    }
+    else if (!_drivers.Any())
+    {
+        <div class="empty-state">
+            <span class="empty-icon">😴</span>
+            <p class="text-bold">Sin drivers disponibles</p>
+            <p class="text-muted">Todos los repartidores están ocupados</p>
+        </div>
+    }
+    else
+    {
+        <p class="text-muted text-sm mb-4">
+            @_drivers.Count driver(s) disponible(s). Selecciona uno para asignarle la carga.
+        </p>
+        <div class="drivers-select-grid">
+            @foreach (var d in _drivers)
+            {
+                <div class="driver-select-card @(_driverSeleccionado?.Id == d.Id ? "driver-select-card--selected" : "")"
+                     @onclick="() => SeleccionarDriver(d)">
+                    <div class="driver-select-avatar"
+                         style="@(string.IsNullOrEmpty(d.Photo)
+                            ? $"background:{AvatarColor(d.FullName)}"
+                            : $"background-image:url('{d.Photo}')")">
+                        @(string.IsNullOrEmpty(d.Photo) ? Initials(d.FullName) : "")
+                    </div>
+                    <div class="driver-select-info">
+                        <p class="driver-select-name">@d.FullName</p>
+                        <p class="text-xs text-muted">🚗 @d.Placa</p>
+                        @if (!string.IsNullOrEmpty(d.Phone))
+                        {
+                            <p class="text-xs text-muted">📞 @d.Phone</p>
+                        }
+                    </div>
+                    @if (_driverSeleccionado?.Id == d.Id)
+                    {
+                        <span class="driver-select-check">✓</span>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="nueva-carga-footer">
+            <button class="btn btn-primary"
+                    disabled="@(_driverSeleccionado is null)"
+                    @onclick="IrAPaso2">
+                Continuar → Elegir distrito
+            </button>
+        </div>
+    }
+}
+
+<!-- ── PASO 2: Elegir Distrito ───────────────────────────────────── -->
+@if (_paso == 2)
+{
+    @if (_loadingPedidos)
+    {
+        <div class="loading-overlay"><div class="spinner"></div></div>
+    }
+    else if (!_distritos.Any())
+    {
+        <div class="empty-state">
+            <span class="empty-icon">📭</span>
+            <p class="text-bold">Sin pedidos disponibles</p>
+            <p class="text-muted">No hay pedidos registrados sin asignar</p>
+        </div>
+    }
+    else
+    {
+        <p class="text-muted text-sm mb-4">
+            Driver seleccionado:
+            <strong>@_driverSeleccionado!.FullName</strong>
+            · @_driverSeleccionado.Placa
+        </p>
+
+        <div class="distritos-grid">
+            @foreach (var d in _distritos)
+            {
+                bool seleccionado = _distritoSeleccionado == d.Distrito;
+                <div class="distrito-card @(seleccionado ? "distrito-card--selected" : "")"
+                     @onclick="() => SeleccionarDistrito(d.Distrito)">
+                    <div class="distrito-card-top">
+                        <span class="distrito-nombre">📍 @d.Distrito</span>
+                        @if (seleccionado)
+                        {
+                            <span class="driver-select-check">✓</span>
+                        }
+                    </div>
+                    <span class="badge badge-encamino">@d.Count pedido(s)</span>
+                    @if (d.Count > 10)
+                    {
+                        <p class="text-xs text-muted mt-2">
+                            ⚠️ Solo se asignarán los primeros 10
+                        </p>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="nueva-carga-footer">
+            <button class="btn btn-ghost" @onclick="() => _paso = 1">
+                ← Volver
+            </button>
+            <button class="btn btn-primary"
+                    disabled="@(string.IsNullOrEmpty(_distritoSeleccionado))"
+                    @onclick="IrAPaso3">
+                Continuar → Seleccionar pedidos
+            </button>
+        </div>
+    }
+}
+
+<!-- ── PASO 3: Seleccionar Pedidos ───────────────────────────────── -->
+@if (_paso == 3)
+{
+    <div class="paso3-header">
+        <div>
+            <p class="text-sm text-muted">
+                🛵 <strong>@_driverSeleccionado!.FullName</strong>
+                · 📍 <strong>@_distritoSeleccionado</strong>
+            </p>
+        </div>
+        <span class="badge @(_pedidosSeleccionados.Count > 10 ? "badge-fallido" : "badge-encamino")">
+            @_pedidosSeleccionados.Count / 10 seleccionados
+        </span>
+    </div>
+
+    <div class="pedidos-select-actions mb-4">
+        <button class="btn btn-ghost btn-sm" @onclick="SeleccionarTodos">
+            ☑️ Seleccionar todos (@Math.Min(_pedidosDelDistrito.Count, 10))
+        </button>
+        <button class="btn btn-ghost btn-sm" @onclick="LimpiarSeleccion">
+            ✕ Limpiar
+        </button>
+    </div>
+
+    <div class="pedidos-select-list">
+        @foreach (var p in _pedidosDelDistrito)
+        {
+            bool seleccionado = _pedidosSeleccionados.Contains(p.Id);
+            bool bloqueado    = !seleccionado && _pedidosSeleccionados.Count >= 10;
+
+            <div class="pedido-select-item @(seleccionado ? "pedido-select-item--selected" : "") @(bloqueado ? "pedido-select-item--bloqueado" : "")"
+                 @onclick="() => TogglePedido(p.Id)">
+
+                <div class="pedido-select-check">
+                    @if (seleccionado) { <span>✓</span> }
+                </div>
+
+                <div class="pedido-select-body">
+                    <div class="pedido-select-top">
+                        <span class="codigo-seguimiento">@p.TrackingCode</span>
+                        <span class="badge badge-asignado text-xs">🏢 @p.CompanyName</span>
+                    </div>
+                    <p class="pedido-select-nombre">@p.RecipientName</p>
+                    <p class="text-xs text-muted">
+                        📍 @p.RecipientAddress
+                        · 📦 @p.PackageDescription (@p.Quantity u.)
+                    </p>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="nueva-carga-footer">
+        <button class="btn btn-ghost" @onclick="() => _paso = 2">
+            ← Volver
+        </button>
+        <button class="btn btn-primary"
+                disabled="@(!_pedidosSeleccionados.Any() || _guardando)"
+                @onclick="CrearCargaAsync">
+            @if (_guardando)
+            {
+                <span class="spinner spinner-sm"></span>
+                <span>Creando carga...</span>
+            }
+            else
+            {
+                <span>✅ Crear carga (@_pedidosSeleccionados.Count pedidos)</span>
+            }
+        </button>
+    </div>
+}
+
+
+@code {
+    private int _paso = 1;
+    private bool _loadingDrivers = true;
+    private bool _loadingPedidos;
+    private bool _guardando;
+    private string? _error;
+
+    // Datos
+    private List<DriverDisponibleDTO> _drivers = [];
+    private List<DistritoGrupoDTO> _distritos = [];
+    private List<PedidoDisponibleDTO> _pedidosDelDistrito = [];
+
+    // Selecciones
+    private DriverDisponibleDTO? _driverSeleccionado;
+    private string? _distritoSeleccionado;
+    private HashSet<int> _pedidosSeleccionados = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarDriversAsync();
+    }
+
+    // ── PASO 1 ────────────────────────────────────────────────────────────
+    private async Task CargarDriversAsync()
+    {
+        _loadingDrivers = true;
+        var r = await _Repository.GetAsync<List<DriverDisponibleDTO>>(
+            "api/Cargas/DriversDisponibles");
+        if (!r.Error) _drivers = r.Response!;
+        _loadingDrivers = false;
+    }
+
+    private void SeleccionarDriver(DriverDisponibleDTO driver)
+    {
+        _driverSeleccionado = driver;
+    }
+
+    private async Task IrAPaso2()
+    {
+        _paso = 2;
+        _loadingPedidos = true;
+        StateHasChanged();
+
+        var r = await _Repository.GetAsync<List<DistritoGrupoDTO>>(
+            "api/Cargas/PedidosDisponibles");
+
+        if (!r.Error) _distritos = r.Response!;
+        else _error = "No se pudieron cargar los pedidos";
+
+        _loadingPedidos = false;
+    }
+
+    // ── PASO 2 ────────────────────────────────────────────────────────────
+    private void SeleccionarDistrito(string distrito)
+    {
+        _distritoSeleccionado = distrito;
+        _pedidosSeleccionados.Clear();
+    }
+
+    private void IrAPaso3()
+    {
+        var grupo = _distritos.FirstOrDefault(d => d.Distrito == _distritoSeleccionado);
+        _pedidosDelDistrito = grupo?.Pedidos ?? [];
+        _paso = 3;
+    }
+
+    // ── PASO 3 ────────────────────────────────────────────────────────────
+    private void TogglePedido(int id)
+    {
+        if (_pedidosSeleccionados.Contains(id))
+            _pedidosSeleccionados.Remove(id);
+        else if (_pedidosSeleccionados.Count < 10)
+            _pedidosSeleccionados.Add(id);
+    }
+
+    private void SeleccionarTodos()
+    {
+        _pedidosSeleccionados = _pedidosDelDistrito
+            .Take(10)
+            .Select(p => p.Id)
+            .ToHashSet();
+    }
+
+    private void LimpiarSeleccion() => _pedidosSeleccionados.Clear();
+
+    private async Task CrearCargaAsync()
+    {
+        _guardando = true;
+        _error     = null;
+
+        var dto = new CargaCreateDTO
+        {
+            DriverID  = _driverSeleccionado!.Id,
+            OrderIds  = [.. _pedidosSeleccionados]
+        };
+
+        var r = await _Repository.PostAsync<CargaCreateDTO, int>(
+            "api/Cargas/Create", dto);
+
+        if (r.Error)
+        {
+            _error     = await r.GetErrorMessageAsync();
+            _guardando = false;
+            return;
+        }
+
+        // Notificar via SignalR que hay nueva carga
+        await _NotificationService.SolicitarConclusionCargaAsync(
+            r.Response, _driverSeleccionado!.FullName, _pedidosSeleccionados.Count);
+
+        _NavigationManager.NavigateTo("/supervisor/dashboard");
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+    private static string Initials(string name)
+    {
+        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{parts[0][0]}{parts[1][0]}"
+            : name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
+    }
+
+    private static readonly string[] _colors =
+        ["#1a56db","#0e9f6e","#7c3aed","#e3a008","#0694a2","#e02424","#d97706"];
+
+    private static string AvatarColor(string name)
+        => _colors[Math.Abs(name.GetHashCode()) % _colors.Length];
+}

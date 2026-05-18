@@ -88,11 +88,11 @@ public class NotificationService(IJSRuntime jsRuntime) : IAsyncDisposable
             AgregarNotificacion("🎉", "Carga concluida", "Tu carga fue aprobada. ¡Ya puedes recibir nuevas!");
             OnCargaConcluida?.Invoke(data.ToString()!);
         });
-
         _hubConnection.On<object>("CargaPendienteConclusion", data =>
         {
-            AgregarNotificacion("📋", "Solicitud de conclusión", "Un driver solicita concluir su carga.");
-            OnNewOrder?.Invoke(data.ToString()!); // reusa el evento para el toast
+            AgregarNotificacion("📋", "Solicitud enviada", "Tu solicitud de conclusión fue enviada al operario.");
+            OnNewOrder?.Invoke(data.ToString()!);
+            OnNotificacionCambiada?.Invoke();
         });
 
 
@@ -158,6 +158,14 @@ public class NotificationService(IJSRuntime jsRuntime) : IAsyncDisposable
             Historial.RemoveAt(Historial.Count - 1);
 
         OnNotificacionCambiada?.Invoke();
+    }
+
+    public async Task SolicitarConclusionCargaAsync(int cargaId, string driverName, int totalPedidos)
+    {
+        if (_hubConnection is null || _hubConnection.State != HubConnectionState.Connected)
+            return;
+
+        await _hubConnection.InvokeAsync("SolicitarConclusion", cargaId, driverName, totalPedidos);
     }
 
 }

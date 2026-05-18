@@ -298,6 +298,30 @@ else
         _error         = string.Empty;
     }
 
+    private async Task SolicitarConclusionAsync(int cargaId)
+    {
+        _guardando = true;
+
+        // 1. Cambiar estado en BD via HTTP
+        var r = await _DriverService.SolicitarConclusionAsync(cargaId);
+
+        if (!r)
+        {
+            _error = "No se pudo enviar la solicitud";
+            _guardando = false;
+            return;
+        }
+
+        // 2. Notificar al Operator via SignalR directamente
+        var nombre = _dashboard?.FullName ?? "Driver";
+        var total = _dashboard?.PedidosHoy.Count ?? 0;
+        await _NotificationService.SolicitarConclusionCargaAsync(cargaId, nombre, total);
+
+        CerrarModal();
+        await LoadAsync();
+        _guardando = false;
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
     private static string Initials(string name)
     {

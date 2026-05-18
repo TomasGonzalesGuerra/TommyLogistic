@@ -87,4 +87,11 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
         var r = await _repository.PutAsync("api/Drivers/Profile", dto);
         return !r.Error;
     }
+
+    public async Task<bool> SolicitarConclusionAsync(int cargaId)
+    {
+        var r = await _repository.PostAsync<object>(
+            $"api/Cargas/SolicitarConclusion/{cargaId}", null!);
+        return !r.Error;
+    }
 }
