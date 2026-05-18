@@ -13,7 +13,7 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
     {
         try
         {
-            var responseHttp = await _repository.GetAsync<List<DriverDTO>>("api/Drivers/GetAllDrivers");
+            var responseHttp = await _repository.GetAsync<List<DriverDTO>>("api/Admins/GetAllDrivers");
 
             if (responseHttp.Error)
             {
@@ -35,7 +35,7 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
     {
         try
         {
-            var responseHttp = await _repository.PostAsync("api/Drivers", createdDTO);
+            var responseHttp = await _repository.PostAsync("api/Admins/CreateDriver", createdDTO);
 
             if (responseHttp.Error)
             {
@@ -53,29 +53,38 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
         }
 
     }
+
+
+    public async Task<DriverDashboardDTO?> GetDashboardAsync()
+    {
+        var r = await _repository.GetAsync<DriverDashboardDTO>("api/Drivers/Dashboard");
+        return r.Error ? null : r.Response;
+    }
+
+    public async Task<List<DriverOrderDTO>> GetMyOrdersAsync(string? status = null)
+    {
+        var url = string.IsNullOrEmpty(status)
+            ? "api/Drivers/MyOrders"
+            : $"api/Drivers/MyOrders?status={status}";
+        var r = await _repository.GetAsync<List<DriverOrderDTO>>(url);
+        return r.Error ? [] : r.Response!;
+    }
+
+    public async Task<bool> UpdateOrderStatusAsync(int orderId, DriverUpdateStatusDTO dto)
+    {
+        var r = await _repository.PutAsync($"api/Drivers/UpdateOrderStatus/{orderId}", dto);
+        return !r.Error;
+    }
+
+    public async Task<DriverProfileDTO?> GetProfileAsync()
+    {
+        var r = await _repository.GetAsync<DriverProfileDTO>("api/Drivers/Profile");
+        return r.Error ? null : r.Response;
+    }
+
+    public async Task<bool> UpdateProfileAsync(DriverProfileUpdateDTO dto)
+    {
+        var r = await _repository.PutAsync("api/Drivers/Profile", dto);
+        return !r.Error;
+    }
 }
-
-//ayudame ha hacer um modal en el renderize un formulario para crear un Driver con servicio y el endpoint estoy en blazor y una api con ef:
-//Driver:
-//public class Driver
-//{
-//    [Key]
-//    public string UserID { get; set; } = null!;
-//    public string Placa { get; set; } = null!;
-//    public bool Available { get; set; }
-
-//    // Navegación a User
-//    public User User { get; set; } = null!;
-
-//    // Navegación a Orders
-//    public ICollection<Order> Orders { get; set; } = [];
-//}
-//DriverCreatedDTO:
-//public class DriverCreatedDTO
-//{
-//    public string DNI { get; set; } = null!;
-//    public string Placa { get; set; } = null!;
-//    public string Email { get; set; } = null!;
-//    public string Celular { get; set; } = null!;
-//    public string FullName { get; set; } = null!;
-//}

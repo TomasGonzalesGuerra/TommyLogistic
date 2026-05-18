@@ -13,12 +13,9 @@
     }
     else
     {
-        @if (!_esRepartidor)
-        {
-            <nav class="app-sidebar @(_sidebarAbierto ? "open" : "")">
-                <Sidebar OnCerrar="CerrarSidebar" />
-            </nav>
-        }
+        <nav class="app-sidebar @(_sidebarAbierto ? "open" : "")">
+            <Sidebar OnCerrar="CerrarSidebar" />
+        </nav>
 
         @if (_sidebarAbierto)
         {
@@ -31,7 +28,7 @@
                     <span></span><span></span><span></span>
                 </button>
                 <div class="topbar-logo">
-                    <span class="logo-mark">TG</span>
+                    <span class="logo-mark">TL</span>
                     <span class="logo-text hide-mobile">Tommy Logistics</span>
                 </div>
                 <div class="topbar-right">
@@ -45,11 +42,6 @@
                 @Body
             </main>
         </div>
-
-        @if (_esRepartidor)
-        {
-            <MobileNav />
-        }
     }
 </div>
 
@@ -75,7 +67,6 @@
     {
         _rol = await _SesionService.GetRolAsync() ?? string.Empty;
         _nombre = await _SesionService.GetNameAsync() ?? string.Empty;
-        _esRepartidor = _rol == "Driver";
         _inicializando = false;
     }
 

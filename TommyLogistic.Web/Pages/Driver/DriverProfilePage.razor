@@ -1,0 +1,163 @@
+﻿@page "/Driver/Profile"
+@layout MainLayout
+@inject DriverService _DriverService
+@attribute [Authorize(Roles = nameof(UserEnum.Driver))]
+
+<PageTitle>Mi perfil — Tommy Logistic</PageTitle>
+
+<div class="list-header">
+    <h1 class="page-title">Mi perfil</h1>
+</div>
+
+@if (_loading)
+{
+    <div class="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+}
+else if (_profile is not null)
+{
+    <div class="profile-grid">
+
+        <!-- Avatar -->
+        <div class="card profile-avatar-card">
+            <div class="profile-avatar"
+                 style="@(string.IsNullOrEmpty(_profile.Photo)
+                                                     ? $"background:{AvatarColor(_profile.FullName)}"
+                                                     : $"background-image:url('{_profile.Photo}')")">
+                @(string.IsNullOrEmpty(_profile.Photo) ? Initials(_profile.FullName) : "")
+            </div>
+            <p class="profile-name">@_profile.FullName</p>
+            <p class="text-muted text-sm">@_profile.Email</p>
+            <span class="badge badge-asignado mt-4">🚗 @_profile.Placa</span>
+        </div>
+
+        <!-- Formulario -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Editar información</span>
+            </div>
+
+            @if (_exito)
+            {
+                <div class="alert alert-success mb-4">
+                    <span>✅</span><span>Perfil actualizado correctamente</span>
+                </div>
+            }
+            @if (_error is not null)
+            {
+                <div class="alert alert-danger mb-4">
+                    <span>⚠️</span><span>@_error</span>
+                </div>
+            }
+
+            <div class="form-group">
+                <label class="form-label required">Placa del vehículo</label>
+                <input @bind="_form.Placa" class="form-control" placeholder="Ej: ABC-123" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Teléfono</label>
+                <input @bind="_form.Phone" class="form-control" placeholder="Ej: 999 888 777" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Dirección</label>
+                <input @bind="_form.Address" class="form-control" placeholder="Tu dirección" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Foto de perfil</label>
+                <InputFile OnChange="OnFotoSeleccionada"
+                           accept="image/*"
+                           class="form-control" />
+                @if (!string.IsNullOrEmpty(_fotoPreview))
+                {
+                    <img src="@_fotoPreview"
+                         class="profile-foto-preview mt-2"
+                         alt="Preview" />
+                }
+            </div>
+
+            <button class="btn btn-primary w-full"
+                    disabled="@_guardando"
+                    @onclick="GuardarAsync">
+                @if (_guardando)
+                {
+                    <span class="spinner spinner-sm"></span>
+                    <span>Guardando...</span>
+                }
+                else
+                {
+                    <span>Guardar cambios</span>
+                }
+            </button>
+        </div>
+
+    </div>
+}
+
+
+@code {
+    private DriverProfileDTO? _profile;
+    private DriverProfileUpdateDTO _form = new();
+    private bool _loading = true;
+    private bool _guardando;
+    private bool _exito;
+    private string? _error;
+    private string? _fotoPreview;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _profile = await _DriverService.GetProfileAsync();
+        if (_profile is not null)
+        {
+            _form.Placa = _profile.Placa;
+            _form.Phone = _profile.Phone;
+            _form.Address = _profile.Address;
+        }
+        _loading = false;
+    }
+
+    private async Task OnFotoSeleccionada(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        using var ms = new MemoryStream();
+        await file.OpenReadStream(maxAllowedSize: 2 * 1024 * 1024).CopyToAsync(ms);
+        var bytes = ms.ToArray();
+        _form.PhotoBase64 = Convert.ToBase64String(bytes);
+        _fotoPreview = $"data:{file.ContentType};base64,{_form.PhotoBase64}";
+    }
+
+    private async Task GuardarAsync()
+    {
+        _guardando = true;
+        _exito = false;
+        _error = null;
+
+        var ok = await _DriverService.UpdateProfileAsync(_form);
+        if (ok)
+        {
+            _exito = true;
+            _profile = await _DriverService.GetProfileAsync();
+        }
+        else
+        {
+            _error = "No se pudo guardar. Intenta de nuevo.";
+        }
+
+        _guardando = false;
+    }
+
+    private static string Initials(string name)
+    {
+        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{parts[0][0]}{parts[1][0]}"
+            : name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
+    }
+
+    private static readonly string[] _avatarColors =
+        ["#1a56db", "#0e9f6e", "#7c3aed", "#e3a008", "#0694a2", "#e02424", "#d97706"];
+
+    private static string AvatarColor(string name)
+        => _avatarColors[Math.Abs(name.GetHashCode()) % _avatarColors.Length];
+}

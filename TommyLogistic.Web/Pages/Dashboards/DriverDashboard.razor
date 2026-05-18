@@ -1,9 +1,325 @@
 ﻿@page "/DriverDashboard"
 @layout MainLayout
+@inject SweetAlertService _Swal
+@inject DriverService _DriverService
+@inject SesionService _SesionService
+@inject NavigationManager _NavigationManager
+@inject NotificationService _NotificationService
 @attribute [Authorize(Roles = nameof(UserEnum.Driver))]
 
-<h3>DriverDashboard</h3>
+<PageTitle>Mi día — Tommy Logistic</PageTitle>
+
+@if (_loading)
+{
+    <div class="loading-overlay">
+        <div class="spinner"></div>
+        <span>Cargando tu día...</span>
+    </div>
+}
+else if (_dashboard is null)
+{
+    <div class="empty-state">
+        <span class="empty-icon">😕</span>
+        <p class="text-bold">No se pudo cargar el dashboard</p>
+    </div>
+}
+else
+{
+    <!-- Saludo -->
+    <div class="driver-greeting">
+        <div class="driver-greeting-avatar"
+             style="@(string.IsNullOrEmpty(_dashboard.Photo)
+                ? $"background:{AvatarColor(_dashboard.FullName)}"
+                : $"background-image:url('{_dashboard.Photo}')")">
+            @(string.IsNullOrEmpty(_dashboard.Photo) ? Initials(_dashboard.FullName) : "")
+        </div>
+        <div>
+            <h1 class="page-title" style="margin-bottom:0">
+                Buenos días, @_dashboard.FullName.Split(' ')[0] 👋
+            </h1>
+            <p class="text-muted text-sm">
+                @DateTime.Now.ToString("dddd, dd 'de' MMMM", new System.Globalization.CultureInfo("es-PE"))
+                · 🚗 @_dashboard.Placa
+            </p>
+        </div>
+        <span class="live-dot ml-2">En línea</span>
+    </div>
+
+    <!-- Stats del día -->
+    <div class="driver-stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:var(--color-info-light)">📋</div>
+            <div class="stat-info">
+                <div class="stat-value" style="color:var(--estado-asignado)">@_dashboard.Asignados</div>
+                <div class="stat-label">Asignados</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#f3e8ff">📦</div>
+            <div class="stat-info">
+                <div class="stat-value" style="color:var(--estado-retirado)">@_dashboard.Retirados</div>
+                <div class="stat-label">Retirados</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:var(--color-primary-light)">🚗</div>
+            <div class="stat-info">
+                <div class="stat-value" style="color:var(--estado-encamino)">@_dashboard.EnCamino</div>
+                <div class="stat-label">En camino</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:var(--color-success-light)">✅</div>
+            <div class="stat-info">
+                <div class="stat-value" style="color:var(--estado-entregado)">@_dashboard.Entregados</div>
+                <div class="stat-label">Entregados</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:var(--color-warning-light)">🚪</div>
+            <div class="stat-info">
+                <div class="stat-value" style="color:var(--estado-ausente)">@_dashboard.Fallidos</div>
+                <div class="stat-label">Fallidos</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#fff7ed">↩️</div>
+            <div class="stat-info">
+                <div class="stat-value" style="color:var(--estado-retorno)">@_dashboard.EnRetorno</div>
+                <div class="stat-label">En retorno</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pedidos de hoy -->
+    <div class="section-title mt-6">🔴 Mis pedidos de hoy</div>
+
+    @if (!_dashboard.PedidosHoy.Any())
+    {
+        <div class="empty-state">
+            <span class="empty-icon">🎉</span>
+            <p class="text-bold">Sin pedidos por ahora</p>
+            <p class="text-muted">Aquí aparecerán los que te asignen</p>
+        </div>
+    }
+    else
+    {
+        <div class="driver-orders-list">
+            @foreach (var pedido in _dashboard.PedidosHoy)
+            {
+                <div class="driver-order-card @(_nuevosIds.Contains(pedido.Id) ? "driver-order-card--nuevo" : "")">
+                    <div class="driver-order-top">
+                        <span class="codigo-seguimiento">@pedido.TrackingCode</span>
+                        <BadgeEstado Estado="@pedido.OrderStatus" />
+                    </div>
+
+                    <div class="driver-order-nombre">@pedido.RecipientName</div>
+
+                    <div class="driver-order-meta">
+                        <span>📍 @pedido.RecipientAddress, @pedido.RecipientDistrict</span>
+                        <span>📞 @pedido.RecipientPhone</span>
+                        <span>📦 @pedido.PackageDescription (@pedido.Quantity u.)</span>
+                    </div>
+
+                    @if (pedido.DeliveryAttempts > 0)
+                    {
+                        <p class="pedido-card-intentos">⚠️ @pedido.DeliveryAttempts intento(s) fallido(s)</p>
+                    }
+
+                    <!-- Acciones según estado -->
+                    <div class="driver-order-actions">
+                        @foreach (var accion in GetAcciones(pedido.OrderStatus))
+                        {
+                            <button class="btn @accion.CssClass btn-sm"
+                                    @onclick="() => AbrirAccion(pedido, accion.NuevoEstado)">
+                                @accion.Icono @accion.Label
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
+
+<!-- Modal de confirmación de acción -->
+<GenericModal Title="@_modalTitulo"
+              IsVisible="_mostrarModal"
+              OnCancel="CerrarModal">
+    <BodyContent>
+        <div class="adm-modal__body">
+            <p class="text-sm mb-4">@_modalDescripcion</p>
+            @if (_requiereNota)
+            {
+                <div class="form-group">
+                    <label class="form-label required">Motivo / Nota</label>
+                    <textarea @bind="_nota"
+                              class="form-control"
+                              rows="3"
+                              placeholder="Describe el motivo..."></textarea>
+                </div>
+            }
+            @if (_error is not null)
+            {
+                <div class="alert alert-danger mt-2">
+                    <span>⚠️</span><span>@_error</span>
+                </div>
+            }
+        </div>
+        <div class="adm-modal__footer">
+            <button class="btn btn-ghost btn-sm" @onclick="CerrarModal">Cancelar</button>
+            <button class="btn @_modalBtnClass btn-sm"
+                    disabled="@(_guardando || (_requiereNota && string.IsNullOrWhiteSpace(_nota)))"
+                    @onclick="ConfirmarAccionAsync">
+                @if (_guardando)
+                {
+                    <span class="spinner spinner-sm"></span>
+                }
+                else
+                {
+                    @_modalBtnLabel
+                }
+            </button>
+        </div>
+    </BodyContent>
+</GenericModal>
+
 
 @code {
+    private DriverDashboardDTO? _dashboard;
+    private bool _loading = true;
+    private HashSet<int> _nuevosIds = [];
+    private bool _mostrarModal;
+    private bool _guardando;
+    private bool _requiereNota;
+    private string _nota = string.Empty;
+    private string _error = string.Empty;
+    private string _modalTitulo = string.Empty;
+    private string _modalDescripcion = string.Empty;
+    private string _modalBtnLabel = string.Empty;
+    private string _modalBtnClass = "btn-primary";
+    private DriverOrderDTO? _pedidoActivo;
+    private OrderStatus _estadoActivo;
 
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        _NotificationService.OnNewOrder += OnNuevoPedidoAsignado;
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _dashboard = await _DriverService.GetDashboardAsync();
+        _loading = false;
+    }
+
+    private void OnNuevoPedidoAsignado(string _)
+    {
+        InvokeAsync(async () =>
+        {
+            await LoadAsync();
+            StateHasChanged();
+        });
+    }
+
+    // ── Acciones disponibles por estado ──────────────────────────────────
+    private static List<AccionDTO> GetAcciones(OrderStatus status) => status switch
+    {
+        OrderStatus.Assigned => [
+            new("btn-primary",  OrderStatus.PickedUp,  "📦", "Retirar")
+        ],
+        OrderStatus.PickedUp => [
+            new("btn-primary",  OrderStatus.OnTheWay,  "🚗", "Salir a entregar")
+        ],
+        OrderStatus.OnTheWay => [
+            new("btn-success",  OrderStatus.Delivered,       "✅", "Entregado"),
+            new("btn-warning",  OrderStatus.RecipientAbsent, "🚪", "Ausente"),
+            new("btn-danger",   OrderStatus.Failed,          "❌", "Fallido"),
+        ],
+        OrderStatus.RecipientAbsent or OrderStatus.Failed => [
+            new("btn-ghost",    OrderStatus.Returning, "↩️", "Retornar a base")
+        ],
+        _ => []
+    };
+
+    private void AbrirAccion(DriverOrderDTO pedido, OrderStatus nuevoEstado)
+    {
+        _pedidoActivo  = pedido;
+        _estadoActivo  = nuevoEstado;
+        _nota          = string.Empty;
+        _error         = string.Empty;
+        _requiereNota  = nuevoEstado is OrderStatus.Failed or OrderStatus.RecipientAbsent;
+
+        (_modalTitulo, _modalDescripcion, _modalBtnLabel, _modalBtnClass) = nuevoEstado switch
+        {
+            OrderStatus.PickedUp        => ("Confirmar retiro",       $"¿Confirmás que retiraste el pedido de {pedido.RecipientName}?",         "Confirmar retiro",    "btn-primary"),
+            OrderStatus.OnTheWay        => ("Salir a entregar",        $"¿Confirmás que salís a entregar a {pedido.RecipientName}?",             "Confirmar salida",    "btn-primary"),
+            OrderStatus.Delivered       => ("Marcar como entregado",   $"¿Confirmás la entrega exitosa a {pedido.RecipientName}?",               "Confirmar entrega",   "btn-success"),
+            OrderStatus.RecipientAbsent => ("Destinatario ausente",    $"Indica el motivo por el que no pudiste entregar a {pedido.RecipientName}.", "Confirmar",        "btn-warning"),
+            OrderStatus.Failed          => ("Entrega fallida",         $"Indica el motivo del fallo para el pedido de {pedido.RecipientName}.",   "Confirmar fallo",    "btn-danger"),
+            OrderStatus.Returning       => ("Retornar a base",         $"¿Confirmás que estás retornando el pedido de {pedido.RecipientName}?",  "Confirmar retorno",   "btn-ghost"),
+            _                           => ("Confirmar acción",        "¿Confirmás esta acción?",                                                "Confirmar",           "btn-primary")
+        };
+
+        _mostrarModal = true;
+    }
+
+    private async Task ConfirmarAccionAsync()
+    {
+        if (_pedidoActivo is null) return;
+        _guardando = true;
+        _error     = string.Empty;
+
+        var dto = new DriverUpdateStatusDTO
+        {
+            NewStatus = _estadoActivo,
+            Note      = string.IsNullOrWhiteSpace(_nota) ? null : _nota
+        };
+
+        var ok = await _DriverService.UpdateOrderStatusAsync(_pedidoActivo.Id, dto);
+
+        if (ok)
+        {
+            CerrarModal();
+            await LoadAsync();
+        }
+        else
+        {
+            _error = "No se pudo actualizar el pedido. Intenta de nuevo.";
+        }
+
+        _guardando = false;
+    }
+
+    private void CerrarModal()
+    {
+        _mostrarModal  = false;
+        _pedidoActivo  = null;
+        _nota          = string.Empty;
+        _error         = string.Empty;
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+    private static string Initials(string name)
+    {
+        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{parts[0][0]}{parts[1][0]}"
+            : name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
+    }
+
+    private static readonly string[] _avatarColors =
+        ["#1a56db","#0e9f6e","#7c3aed","#e3a008","#0694a2","#e02424","#d97706"];
+
+    private static string AvatarColor(string name)
+        => _avatarColors[Math.Abs(name.GetHashCode()) % _avatarColors.Length];
+
+    public void Dispose()
+    {
+        _NotificationService.OnNewOrder -= OnNuevoPedidoAsignado;
+    }
+
+    // Record interno para las acciones
+    private record AccionDTO(string CssClass, OrderStatus NuevoEstado, string Icono, string Label);
 }

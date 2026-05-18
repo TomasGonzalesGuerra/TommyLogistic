@@ -1,0 +1,193 @@
+﻿@page "/Driver/Orders"
+@layout MainLayout
+@inject DriverService _DriverService
+@attribute [Authorize(Roles = nameof(UserEnum.Driver))]
+
+<PageTitle>Mis pedidos — Tommy Logistic</PageTitle>
+
+<div class="list-header">
+    <h1 class="page-title">Mis pedidos</h1>
+</div>
+
+<div class="filtros-bar">
+    <div class="filtro-search">
+        <input @bind="_busqueda" @bind:event="oninput"
+               class="form-control"
+               type="search"
+               placeholder="Buscar código, destinatario, distrito..." />
+    </div>
+    <div class="filtro-estado">
+        <select class="form-control" @bind="_filtroEstado" @bind:after="FiltrarAsync">
+            <option value="">Todos los estados</option>
+            @foreach (var e in Enum.GetValues<OrderStatus>())
+            {
+                <option value="@e.ToString()">@NombreEstado(e)</option>
+            }
+        </select>
+    </div>
+</div>
+
+@if (_loading)
+{
+    <div class="loading-overlay">
+        <div class="spinner"></div>
+        <span>Cargando pedidos...</span>
+    </div>
+}
+else if (!PedidosFiltrados.Any())
+{
+    <div class="empty-state">
+        <span class="empty-icon">📭</span>
+        <p class="text-bold">Sin pedidos</p>
+        <p class="text-muted">@(_busqueda.Length > 0 ? "Prueba con otros filtros" : "Aún no tienes pedidos asignados")</p>
+    </div>
+}
+else
+{
+    <p class="list-summary text-muted text-sm mb-4">@PedidosFiltrados.Count() pedidos</p>
+
+    <!-- Tabla desktop -->
+    <div class="table-wrapper hide-on-mobile">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Destinatario</th>
+                    <th>Dirección</th>
+                    <th>Paquete</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                    <th>Intentos</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in PedidosFiltrados)
+                {
+                    <tr @onclick="() => AbrirDetalle(p)">
+                        <td><span class="codigo-seguimiento">@p.TrackingCode</span></td>
+                        <td><span class="text-bold">@p.RecipientName</span></td>
+                        <td class="text-muted text-sm">@p.RecipientDistrict</td>
+                        <td class="text-muted text-sm">@p.PackageDescription</td>
+                        <td><BadgeEstado Estado="@p.OrderStatus" /></td>
+                        <td class="text-muted text-sm">
+                            @p.RegistrationDate.ToLocalTime().ToString("dd/MM/yyyy")
+                        </td>
+                        <td>
+                            @if (p.DeliveryAttempts > 0)
+                            {
+                                <span class="badge badge-ausente">@p.DeliveryAttempts</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Tarjetas móvil -->
+    <div class="pedido-cards show-on-mobile">
+        @foreach (var p in PedidosFiltrados)
+        {
+            <div class="pedido-card" @onclick="() => AbrirDetalle(p)">
+                <div class="pedido-card-top">
+                    <span class="codigo-seguimiento">@p.TrackingCode</span>
+                    <BadgeEstado Estado="@p.OrderStatus" />
+                </div>
+                <div class="pedido-card-nombre">@p.RecipientName</div>
+                <div class="pedido-card-meta">
+                    <span>📍 @p.RecipientDistrict</span>
+                    <span>📦 @p.PackageDescription</span>
+                </div>
+                @if (p.DeliveryAttempts > 0)
+                {
+                    <div class="pedido-card-intentos">⚠️ @p.DeliveryAttempts intento(s)</div>
+                }
+            </div>
+        }
+    </div>
+}
+
+<!-- Modal detalle -->
+<GenericModal Title="Detalle del pedido"
+              IsVisible="_mostrarDetalle"
+              OnCancel="() => _mostrarDetalle = false"
+              Size="lg">
+    <BodyContent>
+        @if (_pedidoSeleccionado is not null)
+        {
+            <div class="adm-modal__body">
+                <div class="preview-top">
+                    <span class="codigo-seguimiento">@_pedidoSeleccionado.TrackingCode</span>
+                    <BadgeEstado Estado="@_pedidoSeleccionado.OrderStatus" />
+                </div>
+                <div class="preview-divider"></div>
+                <OrderTimeline OrderId="_pedidoSeleccionado.Id" />
+            </div>
+            <div class="adm-modal__footer">
+                <button class="btn btn-ghost btn-sm" @onclick="() => _mostrarDetalle = false">
+                    Cerrar
+                </button>
+            </div>
+        }
+    </BodyContent>
+</GenericModal>
+
+@code {
+    private List<DriverOrderDTO> _orders = [];
+    private bool _loading = true;
+    private string _busqueda = string.Empty;
+    private string _filtroEstado = string.Empty;
+    private bool _mostrarDetalle;
+    private DriverOrderDTO? _pedidoSeleccionado;
+
+    private IEnumerable<DriverOrderDTO> PedidosFiltrados =>
+        _orders.Where(p =>
+            (string.IsNullOrWhiteSpace(_busqueda) ||
+             p.TrackingCode.Contains(_busqueda, StringComparison.OrdinalIgnoreCase) ||
+             p.RecipientName.Contains(_busqueda, StringComparison.OrdinalIgnoreCase) ||
+             p.RecipientDistrict.Contains(_busqueda, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrWhiteSpace(_filtroEstado) ||
+             p.OrderStatus.ToString() == _filtroEstado)
+        );
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _orders = await _DriverService.GetMyOrdersAsync();
+        _loading = false;
+    }
+
+    private async Task FiltrarAsync()
+    {
+        _loading = true;
+        _orders = await _DriverService.GetMyOrdersAsync(_filtroEstado);
+        _loading = false;
+    }
+
+    private void AbrirDetalle(DriverOrderDTO pedido)
+    {
+        _pedidoSeleccionado = pedido;
+        _mostrarDetalle = true;
+    }
+
+    private static string NombreEstado(OrderStatus e) => e switch
+    {
+        OrderStatus.Failed => "Fallido",
+        OrderStatus.PickedUp => "Retirado",
+        OrderStatus.Assigned => "Asignado",
+        OrderStatus.OnTheWay => "En camino",
+        OrderStatus.Delivered => "Entregado",
+        OrderStatus.Returning => "En retorno",
+        OrderStatus.OnStorage => "En almacén",
+        OrderStatus.Registered => "Registrado",
+        OrderStatus.Rescheduled => "Reprogramado",
+        OrderStatus.RecipientAbsent => "Destinatario ausente",
+        _ => e.ToString()
+    };
+}

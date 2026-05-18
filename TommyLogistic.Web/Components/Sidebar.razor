@@ -7,14 +7,14 @@
     <div class="sidebar-header">
         <div class="sidebar-logo">
             <span class="logo-mark">TL</span>
-            <span class="logo-name">TommyLogistic</span>
+            <span class="logo-name">Tommy Logistic</span>
         </div>
         <button class="sidebar-close" @onclick="OnCerrar" aria-label="Cerrar menú">✕</button>
     </div>
 
     <nav class="sidebar-nav" aria-label="Navegación principal">
 
-        <AuthorizeView Roles="Admin">
+        <AuthorizeView Roles="@nameof(UserEnum.Admin)">
             <div class="nav-section-label">Operaciones</div>
             <NavLink class="this" href="/AdminDashboard" Match="NavLinkMatch.All">
                 <span class="nav-icon">📊</span> Dashboard
@@ -34,7 +34,7 @@
             </NavLink>
         </AuthorizeView>
 
-        <AuthorizeView Roles="Supervisor">
+        <AuthorizeView Roles="@nameof(UserEnum.Supervisor)">
             <div class="nav-section-label">Supervisión</div>
             <NavLink class="this" href="/SupervisorDashboard" Match="NavLinkMatch.All">
                 <span class="nav-icon">📊</span> Dashboard
@@ -44,7 +44,7 @@
             </NavLink>
         </AuthorizeView>
 
-        <AuthorizeView Roles="Operator">
+        <AuthorizeView Roles="@nameof(UserEnum.Operator)">
             <div class="nav-section-label">Operador</div>
             <NavLink class="this" href="/OperatorDashboard" Match="NavLinkMatch.All">
                 <span class="nav-icon">📊</span> Dashboard
@@ -54,7 +54,7 @@
             </NavLink>
         </AuthorizeView>
 
-        <AuthorizeView Roles="ClienteEmpresa">
+        <AuthorizeView Roles="@nameof(UserEnum.Client)">
             <div class="nav-section-label">Mi empresa</div>
             <NavLink class="this" href="/ClientDashboard" Match="NavLinkMatch.All">
                 <span class="nav-icon">📊</span> Dashboard
@@ -67,13 +67,22 @@
             </NavLink>
         </AuthorizeView>
 
-        <AuthorizeView Roles="Repartidor">
+        <AuthorizeView Roles="@nameof(UserEnum.Driver)">
             <div class="nav-section-label">Mi ruta</div>
             <NavLink class="this" href="/DriverDashboard" Match="NavLinkMatch.All">
                 <span class="nav-icon">🗺️</span> Mi ruta
             </NavLink>
-            <NavLink class="this" href="/mis-entregas">
-                <span class="nav-icon">✅</span> Mis entregas
+            <NavLink class="this" href="/DriverDashboard">
+                <span class="nav-icon">🗺️</span> Mi Carga
+            </NavLink>
+            <NavLink class="this" href="/Driver/">
+                <span class="nav-icon">✅</span> Mis Entregas
+            </NavLink>
+            <NavLink class="this" href="/Driver/">
+                <span class="nav-icon">📷</span> Escanear
+            </NavLink>
+            <NavLink class="this" href="/Driver/Profile">
+                <span class="nav-icon">👤</span> Mi Perfil
             </NavLink>
         </AuthorizeView>
 

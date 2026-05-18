@@ -1,88 +1,164 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using TommyLogistic.Api.Helpers;
 using TommyLogistic.API.Data;
+using TommyLogistic.API.Hubs;
+using TommyLogistic.API.Services;
 using TommyLogistic.Shared.DTOs.Drivers;
 using TommyLogistic.Shared.Entities;
 using TommyLogistic.Shared.Enums;
 
 namespace TommyLogistic.API.Controllers;
 
-[Route("api/[controller]")]
 [ApiController]
-public class DriversController(LogisticDataContext dadaContext, IUserHelper userHelper) : ControllerBase
+[Route("api/[controller]")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = nameof(UserEnum.Driver))]
+public class DriversController(LogisticDataContext dadaContext, IHubContext<NotificationHub> hubContext, OrderEventService eventService) : ControllerBase
 {
-    private readonly IUserHelper _userHelper = userHelper;
     private readonly LogisticDataContext _dadaContext = dadaContext;
+    private readonly OrderEventService _eventService = eventService;
+    private readonly IHubContext<NotificationHub> _hubContext = hubContext;
+    private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Yop";
 
-    // GET: api/Drivers/GetAllDrivers
-    [HttpGet("GetAllDrivers")]
-    public async Task<ActionResult<IEnumerable<DriverDTO>>> GetAllDriversAsync()
+    // GET: api/Drivers/Profile
+    [HttpGet("Profile")]
+    public async Task<ActionResult> GetProfile()
     {
-        List<User> users = await _dadaContext.Users
-            .Include(u => u.Driver).ThenInclude(d => d.Orders)
-            .Where(u => u.UserType == UserEnum.Driver)
+        Driver? driver = await _dadaContext.Drivers.Include(d => d.User).FirstOrDefaultAsync(d => d.UserID == CurrentUserId);
+        if (driver is null) return NotFound();
+
+        return Ok(new DriverProfileDTO
+        {
+            FullName = driver.User.FullName,
+            Email = driver.User.Email!,
+            Phone = driver.User.PhoneNumber!,
+            Document = driver.User.Document,
+            Address = driver.User.Address,
+            Photo = driver.User.Photo,
+            Placa = driver.Placa,
+        });
+    }
+
+    // GET: api/Drivers/Dashboard
+    [HttpGet("Dashboard")]
+    public async Task<ActionResult> GetDashboard()
+    {
+        string userID = CurrentUserId;
+        var hoy = DateTime.UtcNow.Date;
+
+        Driver? driver = await _dadaContext.Drivers
+            .Include(d => d.User)
+            .Include(d => d.Orders!.Where(o => o.RegistrationDate.Date == hoy))
+                .ThenInclude(o => o.Company)
+            .FirstOrDefaultAsync(d => d.UserID == userID);
+
+        if (driver is null) return NotFound();
+
+        var pedidosHoy = driver.Orders ?? [];
+
+        return Ok(new DriverDashboardDTO
+        {
+            FullName = driver.User.FullName,
+            Placa = driver.Placa,
+            Photo = driver.User.Photo,
+            Available = driver.Available,
+            Asignados = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.Assigned),
+            Retirados = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.PickedUp),
+            EnCamino = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.OnTheWay),
+            Entregados = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.Delivered),
+            Fallidos = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.Failed),
+            EnRetorno = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.Returning),
+            PedidosHoy = pedidosHoy.OrderBy(o => o.OrderStatus).Select(o => MapToDriverOrderDTO(o)).ToList()
+        });
+    }
+
+    // GET: api/Drivers/MyOrders
+    [HttpGet("MyOrders")]
+    public async Task<ActionResult> GetMyOrders([FromQuery] string? status = null)
+    {
+        string userID = CurrentUserId;
+        var query = _dadaContext.Orders.Include(o => o.Company).Where(o => o.DriverID == userID);
+
+        if (!string.IsNullOrEmpty(status) && Enum.TryParse<OrderStatus>(status, out var s))
+            query = query.Where(o => o.OrderStatus == s);
+
+        var orders = await query
+            .OrderByDescending(o => o.RegistrationDate)
+            .Select(o => MapToDriverOrderDTO(o))
             .ToListAsync();
 
-        if (users.Count == 0) return Ok(new List<DriverDTO>());
-        if (users == null) return NotFound();
-
-        List<DriverDTO> driverDTOs = users.Select(u => new DriverDTO
-        {
-            Id = u.Id,
-            FullName = u.FullName,
-            Celular = u.PhoneNumber!,
-            DNI = u.Document,
-            Photo = u.Photo ?? string.Empty,
-            Available = u.Driver!.Available,
-            Placa = u.Driver.Placa,
-            DeliveredToday = (int)(u.Driver!.Orders?.Count(o => o.OrderStatus == OrderStatus.Delivered))!,
-            ActiveOrderToday = (int)(u.Driver!.Orders?.Count(o => o.OrderStatus == OrderStatus.Assigned))!
-        }).ToList();
-
-        return Ok(driverDTOs);
+        return Ok(orders);
     }
 
-    // POST: api/Drivers
-    [HttpPost]
-    public async Task<ActionResult> CreateDriverAsync(DriverCreatedDTO createdDTO)
+    // PUT: api/Drivers/UpdateOrderStatus/{OrderID}
+    [HttpPut("UpdateOrderStatus/{OrderID}")]
+    public async Task<ActionResult> UpdateOrderStatus(int OrderID, [FromBody] DriverUpdateStatusDTO model)
     {
-        var userExists = await _userHelper.GetUserAsync(createdDTO.Email);
-        if (userExists != null) return BadRequest("El correo ya está registrado.");
+        string userID = CurrentUserId;
+        var order = await _dadaContext.Orders
+            .FirstOrDefaultAsync(o => o.Id == OrderID && o.DriverID == userID);
+        if (order is null) return NotFound("Pedido no encontrado o no te pertenece");
 
-        User newUser = new()
+        // Validar transiciones permitidas para el driver
+        var transicionValida = (order.OrderStatus, model.NewStatus) switch
         {
-            UserName = createdDTO.Email,
-            Email = createdDTO.Email,
-            PhoneNumber = createdDTO.Celular,
-            FullName = createdDTO.FullName,
-            Document = createdDTO.DNI,
-            Address = string.Empty,
-            Photo = string.Empty,
-            UserType = UserEnum.Driver,
-            Companies = [],
+            (OrderStatus.Assigned, OrderStatus.PickedUp) => true,
+            (OrderStatus.PickedUp, OrderStatus.OnTheWay) => true,
+            (OrderStatus.OnTheWay, OrderStatus.Delivered) => true,
+            (OrderStatus.OnTheWay, OrderStatus.RecipientAbsent) => true,
+            (OrderStatus.OnTheWay, OrderStatus.Failed) => true,
+            (OrderStatus.RecipientAbsent, OrderStatus.Returning) => true,
+            (OrderStatus.Failed, OrderStatus.Returning) => true,
+            _ => false
         };
 
-        var result = await _userHelper.AddUserAsync(newUser, "123456");
+        if (!transicionValida)
+            return BadRequest($"No puedes pasar de {order.OrderStatus} a {model.NewStatus}");
 
-        if (!result.Succeeded)
-        {
-            return BadRequest(result.Errors.FirstOrDefault()?.Description);
-        }
+        order.OrderStatus = model.NewStatus;
 
-        await _userHelper.AddUserToRoleAsync(newUser, UserEnum.Driver.ToString());
+        // Si es entrega fallida o retorno, incrementar intentos
+        if (model.NewStatus == OrderStatus.Failed ||
+            model.NewStatus == OrderStatus.RecipientAbsent)
+            order.DeliveryAttempts++;
 
-        Driver newDriver = new()
-        {
-            UserID = newUser.Id,
-            Placa = createdDTO.Placa,
-            Available = true,
-            Orders = [],
-        };
+        // Si es entregado, registrar fecha
+        if (model.NewStatus == OrderStatus.Delivered)
+            order.DeliveryDate = DateTime.UtcNow;
 
-        _dadaContext.Drivers.Add(newDriver);
         await _dadaContext.SaveChangesAsync();
+
+        // Registrar en historial
+        await _eventService.RegisterAsync(
+            orderId: OrderID,
+            newStatus: model.NewStatus,
+            userId: userID,
+            note: model.Note
+        );
+
         return Ok();
     }
+
+    // ── Helper privado ────────────────────────────────────────────────────
+    private static DriverOrderDTO MapToDriverOrderDTO(Order o) => new()
+    {
+        Id = o.Id,
+        TrackingCode = o.TrackingCode,
+        OrderStatus = o.OrderStatus,
+        DeliveryType = o.DeliveryType,
+        DeliveryAttempts = o.DeliveryAttempts,
+        RegistrationDate = o.RegistrationDate,
+        RecipientName = o.RecipientName,
+        RecipientPhone = o.RecipientPhone,
+        RecipientAddress = o.RecipientAddress,
+        RecipientDistrict = o.RecipientDistrict,
+        PackageDescription = o.PackageDescription,
+        Quantity = o.Quantity,
+        CompanyName = o.Company!.User.FullName,
+    };
 
 }
