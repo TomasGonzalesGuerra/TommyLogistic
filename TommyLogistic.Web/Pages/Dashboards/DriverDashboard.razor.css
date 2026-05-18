@@ -31,11 +31,12 @@
 
 .driver-orders-list {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     gap: var(--space-3);
 }
 
 .driver-order-card {
+    min-width: 20rem;
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);

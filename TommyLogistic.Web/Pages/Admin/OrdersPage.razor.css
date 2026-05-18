@@ -72,18 +72,16 @@
     display: block;
 }
 
-.show-on-mobile {
-    display: none;
-}
-
-/* Tarjetas móvil */
 .pedido-cards {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: var(--space-3);
 }
 
 .pedido-card {
+    min-width: 20rem;
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
@@ -118,7 +116,7 @@
 
 .pedido-card-meta {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: var(--space-3);
     font-size: var(--font-size-sm);
     color: var(--color-text-muted);
@@ -137,11 +135,6 @@
 @media (max-width: 768px) {
     .hide-on-mobile {
         display: none;
-    }
-
-    .show-on-mobile {
-        display: flex;
-        flex-direction: column;
     }
 
     .filtros-bar {

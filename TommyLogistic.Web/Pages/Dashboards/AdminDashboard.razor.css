@@ -61,7 +61,7 @@
 
 .dash-bottom-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: var(--space-5);
     align-items: start;
 }

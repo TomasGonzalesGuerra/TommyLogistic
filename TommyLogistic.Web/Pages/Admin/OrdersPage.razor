@@ -72,64 +72,12 @@ else
         }
     </div>
 
-    <!-- Vista tabla: desktop -->
-    <div class="table-wrapper hide-on-mobile">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Código</th>
-                    <th>Destinatario</th>
-                    <th>Distrito</th>
-                    <th>Paquete</th>
-                    <th>Tipo</th>
-                    <th>Estado</th>
-                    <th>Estimado</th>
-                    <th>Repartidor</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var p in PedidosFiltrados)
-                {
-                    <tr @onclick="() => IrADetalle(p.Id)" class="@(_newsIds.Contains(p.Id) ? "fila-nueva" : "")">
-                        <td>
-                            <span class="codigo-seguimiento">
-                                @p.TrackingCode
-                            </span>
-                        </td>
-
-                        <td>
-                            <span class="text-bold">@p.RecipientName</span>
-                        </td>
-
-                        <td class="text-muted">@p.RecipientDistrict</td>
-                        <td class="text-muted">@p.PackageDescription</td>
-                        <td>
-                            <span class="badge @(p.DeliveryType == DeliveryType.ToDay ? "badge-encamino" : "badge-asignado")">
-                                @(p.DeliveryType == DeliveryType.ToDay ? "4h" : "24h")
-                            </span>
-                        </td>
-
-                        <td><BadgeEstado Estado="@p.OrderStatus" /></td>
-
-                        <td class="text-muted text-sm">
-                            @(p.EstimatedDeliveryDate.HasValue ? p.EstimatedDeliveryDate.Value.ToString("HH:mm") : "—")
-                        </td>
-
-                        <td class="text-muted text-sm">
-                            @(p.DeliveryPersonName ?? "Sin asignar")
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Vista tarjetas: móvil -->
-    <div class="pedido-cards show-on-mobile">
+    <!-- Vista tarjetas -->
+    <div class="pedido-cards">
         @foreach (var p in PedidosFiltrados)
         {
             <div class="pedido-card @(_newsIds.Contains(p.Id) ? "pedido-card--nuevo" : "")"
-                 @onclick="() => IrADetalle(p.Id)">
+                 @onclick="() => ShowPreviw(p.Id)">
                 <div class="pedido-card-top">
                     <span class="codigo-seguimiento">@p.TrackingCode</span>
                     <BadgeEstado Estado="@p.OrderStatus" />
@@ -250,7 +198,7 @@ else
         StateHasChanged();
     });
 
-    private void IrADetalle(int id)
+    private void ShowPreviw(int id)
     {
         _pedidoSeleccionadoId = id;
         _mostrarPreview = true;

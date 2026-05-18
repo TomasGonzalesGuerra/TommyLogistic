@@ -104,12 +104,8 @@ else if (_dashboard is not null)
             Ver todos →
         </button>
     </div>
+
     <div class="dash-drivers-stats">
-        <div class="dash-driver-stat">
-            <span class="dash-driver-stat-value">@_dashboard.TotalDrivers</span>
-            <span class="text-xs text-muted">Total</span>
-        </div>
-        <div class="dash-driver-divider"></div>
         <div class="dash-driver-stat">
             <span class="dash-driver-stat-value" style="color:var(--color-success)">
                 @_dashboard.DriversDisponibles
@@ -123,11 +119,15 @@ else if (_dashboard is not null)
             </span>
             <span class="text-xs text-muted">Ocupados</span>
         </div>
+        <div class="dash-driver-divider"></div>
+        <div class="dash-driver-stat">
+            <span class="dash-driver-stat-value">@_dashboard.TotalDrivers</span>
+            <span class="text-xs text-muted">Total</span>
+        </div>
     </div>
 
     <!-- Grid inferior: dos columnas -->
     <div class="dash-bottom-grid">
-
         <!-- Últimos pedidos -->
         <div class="card">
             <div class="card-header">
@@ -150,8 +150,7 @@ else if (_dashboard is not null)
                 <div class="dash-feed">
                     @foreach (var p in _dashboard.UltimosPedidos)
                     {
-                        <div class="dash-feed-item"
-                             @onclick="@(() => _NavigationManager.NavigateTo($"/pedidos/{p.Id}"))">
+                        <div @onclick="() => ShowPreviw(p.Id)" class="dash-feed-item">
                             <div class="dash-feed-left">
                                 <span class="codigo-seguimiento">@p.TrackingCode</span>
                                 <span class="dash-feed-name">@p.RecipientName</span>
@@ -174,7 +173,7 @@ else if (_dashboard is not null)
                 </div>
             }
         </div>
-
+        
         <!-- Actividad reciente -->
         <div class="card">
             <div class="card-header">
@@ -195,7 +194,7 @@ else if (_dashboard is not null)
                     {
                         <div class="dash-feed-item">
                             <div class="dash-activity-avatar"
-                                 style="background:@GetRoleColor(ev.ExecutedRole)">
+                                    style="background:@GetRoleColor(ev.ExecutedRole)">
                                 @Initials(ev.ExecutedBy)
                             </div>
                             <div class="dash-feed-left">
@@ -216,13 +215,28 @@ else if (_dashboard is not null)
             }
         </div>
 
+        <!-- Columna derecha -->
+        <div class="dash-bottom-right">
+            <DriversOnlinePanel /> 
+        </div>
     </div>
 }
+
+<GenericModal Title="Detalle del pedido"
+              IsVisible="_mostrarPreview"
+              OnCancel="CerrarPreview"
+              Size="lg">
+    <BodyContent>
+        <OrderDetailsPreview OrderId="_pedidoSeleccionadoId" OnClose="CerrarPreview" />
+    </BodyContent>
+</GenericModal>
 
 
 @code {
     private AdminDashboardDTO? _dashboard;
     private bool _loading = true;
+    private bool _mostrarPreview;
+    private int _pedidoSeleccionadoId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -345,6 +359,14 @@ else if (_dashboard is not null)
             ConfirmButtonText = "Entendido"
         });
     }
+
+    private void ShowPreviw(int ID)
+    {
+        _pedidoSeleccionadoId = ID;
+        _mostrarPreview = true;
+    }
+    
+    private async Task CerrarPreview() => _mostrarPreview = false;
 
     public class AssignmentResponse
     {

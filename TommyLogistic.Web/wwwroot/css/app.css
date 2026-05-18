@@ -549,6 +549,8 @@ a.this, .this {
     border-radius: var(--radius-xl);
     padding: var(--space-6);
     box-shadow: var(--shadow-sm);
+    /* TODO:MAUETAR ESTA MIERDA  */
+    /*max-height: 20rem;*/
 }
 
 .card-header {

@@ -42,7 +42,7 @@ public class AdminsController(LogisticDataContext dadaContext, IUserHelper userH
         // Últimos 10 pedidos registrados
         var ultimosPedidos = await _dadaContext.Orders
             .OrderByDescending(o => o.RegistrationDate)
-            .Take(10)
+            .Take(5)
             .Include(o => o.Driver).ThenInclude(d => d!.User)
             .Include(o => o.Company).ThenInclude(d => d!.User)
             .Select(o => new AdminOrderFeedDTO
@@ -61,7 +61,7 @@ public class AdminsController(LogisticDataContext dadaContext, IUserHelper userH
         // Últimos 10 eventos de actividad
         var actividad = await _dadaContext.OrderEvents
             .OrderByDescending(e => e.Timestamp)
-            .Take(10)
+            .Take(5)
             .Include(e => e.User)
             .Include(e => e.Order)
             .Select(e => new AdminActivityDTO

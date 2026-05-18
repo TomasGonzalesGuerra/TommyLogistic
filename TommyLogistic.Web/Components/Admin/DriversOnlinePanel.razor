@@ -1,0 +1,75 @@
+﻿@implements IDisposable
+@inject NotificationService _NotificationService
+
+<div class="drivers-online-card card">
+    <div class="card-header">
+        <span class="card-title">🛵 Repartidores en línea</span>
+        <span class="live-dot">En vivo</span>
+    </div>
+
+    @if (!_NotificationService.DriversConectados.Any())
+    {
+        <div class="drivers-online-empty">
+            <span>😴</span>
+            <p>Ningún repartidor conectado</p>
+        </div>
+    }
+    else
+    {
+        <div class="drivers-online-list">
+            @foreach (var driver in _NotificationService.DriversConectados)
+            {
+                <div class="driver-online-item">
+                    <div class="driver-online-avatar"
+                         style="@(string.IsNullOrEmpty(driver.Photo) ? $"background:{AvatarColor(driver.FullName)}" : $"background-image:url('{driver.Photo}')")">
+                        @(string.IsNullOrEmpty(driver.Photo) ? Initials(driver.FullName) : "")
+                        <span class="driver-online-dot"></span>
+                    </div>
+                    <div class="driver-online-info">
+                        <p class="driver-online-name">@driver.FullName</p>
+                        <p class="driver-online-placa">🚗 @driver.Placa</p>
+                    </div>
+                    <span class="badge @(driver.Available ? "badge-entregado" : "badge-ausente")">
+                        @(driver.Available ? "Libre" : "Ocupado")
+                    </span>
+                </div>
+            }
+        </div>
+    }
+
+    <div class="drivers-online-footer">
+        <span class="text-xs text-muted">
+            @_NotificationService.DriversConectados.Count conectado(s)
+            · @_NotificationService.DriversConectados.Count(d => d.Available) disponible(s)
+        </span>
+    </div>
+</div>
+
+
+@code {
+    protected override void OnInitialized()
+    {
+        _NotificationService.OnDriversChanged += Actualizar;
+    }
+
+    private void Actualizar() => InvokeAsync(StateHasChanged);
+
+    private static string Initials(string name)
+    {
+        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{parts[0][0]}{parts[1][0]}"
+            : name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
+    }
+
+    private static readonly string[] _colors =
+        ["#1a56db", "#0e9f6e", "#7c3aed", "#e3a008", "#0694a2", "#e02424", "#d97706"];
+
+    private static string AvatarColor(string name)
+        => _colors[Math.Abs(name.GetHashCode()) % _colors.Length];
+
+    public void Dispose()
+    {
+        _NotificationService.OnDriversChanged -= Actualizar;
+    }
+}

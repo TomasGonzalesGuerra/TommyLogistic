@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
+using TommyLogistic.Shared.DTOs.Drivers;
 using TommyLogistic.Shared.Enums;
 using TommyLogistic.Web.Helpers;
 
@@ -12,10 +13,10 @@ public class NotificationService(IJSRuntime jsRuntime) : IAsyncDisposable
     private readonly string _tokenKey = "TOKEN_KEY";
     private readonly IJSRuntime _jsRuntime = jsRuntime;
 
-    // 👇 Historial en memoria (máximo 20)
     public List<NotificationItem> Historial { get; } = [];
     public int NoLeidas => Historial.Count(n => !n.Leida);
-
+    public List<DriverConectadoDTO> DriversConectados { get; } = [];
+    public event Action? OnDriversChanged;
     public event Action<string>? OnNewDriver;
     public event Action<string>? OnNewOrder;
     public event Action? OnDashboardUpdate;
@@ -39,22 +40,63 @@ public class NotificationService(IJSRuntime jsRuntime) : IAsyncDisposable
         _hubConnection.On<object>("NewDriverJoined", data => OnNewDriver?.Invoke(data.ToString()!));
         _hubConnection.On<object>("NewOrderAssigned", data => OnNewOrder?.Invoke(data.ToString()!));
         _hubConnection.On("DashboardUpdate", () => OnDashboardUpdate?.Invoke());
+        _hubConnection.On<object>("DriverConectado", data =>
+        {
+            var json = data.ToString()!;
+            var driver = System.Text.Json.JsonSerializer
+                .Deserialize<DriverConectadoDTO>(json,
+                    new System.Text.Json.JsonSerializerOptions
+                    { PropertyNameCaseInsensitive = true });
+
+            if (driver is null) return;
+
+            // Evitar duplicados
+            if (!DriversConectados.Any(d => d.UserId == driver.UserId))
+                DriversConectados.Add(driver);
+
+            OnDriversChanged?.Invoke();
+        });
+        _hubConnection.On<object>("DriverDesconectado", data =>
+        {
+            var json = data.ToString()!;
+            var parsed = System.Text.Json.JsonDocument.Parse(json);
+            var userId = parsed.RootElement.GetProperty("userId").GetString();
+
+            var driver = DriversConectados.FirstOrDefault(d => d.UserId == userId);
+            if (driver is not null)
+                DriversConectados.Remove(driver);
+
+            OnDriversChanged?.Invoke();
+        });
+        _hubConnection.On<object>("ListaDriversConectados", data =>
+        {
+            var json = data.ToString()!;
+            var drivers = System.Text.Json.JsonSerializer
+                .Deserialize<List<DriverConectadoDTO>>(json,
+                    new System.Text.Json.JsonSerializerOptions
+                    { PropertyNameCaseInsensitive = true });
+
+            DriversConectados.Clear();
+            if (drivers is not null)
+                DriversConectados.AddRange(drivers);
+
+            OnDriversChanged?.Invoke();
+        });
 
         await _hubConnection.StartAsync();
         _started = true;
 
-        if (rol == nameof(UserEnum.Driver))
-        {
-            // Grupo general: broadcast cuando llega un nuevo compañero
-            await _hubConnection.InvokeAsync("JoinDriversGroup");
-
-            // Grupo personal: solo este driver recibe sus pedidos
-            await _hubConnection.InvokeAsync("JoinPersonalGroup", userId);
-        }
-
         if (rol == nameof(UserEnum.Admin))
         {
             await _hubConnection.InvokeAsync("JoinAdminGroup");
+            await _hubConnection.InvokeAsync("GetDriversConectados");
+        }
+
+        if (rol == nameof(UserEnum.Driver))
+        {
+            await _hubConnection.InvokeAsync("JoinDriversGroup");
+            await _hubConnection.InvokeAsync("JoinPersonalGroup", userId);
+            await _hubConnection.InvokeAsync("DriverOnline", userId);
         }
     }
 

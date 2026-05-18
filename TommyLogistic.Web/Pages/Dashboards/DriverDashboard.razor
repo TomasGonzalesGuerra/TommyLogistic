@@ -28,9 +28,7 @@ else
     <!-- Saludo -->
     <div class="driver-greeting">
         <div class="driver-greeting-avatar"
-             style="@(string.IsNullOrEmpty(_dashboard.Photo)
-                ? $"background:{AvatarColor(_dashboard.FullName)}"
-                : $"background-image:url('{_dashboard.Photo}')")">
+             style="@(string.IsNullOrEmpty(_dashboard.Photo) ? $"background:{AvatarColor(_dashboard.FullName)}" : $"background-image:url('{_dashboard.Photo}')")">
             @(string.IsNullOrEmpty(_dashboard.Photo) ? Initials(_dashboard.FullName) : "")
         </div>
         <div>

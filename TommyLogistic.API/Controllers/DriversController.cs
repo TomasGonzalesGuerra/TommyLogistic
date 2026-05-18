@@ -53,7 +53,7 @@ public class DriversController(LogisticDataContext dadaContext, IHubContext<Noti
         Driver? driver = await _dadaContext.Drivers
             .Include(d => d.User)
             .Include(d => d.Orders!.Where(o => o.RegistrationDate.Date == hoy))
-                .ThenInclude(o => o.Company)
+                .ThenInclude(o => o.Company).ThenInclude(c => c!.User)
             .FirstOrDefaultAsync(d => d.UserID == userID);
 
         if (driver is null) return NotFound();
