@@ -16,7 +16,7 @@ public interface IReportService
     Task<byte[]> GenerateClientOrdersExcelAsync(string userId);
     Task<byte[]> GenerateOrdersPdfAsync(DateTime? desde, DateTime? hasta, string? status);
     Task<byte[]> GenerateCargasPdfAsync(DateTime? desde, DateTime? hasta);
-    Task<byte[]> GenerateCargaDetailPdfAsync(Guid cargaId);
+    Task<byte[]> GenerateCargaDetailPdfAsync(int cargaId);
 }
 
 public class ReportService : IReportService
@@ -40,8 +40,8 @@ public class ReportService : IReportService
             .Include(o => o.Driver).ThenInclude(d => d!.User)
             .AsQueryable();
 
-        if (desde.HasValue) query = query.Where(o => o.CreatedAt >= desde.Value);
-        if (hasta.HasValue) query = query.Where(o => o.CreatedAt <= hasta.Value.AddDays(1));
+        if (desde.HasValue) query = query.Where(o => o.RegistrationDate >= desde.Value);
+        if (hasta.HasValue) query = query.Where(o => o.RegistrationDate <= hasta.Value.AddDays(1));
         if (!string.IsNullOrEmpty(status)) query = query.Where(o => nameof(o.OrderStatus) == status);
 
         var orders = await query.OrderByDescending(o => o.DeliveryDate).ToListAsync();
@@ -292,14 +292,14 @@ public class ReportService : IReportService
     {
         var query = _context.Orders
             .Include(o => o.Driver).ThenInclude(d => d!.User)
-            .Include(o => o.Client)
+            .Include(o => o.Company).ThenInclude(c => c!.User)
             .AsQueryable();
 
-        if (desde.HasValue) query = query.Where(o => o.CreatedAt >= desde.Value);
-        if (hasta.HasValue) query = query.Where(o => o.CreatedAt <= hasta.Value.AddDays(1));
-        if (!string.IsNullOrEmpty(status)) query = query.Where(o => o.Status == status);
+        if (desde.HasValue) query = query.Where(o => o.RegistrationDate >= desde.Value);
+        if (hasta.HasValue) query = query.Where(o => o.RegistrationDate <= hasta.Value.AddDays(1));
+        if (!string.IsNullOrEmpty(status)) query = query.Where(o => nameof(o.OrderStatus) == status);
 
-        var orders = await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
+        var orders = await query.OrderByDescending(o => o.RegistrationDate).ToListAsync();
 
         var doc = Document.Create(container =>
         {
@@ -319,9 +319,9 @@ public class ReportService : IReportService
                         // Summary boxes
                         col.Item().Row(row =>
                         {
-                            var delivered = orders.Count(o => o.Status == "Delivered");
-                            var inTransit = orders.Count(o => o.Status is "OnTheWay" or "PickedUp");
-                            var pending = orders.Count(o => o.Status is "Registered" or "Assigned");
+                            var delivered = orders.Count(o => o.OrderStatus == OrderStatus.Delivered);
+                            var inTransit = orders.Count(o => o.OrderStatus is OrderStatus.OnTheWay or OrderStatus.PickedUp);
+                            var pending = orders.Count(o => o.OrderStatus is OrderStatus.Registered or OrderStatus.Assigned);
 
                             AddStatBox(row, "Total", orders.Count.ToString(), "#1a56db");
                             AddStatBox(row, "Entregados", delivered.ToString(), "#057a55");
@@ -338,7 +338,6 @@ public class ReportService : IReportService
                             {
                                 cols.ConstantColumn(70);   // ID
                                 cols.RelativeColumn(2);    // Estado
-                                cols.RelativeColumn(3);    // Origen
                                 cols.RelativeColumn(3);    // Destino
                                 cols.RelativeColumn(3);    // Cliente
                                 cols.RelativeColumn(3);    // Driver
@@ -349,7 +348,7 @@ public class ReportService : IReportService
                             // Header
                             table.Header(header =>
                             {
-                                foreach (var h in new[] { "ID", "Estado", "Origen", "Destino",
+                                foreach (var h in new[] { "ID", "Estado", "Destino",
                                                            "Cliente", "Driver", "Items", "Fecha" })
                                 {
                                     header.Cell().Background("#1a56db").Padding(6)
@@ -364,13 +363,12 @@ public class ReportService : IReportService
                                 string[] cells =
                                 [
                                     o.Id.ToString().Substring(0, 8).ToUpper(),
-                                    TranslateStatus(o.Status),
-                                    o.OriginDistrict,
-                                    o.DestinationDistrict,
-                                    o.Client?.Email ?? "—",
+                                    TranslateStatus(nameof(o.OrderStatus)),
+                                    o.RecipientDistrict,
+                                    o.RecipientName ?? "—",
                                     o.Driver?.User?.FullName ?? "—",
-                                    o.Items.ToString(),
-                                    o.CreatedAt.ToString("dd/MM/yy")
+                                    o.Quantity.ToString(),
+                                    o.RegistrationDate.ToString("dd/MM/yy")
                                 ];
 
                                 foreach (var cellVal in cells)
@@ -408,10 +406,10 @@ public class ReportService : IReportService
             .Include(c => c.Orders)
             .AsQueryable();
 
-        if (desde.HasValue) query = query.Where(c => c.CreatedAt >= desde.Value);
-        if (hasta.HasValue) query = query.Where(c => c.CreatedAt <= hasta.Value.AddDays(1));
+        if (desde.HasValue) query = query.Where(c => c.Orders!.Any(o => o.RegistrationDate >= desde.Value));
+        if (hasta.HasValue) query = query.Where(c => c.Orders!.Any(o => o.RegistrationDate <= hasta.Value.AddDays(1)));
 
-        var cargas = await query.OrderByDescending(c => c.CreatedAt).ToListAsync();
+        var cargas = await query.OrderByDescending(c => c.FechaCreacion).ToListAsync();
 
         var doc = Document.Create(container =>
         {
@@ -450,19 +448,19 @@ public class ReportService : IReportService
                     foreach (var (c, idx) in cargas.Select((c, i) => (c, i)))
                     {
                         var bg = idx % 2 == 0 ? "#ffffff" : "#f8fafc";
-                        int entregados = c.Orders.Count(o => o.Status == "Delivered");
-                        double ef = c.Orders.Count > 0
-                            ? Math.Round((double)entregados / c.Orders.Count * 100, 1) : 0;
+                        int entregados = c.Orders!.Count(o => o.OrderStatus == OrderStatus.Delivered);
+                        double ef = c.Orders!.Count > 0
+                            ? Math.Round((double)entregados / c.Orders!.Count * 100, 1) : 0;
 
                         string[] cells =
                         [
                             c.Id.ToString().Substring(0, 8).ToUpper(),
-                            c.Status,
+                            nameof(c.Status),
                             c.Driver?.User?.FullName ?? "—",
-                            c.Orders.Count.ToString(),
+                            c.Orders!.Count.ToString(),
                             entregados.ToString(),
                             $"{ef}%",
-                            c.CreatedAt.ToString("dd/MM/yy")
+                            c.FechaCreacion.ToString("dd/MM/yy")
                         ];
 
                         foreach (var v in cells)
@@ -487,17 +485,15 @@ public class ReportService : IReportService
     // PDF — DETALLE CARGA
     // ═══════════════════════════════════════════════════════════════════════════
 
-    public async Task<byte[]> GenerateCargaDetailPdfAsync(Guid cargaId)
+    public async Task<byte[]> GenerateCargaDetailPdfAsync(int cargaId)
     {
         var carga = await _context.Cargas
-            .Include(c => c.Driver).ThenInclude(d => d.User)
+            .Include(c => c.Driver).ThenInclude(d => d!.User)
             .Include(c => c.Supervisor)
             .Include(c => c.FacturadaPor)
             .Include(c => c.Orders)
-            .FirstOrDefaultAsync(c => c.Id == cargaId);
-
-        if (carga == null) throw new KeyNotFoundException("Carga no encontrada");
-
+            .FirstOrDefaultAsync(c => c.Id == cargaId) ?? throw new KeyNotFoundException("Carga no encontrada");
+        
         var doc = Document.Create(container =>
         {
             container.Page(page =>
@@ -508,7 +504,7 @@ public class ReportService : IReportService
 
                 page.Header().Element(ComposeHeader(
                     $"Detalle de Carga #{carga.Id.ToString().Substring(0, 8).ToUpper()}",
-                    carga.Status));
+                    nameof(carga.Status)));
 
                 page.Content().Column(col =>
                 {
@@ -524,14 +520,14 @@ public class ReportService : IReportService
                         });
                         info.Item().Row(r =>
                         {
-                            AddInfoPair(r, "Estado", carga.Status);
-                            AddInfoPair(r, "Creada", carga.CreatedAt.ToString("dd/MM/yyyy HH:mm"));
+                            AddInfoPair(r, "Estado", nameof(carga.Status));
+                            AddInfoPair(r, "Creada", carga.FechaCreacion.ToString("dd/MM/yyyy HH:mm"));
                         });
-                        if (carga.CompletedAt.HasValue)
+                        if (carga.FechaCreacion != DateTime.MinValue)
                         {
                             info.Item().Row(r =>
                             {
-                                AddInfoPair(r, "Concluida", carga.CompletedAt.Value.ToString("dd/MM/yyyy HH:mm"));
+                                AddInfoPair(r, "Concluida", carga.FechaCreacion.ToString("dd/MM/yyyy HH:mm"));
                                 AddInfoPair(r, "Facturada por", carga.FacturadaPor?.Email ?? "—");
                             });
                         }
@@ -542,9 +538,9 @@ public class ReportService : IReportService
                     // Stats
                     col.Item().Row(row =>
                     {
-                        int entregados = carga.Orders.Count(o => o.Status == "Delivered");
-                        int fallidos = carga.Orders.Count(o => o.Status == "Failed");
-                        double ef = carga.Orders.Count > 0
+                        int entregados = carga.Orders!.Count(o => o.OrderStatus == OrderStatus.Delivered);
+                        int fallidos = carga.Orders!.Count(o => o.OrderStatus == OrderStatus.Failed);
+                        double ef = carga.Orders!.Count > 0
                             ? Math.Round((double)entregados / carga.Orders.Count * 100, 1) : 0;
 
                         AddStatBox(row, "Total Pedidos", carga.Orders.Count.ToString(), "#1a56db");
@@ -578,17 +574,17 @@ public class ReportService : IReportService
                                       .Text(h).FontColor("#ffffff").FontSize(8).Bold();
                         });
 
-                        foreach (var (o, idx) in carga.Orders.Select((o, i) => (o, i)))
+                        foreach (var (o, idx) in carga.Orders!.Select((o, i) => (o, i)))
                         {
                             var bg = idx % 2 == 0 ? "#ffffff" : "#f8fafc";
                             string[] cells =
                             [
                                 o.Id.ToString().Substring(0, 8).ToUpper(),
-                                TranslateStatus(o.Status),
-                                o.OriginDistrict,
-                                o.DestinationDistrict,
-                                o.Items.ToString(),
-                                o.CreatedAt.ToString("dd/MM/yy")
+                                TranslateStatus(nameof(o.OrderStatus)),
+                                o.RecipientName,
+                                o.RecipientDistrict,
+                                o.Quantity.ToString(),
+                                o.RegistrationDate.ToString("dd/MM/yy")
                             ];
                             foreach (var v in cells)
                                 table.Cell().Background(bg).Padding(5).Text(v).FontSize(8);
@@ -670,4 +666,14 @@ public class ReportService : IReportService
         "Registered" => XLColor.FromHtml("#1a56db"),
         _ => XLColor.FromHtml("#374151")
     };
+
+    public Task<byte[]> GenerateClientOrdersExcelAsync(string userId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<byte[]> GenerateCargaDetailPdfAsync(Guid cargaId)
+    {
+        throw new NotImplementedException();
+    }
 }

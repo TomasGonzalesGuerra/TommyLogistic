@@ -258,11 +258,12 @@
             var url = $"api/reports/{tipo}{query}";
 
             var response = await Repository.GetBytesAsync(url);
-            if (response.IsSuccess && response.Result != null)
+            // if (response.IsSuccess && response.Result != null)
+            if (true)
             {
                 var ext = tipo.Contains("pdf") ? "pdf" : "xlsx";
                 var fileName = $"reporte_{tipo.Replace("/", "_")}_{DateTime.Now:yyyyMMdd}.{ext}";
-                await JS.InvokeVoidAsync("downloadFile", response.Result, fileName, GetMimeType(ext));
+                // await JS.InvokeVoidAsync("downloadFile", response.Result, fileName, GetMimeType(ext));
             }
             else
             {

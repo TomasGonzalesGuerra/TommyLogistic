@@ -28,6 +28,7 @@ builder.Services.AddScoped<IRepository, Repository>();
 builder.Services.AddScoped<SesionService>();
 builder.Services.AddScoped<DriverService>();
 builder.Services.AddScoped<OrderService>();
+builder.Services.AddSingleton<ComingSoonService>();
 builder.Services.AddSingleton<NotificationService>();
 
 

@@ -1,0 +1,43 @@
+﻿@inject IJSRuntime JS
+
+@if (IsVisible)
+{
+    <div class="csm-overlay" @onclick="Close">
+        <div class="csm-modal" @onclick:stopPropagation="true">
+            <button class="csm-close" @onclick="Close" aria-label="Cerrar">
+                <span>✕</span>
+            </button>
+
+            <div class="csm-illustration">
+                <div class="csm-gears">
+                    <div class="gear gear-big">⚙️</div>
+                    <div class="gear gear-small">⚙️</div>
+                </div>
+            </div>
+
+            <div class="csm-body">
+                <span class="csm-pill">En construcción</span>
+                <h2 class="csm-title">Estamos trabajando<br />en esta sección</h2>
+                <p class="csm-sub">
+                    Pronto estará disponible.<br />
+                    <strong>Coming Soon</strong>
+                </p>
+            </div>
+
+            <button class="csm-btn" @onclick="Close">
+                Entendido
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public EventCallback<bool> IsVisibleChanged { get; set; }
+
+    private async Task Close()
+    {
+        IsVisible = false;
+        await IsVisibleChanged.InvokeAsync(false);
+    }
+}

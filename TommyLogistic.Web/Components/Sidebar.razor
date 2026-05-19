@@ -1,6 +1,7 @@
 ﻿@inject IJSRuntime _IJSRuntime
 @inject ILoginService _ILoginService
 @inject NavigationManager _NavigationManager
+@inject ComingSoonService _ComingSoonService
 
 <div class="sidebar-inner">
 
@@ -34,6 +35,9 @@
             <div class="nav-section-label">Gestión</div>
             <NavLink class="this" href="/Companies">
                 <span class="nav-icon">🏢</span> Empresas
+            </NavLink>
+            <NavLink class="this" @onclick="_ComingSoonService.Show">
+                <span class="nav-icon">📊</span> Reportes
             </NavLink>
         </AuthorizeView>
 

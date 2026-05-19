@@ -71,7 +71,7 @@ public class ReportsController(IReportService reportService) : ControllerBase
 
     [HttpGet("carga/{id}/pdf")]
     [Authorize(Roles = "Admin,Supervisor,Operator")]
-    public async Task<IActionResult> DownloadCargaDetailPdf(Guid id)
+    public async Task<IActionResult> DownloadCargaDetailPdf(int id)
     {
         var bytes = await _reportService.GenerateCargaDetailPdfAsync(id);
         return File(bytes, "application/pdf", $"carga_{id}.pdf");

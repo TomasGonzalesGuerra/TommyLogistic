@@ -1,6 +1,8 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable
 @inject SesionService _SesionService
 @inject NavigationManager _NavigationManager
+@inject ComingSoonService _ComingSoonService
 
 <div class="app-layout">
     @if (_inicializando)
@@ -46,6 +48,12 @@
     }
 </div>
 
+<div class="page">
+    @Body
+</div>
+
+<ComingSoonModal @bind-IsVisible="_ComingSoonService.IsVisible" />
+
 
 @code {
     private bool   _inicializando   = true;
@@ -69,8 +77,11 @@
         _rol = await _SesionService.GetRolAsync() ?? string.Empty;
         _nombre = await _SesionService.GetNameAsync() ?? string.Empty;
         _inicializando = false;
+        _ComingSoonService.OnChange += StateHasChanged;
     }
 
-    private void ToggleSidebar() => _sidebarAbierto = !_sidebarAbierto;
     private void CerrarSidebar() => _sidebarAbierto = false;
+    private void ToggleSidebar() => _sidebarAbierto = !_sidebarAbierto;
+    public void Dispose() => _ComingSoonService.OnChange -= StateHasChanged;
+
 }

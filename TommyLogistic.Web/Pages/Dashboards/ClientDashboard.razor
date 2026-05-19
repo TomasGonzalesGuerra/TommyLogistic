@@ -21,28 +21,28 @@ else
         <div class="stat-card">
             <div class="stat-icon" style="background: var(--color-primary-light);">📦</div>
             <div class="stat-info">
-                <span class="stat-value">@stats.Total</span>
+                <span class="stat-value">Total</span>
                 <span class="stat-label">Total Pedidos</span>
             </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon" style="background: #e8f5e9;">🚚</div>
             <div class="stat-info">
-                <span class="stat-value">@stats.EnTransito</span>
+                <span class="stat-value">EnTransito</span>
                 <span class="stat-label">En Tránsito</span>
             </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon" style="background: #e3f2fd;">✅</div>
             <div class="stat-info">
-                <span class="stat-value">@stats.Entregados</span>
+                <span class="stat-value">Entregados</span>
                 <span class="stat-label">Entregados</span>
             </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon" style="background: #fff3e0;">⏳</div>
             <div class="stat-info">
-                <span class="stat-value">@stats.Pendientes</span>
+                <span class="stat-value">Pendientes</span>
                 <span class="stat-label">Pendientes</span>
             </div>
         </div>
@@ -71,25 +71,24 @@ else
                     <div class="order-card-client" @onclick="() => VerDetalle(order.Id)">
                         <div class="order-card-header">
                             <div class="order-id">#@order.Id.ToString().Substring(0, 8).ToUpper()</div>
-                            <BadgeCarga Status="@order.Status" />
                         </div>
                         <div class="order-card-body">
                             <div class="order-route">
-                                <span class="route-point origin">📍 @order.OriginDistrict</span>
+                                <span class="route-point origin">📍 @order.RecipientName</span>
                                 <span class="route-arrow">→</span>
-                                <span class="route-point dest">🎯 @order.DestinationDistrict</span>
+                                <span class="route-point dest">🎯 @order.RecipientDistrict</span>
                             </div>
-                            @if (order.Driver != null)
+                            @if (true)
                             {
                                 <div class="order-driver">
                                     <span class="driver-avatar">🧑‍✈️</span>
-                                    <span>@order.Driver.FullName</span>
+                                    <span class="driver-name">FullName</span>
                                 </div>
                             }
                         </div>
                         <div class="order-card-footer">
-                            <span class="order-date">@order.CreatedAt.ToString("dd/MM/yyyy")</span>
-                            <span class="order-items">@order.Items paquetes</span>
+                            <span class="order-date">@order.RegistrationDate.ToString("dd/MM/yyyy")</span>
+                            <span class="order-items"> paquetes</span>
                         </div>
                     </div>
                 }
@@ -103,17 +102,17 @@ else
             <h2>Historial Reciente</h2>
         </div>
         <div class="history-list">
-            @foreach (var order in historial.Take(5))
+            @* @foreach (var order in historial.Take(5)) *@
+            @if (true)
             {
                 <div class="history-item">
-                    <div class="history-status-dot @GetStatusClass(order.Status)"></div>
+                    <div class="history-status-dot @GetStatusClass("Delivered")"></div>
                     <div class="history-info">
-                        <span class="history-id">#@order.Id.ToString().Substring(0, 8).ToUpper()</span>
-                        <span class="history-route">@order.OriginDistrict → @order.DestinationDistrict</span>
+                        <span class="history-id">#.Id.ToString().Substring(0, 8).ToUpper()</span>
+                        <span class="history-route">OriginDistrict → .DestinationDistrict</span>
                     </div>
                     <div class="history-meta">
-                        <span class="history-date">@order.UpdatedAt?.ToString("dd/MM")</span>
-                        <BadgeCarga Status="@order.Status" />
+                        <span class="history-date">UpdatedAt?.ToString("dd/MM")</span>
                     </div>
                 </div>
             }
@@ -123,14 +122,14 @@ else
 
 @code {
     private bool loading = true;
-    private ClientDashboardStats stats = new();
-    private List<OrderSummaryDto> pedidosActivos = new();
-    private List<OrderSummaryDto> historial = new();
+    private ClientDashboard stats = new();
+    private List<OrderSummaryDTO> pedidosActivos = new();
+    private List<OrderSummaryDTO> historial = new();
 
     protected override async Task OnInitializedAsync()
     {
         // Suscribir a updates en tiempo real
-        NotificationService.OnDashboardUpdate += HandleDashboardUpdate;
+        _NotificationService.OnDashboardUpdate += HandleDashboardUpdate;
 
         await LoadDashboard();
     }
@@ -138,13 +137,14 @@ else
     private async Task LoadDashboard()
     {
         loading = true;
-        var response = await Repository.GetAsync<ClientDashboardDto>("api/orders/client-dashboard");
-        if (response.IsSuccess && response.Result != null)
-        {
-            stats = response.Result.Stats;
-            pedidosActivos = response.Result.Activos;
-            historial = response.Result.Historial;
-        }
+        // var response = await _IRepository.GetAsync<ClientDashboardDTO>("api/orders/client-dashboard");
+        // if (response.IsSuccess && response.Result != null)
+        // {
+        //     stats = response.Result.Stats;
+        //     pedidosActivos = response.Result.Activos;
+        //     historial = response.Result.Historial;
+        // }
+        Task.Delay(2500).Wait();
         loading = false;
     }
 
@@ -154,8 +154,8 @@ else
         await InvokeAsync(StateHasChanged);
     }
 
-    private void VerDetalle(Guid orderId) =>
-        Navigation.NavigateTo($"/pedidos/{orderId}");
+    private void VerDetalle(int orderId) =>
+        _NavigationManager.NavigateTo($"/pedidos/{orderId}");
 
     private string GetStatusClass(string status) => status switch
     {
@@ -167,6 +167,6 @@ else
 
     public void Dispose()
     {
-        NotificationService.OnDashboardUpdate -= HandleDashboardUpdate;
+        _NotificationService.OnDashboardUpdate -= HandleDashboardUpdate;
     }
 }

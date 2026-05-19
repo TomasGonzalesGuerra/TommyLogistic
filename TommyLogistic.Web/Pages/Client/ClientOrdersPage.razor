@@ -10,7 +10,7 @@
 <!-- Filtros -->
 <div class="filters-bar">
     <input class="filter-input" placeholder="Buscar por ID o distrito..."
-            @bind="searchTerm" @bind:event="oninput" @oninput="FiltrarPedidos" />
+            @bind="searchTerm" @oninput="FiltrarPedidos" />
 
     <select class="filter-select" @bind="statusFilter" @bind:after="FiltrarPedidos">
         <option value="">Todos los estados</option>
@@ -58,11 +58,9 @@ else
                 {
                     <tr @onclick="() => VerDetalle(order.Id)" class="table-row-clickable">
                         <td class="font-mono">#@order.Id.ToString().Substring(0, 8).ToUpper()</td>
-                        <td>@order.OriginDistrict</td>
-                        <td>@order.DestinationDistrict</td>
-                        <td>@(order.Driver?.FullName ?? "—")</td>
-                        <td>@order.CreatedAt.ToString("dd/MM/yyyy")</td>
-                        <td><BadgeCarga Status="@order.Status" /></td>
+                        <td>@order.RecipientDistrict</td>
+                        <td>@order.RecipientName</td>
+                        <td>@order.RegistrationDate.ToString("dd/MM/yyyy")</td>
                         <td>
                             <button class="btn btn-ghost btn-sm"
                                     @onclick:stopPropagation="true"
@@ -80,8 +78,8 @@ else
 
 @code {
     private bool loading = true;
-    private List<OrderSummaryDto> pedidos = new();
-    private List<OrderSummaryDto> pedidosFiltrados = new();
+    private List<OrderSummaryDTO> pedidos = new();
+    private List<OrderSummaryDTO> pedidosFiltrados = new();
     private string searchTerm = "";
     private string statusFilter = "";
     private DateTime? fechaDesde;
@@ -89,12 +87,14 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        var response = await Repository.GetAsync<List<OrderSummaryDto>>("api/orders/my-orders");
-        if (response.IsSuccess && response.Result != null)
+        var response = await _IRepository.GetAsync<List<OrderSummaryDTO>>("api/orders/my-orders");
+        
+        if (response != null)
         {
-            pedidos = response.Result;
+            pedidos = [];
             pedidosFiltrados = pedidos;
         }
+
         loading = false;
     }
 
@@ -103,13 +103,13 @@ else
         pedidosFiltrados = pedidos.Where(o =>
             (string.IsNullOrEmpty(searchTerm) ||
              o.Id.ToString().Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-             o.OriginDistrict.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-             o.DestinationDistrict.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) &&
-            (string.IsNullOrEmpty(statusFilter) || o.Status == statusFilter) &&
-            (!fechaDesde.HasValue || o.CreatedAt.Date >= fechaDesde.Value.Date) &&
-            (!fechaHasta.HasValue || o.CreatedAt.Date <= fechaHasta.Value.Date)
+             o.RecipientDistrict!.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+             o.RecipientName!.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrEmpty(statusFilter) || nameof(o.OrderStatus) == statusFilter) &&
+            (!fechaDesde.HasValue || o.RegistrationDate.Date >= fechaDesde.Value.Date) &&
+            (!fechaHasta.HasValue || o.RegistrationDate.Date <= fechaHasta.Value.Date)
         ).ToList();
     }
 
-    private void VerDetalle(Guid id) => Navigation.NavigateTo($"/pedidos/{id}");
+    private void VerDetalle(int id) => _NavigationManager.NavigateTo($"/pedidos/{id}");
 }
