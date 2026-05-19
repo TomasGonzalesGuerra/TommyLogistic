@@ -3,10 +3,12 @@
 @implements IDisposable
 @inject SweetAlertService _Swal
 @inject IRepository _IRepository
+@inject TourService _TourService
 @inject OrderService _OrderService
 @inject SesionService _SesionService
 @inject NavigationManager _NavigationManager
 @inject NotificationService _NotificationService
+@inject AuthenticationStateProvider _AuthProvider
 @attribute [Authorize(Roles = nameof(UserEnum.Admin))]
 
 <PageTitle>Dashboard — Tommy Logistic</PageTitle>
@@ -22,7 +24,7 @@ else if (_dashboard is not null)
 {
     <!-- Header -->
     <div class="dash-header">
-        <div>
+        <div data-tour="welcome">
             <h1 class="page-title" style="margin-bottom: var(--space-1)">Dashboard</h1>
             <p class="text-muted text-sm">
                 @DateTime.Now.ToString("dddd, dd 'de' MMMM yyyy", new System.Globalization.CultureInfo("es-PE"))
@@ -35,6 +37,9 @@ else if (_dashboard is not null)
             </button>
             <button class="btn btn-success" @onclick="AutoRouteAndAssignAsync">
                 ⚡ Armar cargas
+            </button>
+            <button class="btn btn-ghost" @onclick="RepetirTour">
+                🤖 Ver tour de bienvenida
             </button>
         </div>
 
@@ -49,7 +54,7 @@ else if (_dashboard is not null)
 
     <!-- Stats pedidos -->
     <div class="dash-stats-grid">
-        <div class="stat-card">
+        <div class="stat-card" data-tour="stats">
             <div class="stat-icon" style="background:var(--color-primary-light)">📦</div>
             <div class="stat-info">
                 <div class="stat-value" style="color:var(--color-primary)">
@@ -216,7 +221,7 @@ else if (_dashboard is not null)
         </div>
 
         <!-- Columna derecha -->
-        <div class="dash-bottom-right">
+        <div class="dash-bottom-right" data-tour="drivers-panel">
             <DriversOnlinePanel /> 
         </div>
     </div>
@@ -373,5 +378,11 @@ else if (_dashboard is not null)
         public string Message { get; set; } = "";
         public int DriversUsed { get; set; }
         public int OrdersPending { get; set; }
+    }
+
+    private async Task RepetirTour()
+    {
+        await _TourService.ResetTourAsync("Admin");
+        _TourService.StartTourManual("Admin");
     }
 }

@@ -1,5 +1,6 @@
 ﻿@inherits LayoutComponentBase
 @implements IDisposable
+@inject TourService _TourService
 @inject SesionService _SesionService
 @inject NavigationManager _NavigationManager
 @inject ComingSoonService _ComingSoonService
@@ -48,10 +49,7 @@
     }
 </div>
 
-<div class="page">
-    @Body
-</div>
-
+<OnboardingTour />
 <ComingSoonModal @bind-IsVisible="_ComingSoonService.IsVisible" />
 
 
@@ -78,10 +76,15 @@
         _nombre = await _SesionService.GetNameAsync() ?? string.Empty;
         _inicializando = false;
         _ComingSoonService.OnChange += StateHasChanged;
+        _TourService.OnChange += StateHasChanged;
     }
 
     private void CerrarSidebar() => _sidebarAbierto = false;
     private void ToggleSidebar() => _sidebarAbierto = !_sidebarAbierto;
-    public void Dispose() => _ComingSoonService.OnChange -= StateHasChanged;
+    public void Dispose()
+    {
+        _ComingSoonService.OnChange -= StateHasChanged;
+        _TourService.OnChange -= StateHasChanged;
+    }
 
 }

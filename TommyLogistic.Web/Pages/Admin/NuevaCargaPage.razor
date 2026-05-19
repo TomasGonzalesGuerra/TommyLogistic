@@ -344,7 +344,7 @@
         await _NotificationService.SolicitarConclusionCargaAsync(
             r.Response, _driverSeleccionado!.FullName, _pedidosSeleccionados.Count);
 
-        _NavigationManager.NavigateTo("/supervisor/dashboard");
+        _NavigationManager.NavigateTo("/AdminDashboard");
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

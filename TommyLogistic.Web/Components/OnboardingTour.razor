@@ -1,0 +1,346 @@
+﻿@inject IJSRuntime JS
+@implements IDisposable
+@inject TourService _TourService
+@inject AuthenticationStateProvider _AuthProvider
+
+@if (_TourService.IsActive && _TourService.Current != null)
+{
+    <!-- Overlay con spotlight -->
+    <div class="tour-overlay" id="tour-overlay"></div>
+
+    <!-- Spotlight recorte (se posiciona vía JS) -->
+    <div class="tour-spotlight" id="tour-spotlight"></div>
+
+    <!-- Robotito mascota -->
+    <div class="tour-mascot" id="tour-mascot" style="left:@(mascotX)px; top:@(mascotY)px;">
+        <div class="mascot-body mascot-mood--@_TourService.Current.Mood.ToString().ToLower()">
+            @RobotSvg(_TourService.Current.Mood)
+        </div>
+    </div>
+
+    <!-- Bocadillo -->
+    <div class="tour-bubble tour-bubble--@_TourService.Current.BubblePos.ToString().ToLower()"
+         id="tour-bubble"
+         style="left:@(bubbleX)px; top:@(bubbleY)px;">
+
+        <div class="tour-bubble-header">
+            <span class="tour-step-counter">@(_TourService.CurrentStep + 1) / @_TourService.TotalSteps</span>
+            <button class="tour-skip" @onclick="SkipTour">Saltar tour</button>
+        </div>
+
+        <h3 class="tour-bubble-title">@_TourService.Current.Title</h3>
+        <p class="tour-bubble-message">@_TourService.Current.Message</p>
+
+        <div class="tour-progress">
+            @for (int i = 0; i < _TourService.TotalSteps; i++)
+            {
+                <div class="tour-dot @(i == _TourService.CurrentStep ? "active" : i < _TourService.CurrentStep ? "done" : "")"></div>
+            }
+        </div>
+
+        <div class="tour-bubble-actions">
+            @if (!_TourService.IsFirstStep)
+            {
+                <button class="tour-btn tour-btn--ghost" @onclick="Previous">
+                    ← Anterior
+                </button>
+            }
+            else
+            {
+                <span></span>
+            }
+
+            @if (_TourService.IsLastStep)
+            {
+                <button class="tour-btn tour-btn--primary" @onclick="FinishTour">
+                    ¡Entendido! 🎉
+                </button>
+            }
+            else
+            {
+                <button class="tour-btn tour-btn--primary" @onclick="Next">
+                    Siguiente →
+                </button>
+            }
+        </div>
+    </div>
+}
+
+
+
+@code {
+    private double mascotX = 40;
+    private double mascotY = 400;
+    private double bubbleX = 160;
+    private double bubbleY = 380;
+    private string userRole = "";
+
+    protected override void OnInitialized()
+    {
+        _TourService.OnChange += HandleTourChange;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var authState = await _AuthProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                userRole = user.FindFirst("role")?.Value ?? "";
+                await _TourService.TryStartTourAsync(userRole);
+            }
+        }
+
+        if (_TourService.IsActive && _TourService.Current != null)
+        {
+            await PositionElements();
+        }
+    }
+
+    private async Task PositionElements()
+    {
+        if (_TourService.Current == null) return;
+
+        try
+        {
+            var rect = await JS.InvokeAsync<ElementRect>("tourGetElementRect",
+                _TourService.Current.TargetSelector);
+
+            if (rect == null) return;
+
+            // Spotlight encima del elemento
+            await JS.InvokeVoidAsync("tourSetSpotlight", rect.Left - 8, rect.Top - 8,
+                rect.Width + 16, rect.Height + 16);
+
+            // Mascota: se pone cerca del elemento
+            mascotX = rect.Left + rect.Width / 2 - 45;
+            mascotY = rect.Top - 120;
+
+            // Bocadillo según posición preferida
+            switch (_TourService.Current.BubblePos)
+            {
+                case BubblePosition.Right:
+                    bubbleX = rect.Left + rect.Width + 20;
+                    bubbleY = rect.Top + rect.Height / 2 - 100;
+                    mascotX = rect.Left + rect.Width + 20;
+                    mascotY = rect.Top + rect.Height / 2 - 200;
+                    break;
+                case BubblePosition.Left:
+                    bubbleX = rect.Left - 320;
+                    bubbleY = rect.Top + rect.Height / 2 - 100;
+                    mascotX = rect.Left - 120;
+                    mascotY = rect.Top + rect.Height / 2 - 200;
+                    break;
+                case BubblePosition.Bottom:
+                    bubbleX = rect.Left + rect.Width / 2 - 150;
+                    bubbleY = rect.Top + rect.Height + 24;
+                    mascotX = rect.Left + rect.Width / 2 - 45;
+                    mascotY = rect.Top + rect.Height + 130;
+                    break;
+                case BubblePosition.Top:
+                    bubbleX = rect.Left + rect.Width / 2 - 150;
+                    bubbleY = rect.Top - 220;
+                    mascotX = rect.Left + rect.Width / 2 - 45;
+                    mascotY = rect.Top - 330;
+                    break;
+            }
+
+            // Clamp para que no salga de pantalla
+            var vw = await JS.InvokeAsync<double>("tourGetViewportWidth");
+            var vh = await JS.InvokeAsync<double>("tourGetViewportHeight");
+
+            bubbleX = Math.Max(16, Math.Min(bubbleX, vw - 316));
+            bubbleY = Math.Max(16, Math.Min(bubbleY, vh - 280));
+            mascotX = Math.Max(8, Math.Min(mascotX, vw - 100));
+            mascotY = Math.Max(8, Math.Min(mascotY, vh - 140));
+
+            StateHasChanged();
+        }
+        catch { /* elemento no encontrado, siguiente step */ }
+    }
+
+    private async void HandleTourChange()
+    {
+        await InvokeAsync(async () =>
+        {
+            StateHasChanged();
+            await Task.Delay(60); // esperar render
+            await PositionElements();
+        });
+    }
+
+    private async Task Next()
+    {
+        _TourService.Next();
+        await PositionElements();
+    }
+
+    private async Task Previous()
+    {
+        _TourService.Previous();
+        await PositionElements();
+    }
+
+    private async Task FinishTour() => await _TourService.FinishAsync(userRole);
+    private async Task SkipTour() => await _TourService.SkipAsync(userRole);
+
+    public void Dispose() => _TourService.OnChange -= HandleTourChange;
+
+    // SVG del robotito según mood
+    private RenderFragment RobotSvg(MascotMood mood) => __builder =>
+    {
+        __builder.AddMarkupContent(0, mood switch
+        {
+            MascotMood.Waving => WavingRobot(),
+            MascotMood.Pointing => PointingRobot(),
+            MascotMood.Thinking => ThinkingRobot(),
+            _ => HappyRobot()
+        });
+    };
+
+    private static string HappyRobot() => """
+        <svg width="80" height="100" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
+          <!-- Antena -->
+          <line x1="40" y1="8" x2="40" y2="18" stroke="#1a56db" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="40" cy="6" r="4" fill="#1a56db"/>
+          <!-- Cabeza -->
+          <rect x="18" y="18" width="44" height="36" rx="10" fill="#1a56db"/>
+          <!-- Ojos -->
+          <circle cx="31" cy="31" r="5" fill="white"/>
+          <circle cx="49" cy="31" r="5" fill="white"/>
+          <circle cx="32" cy="32" r="3" fill="#0c3483"/>
+          <circle cx="50" cy="32" r="3" fill="#0c3483"/>
+          <!-- Brillo ojos -->
+          <circle cx="33" cy="30" r="1.2" fill="white"/>
+          <circle cx="51" cy="30" r="1.2" fill="white"/>
+          <!-- Sonrisa -->
+          <path d="M 29 42 Q 40 50 51 42" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <!-- Cuello -->
+          <rect x="34" y="54" width="12" height="6" rx="3" fill="#1344aa"/>
+          <!-- Cuerpo -->
+          <rect x="14" y="60" width="52" height="34" rx="10" fill="#2563eb"/>
+          <!-- Panel pecho -->
+          <rect x="24" y="68" width="32" height="18" rx="5" fill="#1a56db"/>
+          <circle cx="34" cy="74" r="3" fill="#60a5fa"/>
+          <circle cx="40" cy="74" r="3" fill="#34d399"/>
+          <circle cx="46" cy="74" r="3" fill="#fbbf24"/>
+          <rect x="28" y="80" width="24" height="2.5" rx="1.2" fill="#60a5fa" opacity="0.6"/>
+          <!-- Brazos -->
+          <rect x="2"  y="62" width="12" height="24" rx="6" fill="#2563eb"/>
+          <rect x="66" y="62" width="12" height="24" rx="6" fill="#2563eb"/>
+          <!-- Manos -->
+          <circle cx="8"  cy="88" r="5" fill="#1a56db"/>
+          <circle cx="72" cy="88" r="5" fill="#1a56db"/>
+          <!-- Piernas -->
+          <rect x="22" y="93" width="12" height="7" rx="4" fill="#1a56db"/>
+          <rect x="46" y="93" width="12" height="7" rx="4" fill="#1a56db"/>
+        </svg>
+        """;
+
+    private static string WavingRobot() => """
+        <svg width="80" height="100" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
+          <line x1="40" y1="8" x2="40" y2="18" stroke="#1a56db" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="40" cy="6" r="4" fill="#1a56db"/>
+          <rect x="18" y="18" width="44" height="36" rx="10" fill="#1a56db"/>
+          <circle cx="31" cy="31" r="5" fill="white"/>
+          <circle cx="49" cy="31" r="5" fill="white"/>
+          <circle cx="32" cy="31" r="3" fill="#0c3483"/>
+          <circle cx="50" cy="31" r="3" fill="#0c3483"/>
+          <circle cx="33" cy="30" r="1.2" fill="white"/>
+          <circle cx="51" cy="30" r="1.2" fill="white"/>
+          <!-- Guiño -->
+          <path d="M 26 43 Q 31 47 36 43" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+          <path d="M 44 43 Q 48 47 53 43" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+          <rect x="34" y="54" width="12" height="6" rx="3" fill="#1344aa"/>
+          <rect x="14" y="60" width="52" height="34" rx="10" fill="#2563eb"/>
+          <rect x="24" y="68" width="32" height="18" rx="5" fill="#1a56db"/>
+          <circle cx="34" cy="74" r="3" fill="#60a5fa"/>
+          <circle cx="40" cy="74" r="3" fill="#34d399"/>
+          <circle cx="46" cy="74" r="3" fill="#fbbf24"/>
+          <rect x="28" y="80" width="24" height="2.5" rx="1.2" fill="#60a5fa" opacity="0.6"/>
+          <!-- Brazo izquierdo normal -->
+          <rect x="2"  y="62" width="12" height="24" rx="6" fill="#2563eb"/>
+          <circle cx="8"  cy="88" r="5" fill="#1a56db"/>
+          <!-- Brazo derecho levantado (saludando) -->
+          <rect x="66" y="42" width="12" height="24" rx="6" fill="#2563eb" transform="rotate(-40 72 54)"/>
+          <circle cx="76" cy="44" r="5" fill="#1a56db"/>
+          <rect x="22" y="93" width="12" height="7" rx="4" fill="#1a56db"/>
+          <rect x="46" y="93" width="12" height="7" rx="4" fill="#1a56db"/>
+        </svg>
+        """;
+
+    private static string PointingRobot() => """
+        <svg width="90" height="100" viewBox="0 0 90 100" xmlns="http://www.w3.org/2000/svg">
+          <line x1="40" y1="8" x2="40" y2="18" stroke="#1a56db" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="40" cy="6" r="4" fill="#1a56db"/>
+          <rect x="18" y="18" width="44" height="36" rx="10" fill="#1a56db"/>
+          <circle cx="31" cy="31" r="5" fill="white"/>
+          <circle cx="49" cy="31" r="5" fill="white"/>
+          <!-- Ojos mirando a la derecha -->
+          <circle cx="34" cy="32" r="3" fill="#0c3483"/>
+          <circle cx="52" cy="32" r="3" fill="#0c3483"/>
+          <circle cx="35" cy="30" r="1.2" fill="white"/>
+          <circle cx="53" cy="30" r="1.2" fill="white"/>
+          <path d="M 29 43 Q 40 49 51 43" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <rect x="34" y="54" width="12" height="6" rx="3" fill="#1344aa"/>
+          <rect x="14" y="60" width="52" height="34" rx="10" fill="#2563eb"/>
+          <rect x="24" y="68" width="32" height="18" rx="5" fill="#1a56db"/>
+          <circle cx="34" cy="74" r="3" fill="#60a5fa"/>
+          <circle cx="40" cy="74" r="3" fill="#34d399"/>
+          <circle cx="46" cy="74" r="3" fill="#fbbf24"/>
+          <rect x="28" y="80" width="24" height="2.5" rx="1.2" fill="#60a5fa" opacity="0.6"/>
+          <!-- Brazo izquierdo -->
+          <rect x="2"  y="62" width="12" height="24" rx="6" fill="#2563eb"/>
+          <circle cx="8"  cy="88" r="5" fill="#1a56db"/>
+          <!-- Brazo derecho apuntando -->
+          <rect x="64" y="58" width="26" height="10" rx="5" fill="#2563eb"/>
+          <!-- Dedo apuntando -->
+          <rect x="86" y="59" width="14" height="7" rx="3.5" fill="#1a56db"/>
+          <rect x="22" y="93" width="12" height="7" rx="4" fill="#1a56db"/>
+          <rect x="46" y="93" width="12" height="7" rx="4" fill="#1a56db"/>
+        </svg>
+        """;
+
+    private static string ThinkingRobot() => """
+        <svg width="80" height="100" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
+          <line x1="40" y1="8" x2="40" y2="18" stroke="#1a56db" stroke-width="2.5" stroke-linecap="round"/>
+          <!-- Antena con signo ? -->
+          <circle cx="40" cy="5" r="5" fill="#fbbf24"/>
+          <text x="40" y="9" text-anchor="middle" font-size="7" font-weight="bold" fill="#92400e">?</text>
+          <rect x="18" y="18" width="44" height="36" rx="10" fill="#1a56db"/>
+          <circle cx="31" cy="31" r="5" fill="white"/>
+          <circle cx="49" cy="31" r="5" fill="white"/>
+          <!-- Ojos mirando arriba -->
+          <circle cx="31" cy="29" r="3" fill="#0c3483"/>
+          <circle cx="49" cy="29" r="3" fill="#0c3483"/>
+          <circle cx="32" cy="28" r="1.2" fill="white"/>
+          <circle cx="50" cy="28" r="1.2" fill="white"/>
+          <!-- Boca pensativa -->
+          <path d="M 33 44 Q 37 42 43 44" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+          <rect x="34" y="54" width="12" height="6" rx="3" fill="#1344aa"/>
+          <rect x="14" y="60" width="52" height="34" rx="10" fill="#2563eb"/>
+          <rect x="24" y="68" width="32" height="18" rx="5" fill="#1a56db"/>
+          <circle cx="34" cy="74" r="3" fill="#60a5fa"/>
+          <circle cx="40" cy="74" r="3" fill="#34d399"/>
+          <circle cx="46" cy="74" r="3" fill="#fbbf24"/>
+          <rect x="28" y="80" width="24" height="2.5" rx="1.2" fill="#60a5fa" opacity="0.6"/>
+          <rect x="2"  y="62" width="12" height="24" rx="6" fill="#2563eb"/>
+          <circle cx="8"  cy="88" r="5" fill="#1a56db"/>
+          <!-- Mano en barbilla -->
+          <rect x="56" y="52" width="12" height="18" rx="6" fill="#2563eb" transform="rotate(30 62 61)"/>
+          <circle cx="66" cy="48" r="6" fill="#1a56db"/>
+          <rect x="22" y="93" width="12" height="7" rx="4" fill="#1a56db"/>
+          <rect x="46" y="93" width="12" height="7" rx="4" fill="#1a56db"/>
+        </svg>
+        """;
+
+    public class ElementRect
+    {
+        public double Left { get; set; }
+        public double Top { get; set; }
+        public double Width { get; set; }
+        public double Height { get; set; }
+    }
+}
