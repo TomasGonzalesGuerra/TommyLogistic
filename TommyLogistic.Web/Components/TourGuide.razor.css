@@ -1,0 +1,249 @@
+﻿/* ───────────────────────────────
+   OVERLAY
+─────────────────────────────── */
+.tg-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(6, 10, 30, 0.65);
+    z-index: 1000;
+    animation: tg-fade-in 0.35s ease;
+}
+
+/* ───────────────────────────────
+   HIGHLIGHT DEL ELEMENTO ACTIVO
+─────────────────────────────── */
+.tg-highlight {
+    position: absolute;
+    border-radius: 8px;
+    border: 1.5px solid rgba(200, 155, 60, 0.75);
+    box-shadow: 0 0 0 4px rgba(200, 155, 60, 0.12), 0 0 20px rgba(200, 155, 60, 0.1);
+    pointer-events: none;
+    z-index: 1001;
+    transition: top 0.55s cubic-bezier(.65, 0, .35, 1), left 0.55s cubic-bezier(.65, 0, .35, 1), width 0.55s cubic-bezier(.65, 0, .35, 1), height 0.55s cubic-bezier(.65, 0, .35, 1);
+}
+
+/* ───────────────────────────────
+   MASCOTA + BOCADILLO (WRAPPER)
+─────────────────────────────── */
+.tg-mascot-wrap {
+    position: fixed;
+    right: 1.5rem;
+    z-index: 1002;
+    display: flex;
+    align-items: flex-end;
+    gap: 0;
+    pointer-events: all;
+}
+
+/* ───────────────────────────────
+   BOCADILLO
+─────────────────────────────── */
+.tg-bubble {
+    background: #0d1235;
+    border: 1.5px solid rgba(200, 155, 60, 0.6);
+    border-radius: 14px 14px 4px 14px;
+    padding: 14px 16px 12px;
+    width: 220px;
+    position: relative;
+    margin-right: 10px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+    animation: tg-bubble-in 0.3s cubic-bezier(.34, 1.56, .64, 1);
+}
+
+    /* flecha del bocadillo apuntando al águila */
+    .tg-bubble::after {
+        content: '';
+        position: absolute;
+        right: -10px;
+        bottom: 20px;
+        border: 6px solid transparent;
+        border-left-color: rgba(200, 155, 60, 0.6);
+    }
+
+    .tg-bubble::before {
+        content: '';
+        position: absolute;
+        right: -8px;
+        bottom: 21px;
+        border: 5px solid transparent;
+        border-left-color: #0d1235;
+        z-index: 1;
+    }
+
+.tg-bubble-step {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    color: #C89B3C;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
+.tg-bubble-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e8e4ff;
+    margin-bottom: 5px;
+    line-height: 1.3;
+}
+
+.tg-bubble-text {
+    font-size: 12.5px;
+    color: #9da8d0;
+    line-height: 1.55;
+    margin-bottom: 13px;
+}
+
+/* ───────────────────────────────
+   BOTONES DEL BOCADILLO
+─────────────────────────────── */
+.tg-bubble-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tg-btn {
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid rgba(200, 155, 60, 0.45);
+    background: transparent;
+    color: #C89B3C;
+    font-family: inherit;
+    transition: background 0.15s, transform 0.1s;
+}
+
+    .tg-btn:hover {
+        background: rgba(200, 155, 60, 0.12);
+    }
+
+    .tg-btn:active {
+        transform: scale(0.97);
+    }
+
+.tg-btn-next {
+    background: #C89B3C;
+    color: #0d1235;
+    font-weight: 600;
+    border-color: #C89B3C;
+}
+
+    .tg-btn-next:hover {
+        background: #ddb04e;
+    }
+
+.tg-btn-close {
+    color: #556;
+    border-color: #2a2a44;
+    margin-left: auto;
+    padding: 4px 9px;
+}
+
+    .tg-btn-close:hover {
+        background: rgba(255, 255, 255, 0.06);
+        color: #889;
+    }
+
+/* ───────────────────────────────
+   ÁGUILA SVG
+─────────────────────────────── */
+.tg-eagle {
+    width: 72px;
+    height: 88px;
+    flex-shrink: 0;
+}
+
+/* bobbing general */
+.tg-eagle-bob {
+    animation: tg-bob 3.4s ease-in-out infinite;
+    transform-origin: 36px 80px;
+}
+
+/* alas */
+.tg-wing-l {
+    transform-origin: 34px 36px;
+    animation: tg-wing-l 2.2s ease-in-out infinite;
+}
+
+.tg-wing-r {
+    transform-origin: 38px 36px;
+    animation: tg-wing-r 2.2s ease-in-out infinite;
+}
+
+/* ojos */
+.tg-eye-l {
+    transform-origin: 29.5px 15px;
+    animation: tg-blink 4.2s ease-in-out infinite 0.5s;
+}
+
+.tg-eye-r {
+    transform-origin: 42.5px 15px;
+    animation: tg-blink 4.2s ease-in-out infinite 0.7s;
+}
+
+/* ───────────────────────────────
+   KEYFRAMES
+─────────────────────────────── */
+@keyframes tg-fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes tg-bubble-in {
+    from {
+        opacity: 0;
+        transform: scale(0.88) translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes tg-bob {
+    0%,100% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+@keyframes tg-wing-l {
+    0%,100% {
+        transform: rotate(-6deg) scaleY(1);
+    }
+
+    50% {
+        transform: rotate(-16deg) scaleY(0.9);
+    }
+}
+
+@keyframes tg-wing-r {
+    0%,100% {
+        transform: rotate(6deg) scaleY(1);
+    }
+
+    50% {
+        transform: rotate(16deg) scaleY(0.9);
+    }
+}
+
+@keyframes tg-blink {
+    0%,91%,100% {
+        transform: scaleY(1);
+    }
+
+    94% {
+        transform: scaleY(0.06);
+    }
+}

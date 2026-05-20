@@ -1,0 +1,204 @@
+﻿@using TommyLogistic.Shared.Models
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+@if (IsActive && Steps is { Count: > 0 })
+{
+    <!-- Overlay oscuro -->
+    <div class="tg-overlay" @onclick="HandleOverlayClick"></div>
+
+    <!-- Highlight del elemento activo -->
+    @if (_highlightStyle != null)
+    {
+        <div class="tg-highlight" style="@_highlightStyle"></div>
+    }
+
+    <!-- Mascota + Bocadillo -->
+    <div class="tg-mascot-wrap" style="@_mascotStyle">
+
+        <!-- Bocadillo -->
+        <div class="tg-bubble">
+            <div class="tg-bubble-step">PASO @(_currentIndex + 1) DE @Steps.Count</div>
+            <div class="tg-bubble-title">@Steps[_currentIndex].Title</div>
+            <div class="tg-bubble-text">@Steps[_currentIndex].Message</div>
+            <div class="tg-bubble-actions">
+                @if (_currentIndex > 0)
+                {
+                    <button class="tg-btn tg-btn-prev" @onclick="PrevStep">← Atrás</button>
+                }
+                <button class="tg-btn tg-btn-next" @onclick="NextStep">
+                    @(_currentIndex == Steps.Count - 1 ? "Finalizar ✓" : "Siguiente →")
+                </button>
+                <button class="tg-btn tg-btn-close" @onclick="Close">✕</button>
+            </div>
+        </div>
+
+        <!-- Águila SVG -->
+        <svg class="tg-eagle" viewBox="0 0 72 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g class="tg-eagle-bob">
+                <ellipse cx="36" cy="86" rx="13" ry="3" fill="#C89B3C" opacity="0.13" />
+
+                <!-- Ala izquierda -->
+                <g class="tg-wing-l">
+                    <path d="M36 36 C27 30 15 28 7 34 C3 38 6 44 16 44 C24 44 33 41 36 36Z" fill="#1e2a6a" />
+                    <path d="M36 40 C28 36 16 36 10 42 C7 45 10 49 18 48 C26 47 33 44 36 40Z" fill="#172058" opacity="0.85" />
+                    <path d="M16 44 L11 50 M20 45 L17 52 M25 44 L23 51" stroke="#C89B3C" stroke-width="0.7" stroke-linecap="round" opacity="0.5" />
+                </g>
+
+                <!-- Ala derecha -->
+                <g class="tg-wing-r">
+                    <path d="M36 36 C45 30 57 28 65 34 C69 38 66 44 56 44 C48 44 39 41 36 36Z" fill="#1e2a6a" />
+                    <path d="M36 40 C44 36 56 36 62 42 C65 45 62 49 54 48 C46 47 39 44 36 40Z" fill="#172058" opacity="0.85" />
+                    <path d="M56 44 L61 50 M52 45 L55 52 M47 44 L49 51" stroke="#C89B3C" stroke-width="0.7" stroke-linecap="round" opacity="0.5" />
+                </g>
+
+                <!-- Cola -->
+                <path d="M29 70 L26 84 L31 78 L36 86 L41 78 L46 84 L43 70Z" fill="#172058" />
+                <path d="M31 78 L36 86 L41 78" stroke="#C89B3C" stroke-width="0.6" opacity="0.4" />
+
+                <!-- Cuerpo -->
+                <path d="M24 38 C20 44 20 56 22 64 C24 70 30 73 36 73 C42 73 48 70 50 64 C52 56 52 44 48 38 C45 32 41 30 36 30 C31 30 27 32 24 38Z" fill="#253282" />
+
+                <!-- Pecho -->
+                <path d="M28 46 C26 51 26 60 28 65 C30 69 33 71 36 71 C39 71 42 69 44 65 C46 60 46 51 44 46 C42 41 39 39 36 39 C33 39 30 41 28 46Z" fill="#1c2870" />
+
+                <!-- Línea central dorada sutil -->
+                <path d="M34 40 Q36 38 38 40 L39 66 Q36 68 33 66Z" fill="#C89B3C" opacity="0.09" />
+
+                <!-- Cuello -->
+                <path d="M29 32 C28 28 30 24 36 23 C42 24 44 28 43 32 C41 30 39 29 36 29 C33 29 31 30 29 32Z" fill="#253282" />
+
+                <!-- Cabeza -->
+                <path d="M25 18 C24 10 28 4 36 3 C44 4 48 10 47 18 C46 24 42 28 36 29 C30 28 26 24 25 18Z" fill="#2a3890" />
+
+                <!-- Cresta -->
+                <path d="M33 4 L31 0 M36 3 L36 -1 M39 4 L41 0" stroke="#C89B3C" stroke-width="1.1" stroke-linecap="round" opacity="0.75" />
+
+                <!-- Máscara facial -->
+                <path d="M27 14 C26 10 28 6 36 6 C44 6 46 10 45 14 C44 18 41 21 36 21 C31 21 28 18 27 14Z" fill="#1c2468" />
+
+                <!-- Ojo izquierdo -->
+                <g class="tg-eye-l">
+                    <ellipse cx="29.5" cy="15" rx="3.8" ry="4" fill="#0a0f2e" />
+                    <ellipse cx="29.5" cy="15" rx="2.6" ry="2.8" fill="#C89B3C" opacity="0.92" />
+                    <ellipse cx="29.5" cy="15" rx="1.4" ry="1.6" fill="#070c22" />
+                    <ellipse cx="28.8" cy="13.8" rx="0.65" ry="0.65" fill="white" opacity="0.85" />
+                </g>
+
+                <!-- Ojo derecho -->
+                <g class="tg-eye-r">
+                    <ellipse cx="42.5" cy="15" rx="3.8" ry="4" fill="#0a0f2e" />
+                    <ellipse cx="42.5" cy="15" rx="2.6" ry="2.8" fill="#C89B3C" opacity="0.92" />
+                    <ellipse cx="42.5" cy="15" rx="1.4" ry="1.6" fill="#070c22" />
+                    <ellipse cx="41.8" cy="13.8" rx="0.65" ry="0.65" fill="white" opacity="0.85" />
+                </g>
+
+                <!-- Cejas -->
+                <path d="M26 11 L31 13" stroke="#C89B3C" stroke-width="1.6" stroke-linecap="round" opacity="0.8" />
+                <path d="M46 11 L41 13" stroke="#C89B3C" stroke-width="1.6" stroke-linecap="round" opacity="0.8" />
+
+                <!-- Pico -->
+                <path d="M33 19 L36 26 L39 19 L37 17 L36 16 L35 17Z" fill="#C89B3C" />
+                <path d="M33 19 L36 23 L39 19 L37 17 L36 16 L35 17Z" fill="#a07828" />
+                <path d="M33 19 L39 19" stroke="#8B6820" stroke-width="0.7" fill="none" />
+
+                <!-- Garras -->
+                <path d="M28 72 L24 80 M28 72 L27 81 M28 72 L29 80 M28 72 L32 78" stroke="#C89B3C" stroke-width="1.3" stroke-linecap="round" fill="none" />
+                <path d="M44 72 L40 78 M44 72 L44 81 M44 72 L46 80 M44 72 L48 80" stroke="#C89B3C" stroke-width="1.3" stroke-linecap="round" fill="none" />
+            </g>
+        </svg>
+
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public List<TourStep> Steps { get; set; } = new();
+    [Parameter] public bool IsActive { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public bool CloseOnOverlayClick { get; set; } = false;
+
+    private int _currentIndex = 0;
+    private string? _highlightStyle;
+    private string? _mascotStyle = "opacity:0;right:1.5rem;top:50vh;";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsActive && Steps.Count > 0)
+        {
+            _currentIndex = 0;
+            await UpdatePositions();
+        }
+    }
+
+    private async Task UpdatePositions()
+    {
+        if (_currentIndex < 0 || _currentIndex >= Steps.Count) return;
+
+        var step = Steps[_currentIndex];
+        await JS.InvokeVoidAsync("tourGuide.scrollToElement", step.ElementId, 140);
+
+        await Task.Delay(400);
+
+        var pos = await JS.InvokeAsync<ElementPosition?>("tourGuide.getElementPosition", step.ElementId);
+        if (pos == null) return;
+
+        var scrollY = await JS.InvokeAsync<double>("tourGuide.getScrollY");
+
+        // Highlight fijo al elemento
+        _highlightStyle = $"top:{pos.Top}px; left:{pos.Left - 6}px; width:{pos.Width + 12}px; height:{pos.Height + 12}px;";
+
+        // Mascota posicionada a la derecha, centrada con el elemento
+        var mascotTop = pos.Top + (pos.Height / 2) - 60;
+        _mascotStyle = $"opacity:1; right:1.5rem; top:{mascotTop}px; transition: top 0.55s cubic-bezier(.65,0,.35,1), opacity 0.3s;";
+
+        StateHasChanged();
+    }
+
+    private async Task NextStep()
+    {
+        if (_currentIndex < Steps.Count - 1)
+        {
+            _currentIndex++;
+            await UpdatePositions();
+        }
+        else
+        {
+            await Close();
+        }
+    }
+
+    private async Task PrevStep()
+    {
+        if (_currentIndex > 0)
+        {
+            _currentIndex--;
+            await UpdatePositions();
+        }
+    }
+
+    private async Task Close()
+    {
+        _highlightStyle = null;
+        _mascotStyle = "opacity:0; right:1.5rem; top:50vh; transition: opacity 0.3s;";
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task HandleOverlayClick()
+    {
+        if (CloseOnOverlayClick)
+            await Close();
+    }
+
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+
+    // DTO interno para deserializar la posición desde JS
+    private class ElementPosition
+    {
+        public double Top { get; set; }
+        public double Left { get; set; }
+        public double Width { get; set; }
+        public double Height { get; set; }
+        public double ViewportTop { get; set; }
+    }
+}
+
