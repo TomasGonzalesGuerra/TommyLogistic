@@ -8,6 +8,3 @@ public class TourStep
     public MascotMood Mood { get; set; } = MascotMood.Happy;
     public BubblePosition BubblePos { get; set; } = BubblePosition.Right;
 }
-
-public enum MascotMood { Happy, Pointing, Thinking, Waving }
-public enum BubblePosition { Right, Left, Top, Bottom }

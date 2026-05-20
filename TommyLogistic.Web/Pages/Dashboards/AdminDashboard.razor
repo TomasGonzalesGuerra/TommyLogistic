@@ -3,7 +3,6 @@
 @implements IDisposable
 @inject SweetAlertService _Swal
 @inject IRepository _IRepository
-@inject TourService _TourService
 @inject OrderService _OrderService
 @inject SesionService _SesionService
 @inject NavigationManager _NavigationManager
@@ -382,7 +381,6 @@ else if (_dashboard is not null)
 
     private async Task RepetirTour()
     {
-        await _TourService.ResetTourAsync("Admin");
-        _TourService.StartTourManual("Admin");
+        Console.WriteLine("Tour de Bienvenida para Admin...");
     }
 }

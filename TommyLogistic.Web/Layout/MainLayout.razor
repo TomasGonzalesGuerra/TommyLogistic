@@ -1,6 +1,5 @@
 ﻿@inherits LayoutComponentBase
 @implements IDisposable
-@inject TourService _TourService
 @inject SesionService _SesionService
 @inject NavigationManager _NavigationManager
 @inject ComingSoonService _ComingSoonService
@@ -37,7 +36,8 @@
                 <div class="topbar-right">
                     <NotificationBell />
                     <span class="topbar-rol badge @BadgeRol">@_rol</span>
-                    <span class="topbar-nombre hide-mobile">@_nombre</span>
+                    <span class="topbar-nombre hide-mobile">@_nombre.Split('@')[0]</span>
+                    <img class="topbar-photo hide-mobile" src="@_photo" alt="Foto de perfil" />
                 </div>
             </header>
 
@@ -49,7 +49,6 @@
     }
 </div>
 
-<OnboardingTour />
 <ComingSoonModal @bind-IsVisible="_ComingSoonService.IsVisible" />
 
 
@@ -59,6 +58,7 @@
     private bool   _esRepartidor;
     private string _rol    = string.Empty;
     private string _nombre = string.Empty;
+    private string _photo = string.Empty;
     private string BadgeRol => _rol switch
     {
         "Admin" => "badge-encamino",
@@ -74,9 +74,9 @@
     {
         _rol = await _SesionService.GetRolAsync() ?? string.Empty;
         _nombre = await _SesionService.GetNameAsync() ?? string.Empty;
+        _photo = await _SesionService.GetPhotoAsync() ?? string.Empty;
         _inicializando = false;
         _ComingSoonService.OnChange += StateHasChanged;
-        _TourService.OnChange += StateHasChanged;
     }
 
     private void CerrarSidebar() => _sidebarAbierto = false;
@@ -84,7 +84,6 @@
     public void Dispose()
     {
         _ComingSoonService.OnChange -= StateHasChanged;
-        _TourService.OnChange -= StateHasChanged;
     }
 
 }

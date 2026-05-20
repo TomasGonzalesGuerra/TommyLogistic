@@ -31,6 +31,12 @@ public class SesionService(AuthenticationStateProvider authProvider)
         return user.FindFirst(ClaimTypes.Role)?.Value;
     }
 
+    public async Task<string?> GetPhotoAsync()
+    {
+        var user = await ObtenerUsuarioAsync();
+        return user.FindFirst("Photo")?.Value;
+    }
+
     public async Task<bool> EsAdminAsync() => (await GetRolAsync()) == "Admin";
     public async Task<bool> EsRepartidorAsync() => (await GetRolAsync()) == "Driver";
     public async Task<bool> EsClienteEmpresaAsync() => (await GetRolAsync()) == "ClienteEmpresa";

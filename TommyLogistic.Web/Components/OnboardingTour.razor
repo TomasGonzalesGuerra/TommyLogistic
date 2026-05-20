@@ -1,27 +1,26 @@
-﻿@inject IJSRuntime JS
+﻿@using Blazored.LocalStorage
+@using TommyLogistic.Shared.Models
+@inject IJSRuntime JS
 @implements IDisposable
 @inject TourService _TourService
+@inject ILocalStorageService LocalStorage
 @inject AuthenticationStateProvider _AuthProvider
 
 @if (_TourService.IsActive && _TourService.Current != null)
 {
-    <!-- Overlay con spotlight -->
-    <div class="tour-overlay" id="tour-overlay"></div>
-
-    <!-- Spotlight recorte (se posiciona vía JS) -->
+    @* El overlay SOLO existe cuando el tour está activo *@
+    <div class="tour-overlay"></div>
     <div class="tour-spotlight" id="tour-spotlight"></div>
 
-    <!-- Robotito mascota -->
-    <div class="tour-mascot" id="tour-mascot" style="left:@(mascotX)px; top:@(mascotY)px;">
+    <div class="tour-mascot" id="tour-mascot" style=@($"left:{mascotX}px; top:{mascotY}px;")>
         <div class="mascot-body mascot-mood--@_TourService.Current.Mood.ToString().ToLower()">
             @RobotSvg(_TourService.Current.Mood)
         </div>
     </div>
 
     <!-- Bocadillo -->
-    <div class="tour-bubble tour-bubble--@_TourService.Current.BubblePos.ToString().ToLower()"
-         id="tour-bubble"
-         style="left:@(bubbleX)px; top:@(bubbleY)px;">
+    <div class="tour-bubble tour-bubble--@(_TourService.Current.BubblePos.ToString().ToLower())"
+         id="tour-bubble" style=@($"left:{bubbleX}px; top:{bubbleY}px;")>
 
         <div class="tour-bubble-header">
             <span class="tour-step-counter">@(_TourService.CurrentStep + 1) / @_TourService.TotalSteps</span>
@@ -67,7 +66,6 @@
 }
 
 
-
 @code {
     private double mascotX = 40;
     private double mascotY = 400;
@@ -89,14 +87,17 @@
             if (user.Identity?.IsAuthenticated == true)
             {
                 userRole = user.FindFirst("role")?.Value ?? "";
-                await _TourService.TryStartTourAsync(userRole);
+
+                // Leer localStorage desde el componente (Scoped ✅)
+                var key = $"tour_done_{userRole.ToLower()}";
+                var done = await LocalStorage.GetItemAsync<bool>(key);
+
+                _TourService.TryStartTour(userRole, done);
             }
         }
 
         if (_TourService.IsActive && _TourService.Current != null)
-        {
             await PositionElements();
-        }
     }
 
     private async Task PositionElements()
@@ -182,9 +183,16 @@
         _TourService.Previous();
         await PositionElements();
     }
+    
+    private async Task FinishTour()
+    {
+        // Guardar en localStorage desde el componente (Scoped ✅)
+        var key = $"tour_done_{userRole.ToLower()}";
+        await LocalStorage.SetItemAsync(key, true);
+        _TourService.Finish();
+    }
 
-    private async Task FinishTour() => await _TourService.FinishAsync(userRole);
-    private async Task SkipTour() => await _TourService.SkipAsync(userRole);
+    private async Task SkipTour() => await FinishTour();
 
     public void Dispose() => _TourService.OnChange -= HandleTourChange;
 
