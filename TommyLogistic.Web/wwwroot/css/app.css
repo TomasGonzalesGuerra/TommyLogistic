@@ -170,6 +170,7 @@ ul, ol {
 .app-main {
     display: flex;
     flex-direction: column;
+    align-items: center;
     margin-left: var(--sidebar-width);
     width: 100%;
     min-width: 0;
@@ -337,7 +338,7 @@ a.this, .this {
     font-size: var(--font-size-2xl);
     font-weight: 800;
     color: var(--color-text);
-    margin-bottom: var(--space-6);
+    margin: var(--space-6) 0px;
     letter-spacing: -0.02em;
 }
 

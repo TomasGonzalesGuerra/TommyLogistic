@@ -10,7 +10,7 @@
 <!-- Breadcrumb -->
 <div class="detail-breadcrumb">
     <button class="btn btn-ghost btn-sm"
-            @onclick='() => _NavigationManager.NavigateTo("/supervisor/dashboard")'>
+            @onclick='() => _NavigationManager.NavigateTo("/AdminDashboard")'>
         ← Dashboard
     </button>
     <span class="text-muted">/</span>
@@ -25,12 +25,16 @@
         <div class="step-circle">@(_paso > 1 ? "✓" : "1")</div>
         <span class="step-label">Elegir driver</span>
     </div>
+
     <div class="step-line @(_paso > 1 ? "step-line--done" : "")"></div>
+
     <div class="step @(_paso >= 2 ? "step--active" : "") @(_paso > 2 ? "step--done" : "")">
         <div class="step-circle">@(_paso > 2 ? "✓" : "2")</div>
         <span class="step-label">Elegir distrito</span>
     </div>
+
     <div class="step-line @(_paso > 2 ? "step-line--done" : "")"></div>
+
     <div class="step @(_paso >= 3 ? "step--active" : "")">
         <div class="step-circle">3</div>
         <span class="step-label">Seleccionar pedidos</span>
@@ -70,9 +74,7 @@
                 <div class="driver-select-card @(_driverSeleccionado?.Id == d.Id ? "driver-select-card--selected" : "")"
                      @onclick="() => SeleccionarDriver(d)">
                     <div class="driver-select-avatar"
-                         style="@(string.IsNullOrEmpty(d.Photo)
-                            ? $"background:{AvatarColor(d.FullName)}"
-                            : $"background-image:url('{d.Photo}')")">
+                         style="@(string.IsNullOrEmpty(d.Photo) ? $"background:{AvatarColor(d.FullName)}" : $"background-image:url('{d.Photo}')")">
                         @(string.IsNullOrEmpty(d.Photo) ? Initials(d.FullName) : "")
                     </div>
                     <div class="driver-select-info">
@@ -100,6 +102,7 @@
         </div>
     }
 }
+
 
 <!-- ── PASO 2: Elegir Distrito ───────────────────────────────────── -->
 @if (_paso == 2)
@@ -160,6 +163,7 @@
         </div>
     }
 }
+
 
 <!-- ── PASO 3: Seleccionar Pedidos ───────────────────────────────── -->
 @if (_paso == 3)
