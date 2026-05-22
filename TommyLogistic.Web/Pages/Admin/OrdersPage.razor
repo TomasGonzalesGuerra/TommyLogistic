@@ -1,15 +1,14 @@
 ﻿@page "/Orders"
 @layout MainLayout
 @inject OrderService _OrderService
-@attribute [Authorize(Roles = "Admin")]
-@inject NavigationManager _NavigationManager
+@attribute [Authorize(Roles = $"{nameof(UserEnum.Admin)}, {nameof(UserEnum.Supervisor)}")]
 
 <PageTitle>Pedidos — Logistic</PageTitle>
 
 <div class="list-header">
     <h1 class="page-title">Todos los pedidos</h1>
 
-    <button @onclick="@(() => _NavigationManager.NavigateTo("/mis-pedidos/nuevo"))" class="btn btn-primary">
+    <button class="btn btn-primary">
         ➕ Nuevo pedido
     </button>
 </div>
@@ -54,9 +53,7 @@ else if (!PedidosFiltrados.Any())
         <div class="empty-icon">📭</div>
         <p class="text-bold">No hay pedidos</p>
         <p class="text-muted">
-            @(_busqueda.Length > 0 || _filtroEstado.Length > 0
-                ? "Prueba con otros filtros"
-                : "Aún no hay pedidos registrados")
+            @(_busqueda.Length > 0 || _filtroEstado.Length > 0 ? "Prueba con otros filtros" : "Aún no hay pedidos registrados")
         </p>
     </div>
 }
@@ -64,39 +61,59 @@ else
 {
     <div class="list-summary text-muted text-sm mb-4">
         @PedidosFiltrados.Count() pedidos
-        @if (_nuevos > 0)
-        {
-            <span class="badge badge-encamino ml-2">
-                @_nuevos nuevos
-            </span>
-        }
     </div>
 
-    <!-- Vista tarjetas -->
-    <div class="pedido-cards">
-        @foreach (var p in PedidosFiltrados)
-        {
-            <div class="pedido-card @(_newsIds.Contains(p.Id) ? "pedido-card--nuevo" : "")"
-                 @onclick="() => ShowPreviw(p.Id)">
-                <div class="pedido-card-top">
-                    <span class="codigo-seguimiento">@p.TrackingCode</span>
-                    <BadgeEstado Estado="@p.OrderStatus" />
-                </div>
-                <div class="pedido-card-nombre">@p.RecipientName</div>
-                <div class="pedido-card-meta">
-                    <span>📍 @p.RecipientDistrict</span>
-                    <span>📱 @p.PackageDescription</span>
-                </div>
-                @if (p.DeliveryAttempts > 0)
-                {
-                    <div class="pedido-card-intentos">
-                        ⚠️ @p.DeliveryAttempts intento(s) fallido(s)
-                    </div>
-                }
-            </div>
-        }
+    <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <p class="text-bold">
+            @($"Tenemos {PedidosFiltrados.Count()} Pedidos Registrados")
+        </p>
     </div>
 }
+
+
+@if (_loading)
+{
+    <div class="loading-overlay">
+        <div class="spinner"></div>
+        <span>Cargando pedidos...</span>
+    </div>
+}
+else if (_cargas is null || _cargas.Count() == 0)
+{
+    <div class="empty-state">
+        <div class="empty-icon">😭</div>
+        <p class="text-bold">
+            @("No hay cargas activas en este Momento")
+        </p>
+    </div>        
+}
+else
+{
+    <!-- Vista tarjetas -->
+    <div class="pedido-cards">
+        @foreach (var item in _cargas)
+        {
+            <div class="pedido-card @(_newsIds.Contains(item.Id) ? "pedido-card--nuevo" : "")"
+                    @onclick="() => ShowPreview(item.Id)">
+
+                <div class="pedido-card-top">
+                    <span class="codigo-seguimiento">@item.Id</span>
+                    <span class="codigo-badge">@item.Status</span>
+                </div>
+
+                <div class="pedido-card-nombre">@item.DriverName</div>
+
+                <div class="pedido-card-meta">
+                    <span>📱 @item.DriverPlaca</span>
+                    <span>📍 @item.Distrito</span>
+                    <span>📱 @item.TotalPedidos</span>
+                </div>
+            </div>
+        }
+    </div>    
+}
+
 
 <GenericModal Title="Detalle del pedido"
               IsVisible="_mostrarPreview"
@@ -115,6 +132,7 @@ else
     private string _busqueda = string.Empty;
     private string _filtroTipo = string.Empty;
     private List<OrderSummaryDTO> _orders = [];
+    private List<CargaSummaryDTO> _cargas = [];
     private string _filtroEstado = string.Empty;
     private IEnumerable<OrderSummaryDTO> PedidosFiltrados =>
         _orders.Where(p =>
@@ -136,16 +154,13 @@ else
     private int _pedidoSeleccionadoId;
 
 
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadAsync();
-        // await Conectar_SignalRServiceAsync();
-    }
+    protected override async Task OnInitializedAsync() => await LoadAsync();
 
     private async Task LoadAsync()
     {
         try
         {
+            _cargas = await _OrderService.GetAllCargasAsync();
             _orders = await _OrderService.GetAllOrdersAsync();
         }
         finally
@@ -161,50 +176,17 @@ else
         await LoadAsync();
     }
 
-    //TODO: Falta Implementar SignalR
-    // private async Task Conectar_SignalRServiceAsync()
-    // {
-    //     await _SignalRService.ConectarAsync();
-
-    //     if (_esAdmin)
-    //         await _SignalRService.UnirseAAdminAsync();
-    //     else
-    //     {
-    //         var empId = await _SesionService.ObtenerEmpresaIdAsync();
-    //         if (empId.HasValue)
-    //             await _SignalRService.UnirseAEmpresaAsync(empId.Value);
-    //     }
-
-    //     _SignalRService.OnEstadoActualizado += OnActualizacion;
-    //     _SignalRService.OnNuevoPedido += OnNuevoPedido;
-    // }
-
-    private void OnActualizacion(OrderSummaryDTO DTO) => InvokeAsync(() =>
+    private void ShowPreview(int ID)
     {
-        var idx = _orders.FindIndex(p => p.Id == DTO.Id);
-        if (idx >= 0) _orders[idx] = DTO;
-        _newsIds.Add(DTO.Id);
-        StateHasChanged();
-    });
-
-    private void OnNuevoPedido(OrderSummaryDTO DTO) => InvokeAsync(() =>
-    {
-        if (!_orders.Any(p => p.Id == DTO.Id))
-        {
-            _orders.Insert(0, DTO);
-            _newsIds.Add(DTO.Id);
-            _nuevos++;
-        }
-        StateHasChanged();
-    });
-
-    private void ShowPreviw(int id)
-    {
-        _pedidoSeleccionadoId = id;
+        _pedidoSeleccionadoId = ID;
         _mostrarPreview = true;
     }
 
-    private async Task CerrarPreview() => _mostrarPreview = false;
+    private async Task CerrarPreview()
+    {
+        _pedidoSeleccionadoId = 0;
+        _mostrarPreview = false;
+    }
 
     private static string NombreEstado(OrderStatus e) => e switch
     {
@@ -220,11 +202,4 @@ else
         OrderStatus.RecipientAbsent => "Destinatario Ausente",
         _ => e.ToString()
     };
-
-    // public async ValueTask DisposeAsync()
-    // {
-    //     _SignalRService.OnEstadoActualizado -= OnActualizacion;
-    //     _SignalRService.OnNuevoPedido -= OnNuevoPedido;
-    //     await _SignalRService.DisposeAsync();
-    // }
 }

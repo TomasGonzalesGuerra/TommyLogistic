@@ -1,10 +1,7 @@
 ﻿@page "/"
-@using System.Security.Claims
 @inject IRepository _IRepository
 @inject ILoginService _ILoginService
 @inject SesionService _SesionService
-@inject SweetAlertService _SweetAlertService
-@inject NavigationManager _NavigationManager
 
 <PageTitle>Iniciar sesión — Tommy Logistic</PageTitle>
 
@@ -76,20 +73,6 @@
     private string rojete = string.Empty;
 
 
-    protected override async Task OnInitializedAsync()
-    {
-        // if (AuthStateTask != null)
-        // {
-        //     var authState = await AuthStateTask;
-        //     var user = authState.User;
-
-        //     if (user.Identity is not null && user.Identity.IsAuthenticated)
-        //     {
-        //         await RedirectbyRole(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-        //     }
-        // }
-    }
-
     private async Task LoginAsync()
     {
         _error = false;
@@ -100,7 +83,7 @@
         if (responseHttp.Error)
         {
             var message = await responseHttp.GetErrorMessageAsync();
-            await _SweetAlertService.FireAsync("Error", message, SweetAlertIcon.Error);
+            await _Swal.FireAsync("Error", message, SweetAlertIcon.Error);
             _error = responseHttp.Error;
             _cargando = false;
             rojete = _error ? "is-invalid" : string.Empty;
@@ -116,7 +99,7 @@
     {
         if (string.IsNullOrEmpty(rol))
         {
-            await _SweetAlertService.FireAsync("Error", "No se pudo determinar el rol del usuario.", SweetAlertIcon.Error);
+            await _Swal.FireAsync("Error", "No se pudo determinar el rol del usuario.", SweetAlertIcon.Error);
             _NavigationManager.NavigateTo("/WhoAreYou");
             return;
         }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
+using System.Text.Json;
 using TommyLogistic.Shared.DTOs.Drivers;
 using TommyLogistic.Shared.Enums;
 using TommyLogistic.Web.Helpers;
@@ -44,10 +45,7 @@ public class NotificationService(IJSRuntime jsRuntime) : IAsyncDisposable
         _hubConnection.On<object>("DriverConectado", data =>
         {
             var json = data.ToString()!;
-            var driver = System.Text.Json.JsonSerializer
-                .Deserialize<DriverConectadoDTO>(json,
-                    new System.Text.Json.JsonSerializerOptions
-                    { PropertyNameCaseInsensitive = true });
+            var driver = JsonSerializer.Deserialize<DriverConectadoDTO>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
             if (driver is null) return;
 
@@ -60,7 +58,7 @@ public class NotificationService(IJSRuntime jsRuntime) : IAsyncDisposable
         _hubConnection.On<object>("DriverDesconectado", data =>
         {
             var json = data.ToString()!;
-            var parsed = System.Text.Json.JsonDocument.Parse(json);
+            var parsed = JsonDocument.Parse(json);
             var userId = parsed.RootElement.GetProperty("userId").GetString();
 
             var driver = DriversConectados.FirstOrDefault(d => d.UserId == userId);
@@ -72,10 +70,7 @@ public class NotificationService(IJSRuntime jsRuntime) : IAsyncDisposable
         _hubConnection.On<object>("ListaDriversConectados", data =>
         {
             var json = data.ToString()!;
-            var drivers = System.Text.Json.JsonSerializer
-                .Deserialize<List<DriverConectadoDTO>>(json,
-                    new System.Text.Json.JsonSerializerOptions
-                    { PropertyNameCaseInsensitive = true });
+            var drivers = JsonSerializer.Deserialize<List<DriverConectadoDTO>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
             DriversConectados.Clear();
             if (drivers is not null)

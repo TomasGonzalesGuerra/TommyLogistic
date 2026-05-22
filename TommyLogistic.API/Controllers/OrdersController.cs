@@ -15,7 +15,7 @@ namespace TommyLogistic.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = $"{nameof(UserEnum.Admin)}, {nameof(UserEnum.Supervisor)}")]
 public class OrdersController(LogisticDataContext dataContext, IHubContext<NotificationHub> hubContext, OrderEventService eventService) : ControllerBase
 {
     private readonly LogisticDataContext _dataContext = dataContext;
@@ -27,27 +27,24 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
     [HttpGet("GetAllOrders")]
     public async Task<ActionResult<IEnumerable<OrderSummaryDTO>>> GetAllOrdersasync()
     {
-        List<Order> orders = await _dataContext.Orders
-            .Include(o => o.Driver).ThenInclude(d => d.User)
-            .ToListAsync();
-        if (orders.Count == 0) return Ok(new List<OrderSummaryDTO>());
-        if (orders == null) return NotFound();
+        List<OrderSummaryDTO> query = await _dataContext.Orders
+            .Select(o => new OrderSummaryDTO
+            {
+                Id = o.Id,
+                TrackingCode = o.TrackingCode,
+                RecipientName = o.RecipientName,
+                RecipientDistrict = o.RecipientDistrict,
+                PackageDescription = o.PackageDescription,
+                DeliveryType = o.DeliveryType,
+                OrderStatus = o.OrderStatus,
+                EstimatedDeliveryDate = DateTime.Now.AddHours(4),
+                DeliveryPersonName = o.Driver!.User.FullName,
+                DeliveryAttempts = o.DeliveryAttempts
+            }).ToListAsync();
 
-        List<OrderSummaryDTO> orderSummaries = orders.Select(o => new OrderSummaryDTO
-        {
-            Id = o.Id,
-            TrackingCode = o.TrackingCode,
-            RecipientName = o.RecipientName,
-            RecipientDistrict = o.RecipientDistrict,
-            PackageDescription = o.PackageDescription,
-            DeliveryType = o.DeliveryType,
-            OrderStatus = o.OrderStatus,
-            EstimatedDeliveryDate = DateTime.Now.AddHours(4),
-            DeliveryPersonName = o.Driver?.User?.FullName,
-            DeliveryAttempts = o.DeliveryAttempts
-        }).ToList();
+        if (query == null || query.Count == 0) return Ok(new List<OrderSummaryDTO>());
 
-        return Ok(orderSummaries);
+        return Ok(query);
     }
 
     // GET: api/Orders/#

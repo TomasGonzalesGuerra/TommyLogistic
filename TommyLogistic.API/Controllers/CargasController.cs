@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using DocumentFormat.OpenXml.InkML;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -10,6 +11,7 @@ using TommyLogistic.API.Hubs;
 using TommyLogistic.API.Services;
 using TommyLogistic.Shared.DTOs.Cargas;
 using TommyLogistic.Shared.DTOs.Drivers;
+using TommyLogistic.Shared.DTOs.Orders;
 using TommyLogistic.Shared.Entities;
 using TommyLogistic.Shared.Enums;
 
@@ -102,25 +104,35 @@ public class CargasController(LogisticDataContext context, IHubContext<Notificat
         return Ok(carga.Id);
     }
 
-    // ── Supervisor/Admin: listar cargas ───────────────────────────────────
-    [HttpGet("GetAll")]
-    public async Task<ActionResult> GetAll([FromQuery] CargaStatus? status = null)
+    // GET: api/Cargas/GetAllCargas
+    [HttpGet("GetAllCargas")]
+    public async Task<ActionResult<IEnumerable<CargaSummaryDTO>>> GetAllCargasAsync()
     {
-        var query = _dadaContext.Cargas
-            .Include(c => c.Driver).ThenInclude(d => d.User)
-            .Include(c => c.Supervisor)
-            .Include(c => c.Orders)
-            .AsQueryable();
-
-        if (status.HasValue)
-            query = query.Where(c => c.Status == status.Value);
-
-        var cargas = await query
+        List<CargaSummaryDTO> query = await _dadaContext.Cargas
+            .Where(c => c.Status == CargaStatus.Activa)
             .OrderByDescending(c => c.FechaCreacion)
-            .Select(c => MapToSummary(c))
-            .ToListAsync();
+            .Select(c => new CargaSummaryDTO
+            {
+                Id = c.Id,
+                Status = c.Status,
+                FechaCreacion = c.FechaCreacion,
+                FechaConcluida = c.FechaConcluida,
+                FechaFacturada = c.FechaFacturada,
+                DriverID = c.DriverID,
+                DriverName = c.Driver!.User.FullName,
+                DriverPlaca = c.Driver.Placa,
+                DriverPhoto = c.Driver.User.Photo,
+                SupervisorName = c.Supervisor!.FullName,
+                TotalPedidos = c.Orders!.Count,
+                Entregados = c.Orders.Count(o => o.OrderStatus == OrderStatus.Delivered),
+                EnOnStorage = c.Orders.Count(o => o.OrderStatus == OrderStatus.OnStorage),
+                Pendientes = c.Orders.Count(o => o.OrderStatus == OrderStatus.Assigned),
+                Distrito = c.Orders.Select(o => o.RecipientDistrict).FirstOrDefault()!,
+            }).ToListAsync();
 
-        return Ok(cargas);
+        if (query == null || query.Count == 0) return Ok(new List<CargaSummaryDTO>());
+
+        return Ok(query);
     }
 
     // ── Supervisor/Admin/Operator: detalle de carga ───────────────────────

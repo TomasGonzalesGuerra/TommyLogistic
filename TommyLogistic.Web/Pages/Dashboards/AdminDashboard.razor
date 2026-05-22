@@ -1,16 +1,11 @@
 ﻿@page "/AdminDashboard"
 @layout MainLayout
 @implements IDisposable
-@inject SweetAlertService _Swal
 @inject IRepository _IRepository
 @inject OrderService _OrderService
-@inject SesionService _SesionService
-@inject NavigationManager _NavigationManager
-@inject NotificationService _NotificationService
-@inject AuthenticationStateProvider _AuthProvider
-@attribute [Authorize(Roles = nameof(UserEnum.Admin))]
+@attribute [Authorize(Roles = $"{nameof(UserEnum.Admin)}, {nameof(UserEnum.Supervisor)}")]
 
-<PageTitle>Dashboard — Tommy Logistic</PageTitle>
+<PageTitle>Admin Dashboard — Tommy Logistic</PageTitle>
 
 @if (_loading && _dashboard is null)
 {
@@ -24,7 +19,7 @@ else if (_dashboard is not null)
     <!-- Header -->
     <div class="dash-header">
         <div data-tour="welcome">
-            <h1 class="page-title" style="margin-bottom: var(--space-1)">Dashboard</h1>
+            <h1 class="page-title" style="margin-bottom: var(--space-1)">Admin Dashboard</h1>
             <p class="text-muted text-sm">
                 @DateTime.Now.ToString("dddd, dd 'de' MMMM yyyy", new System.Globalization.CultureInfo("es-PE"))
             </p>
@@ -37,7 +32,7 @@ else if (_dashboard is not null)
             <button class="btn btn-success" @onclick="AutoRouteAndAssignAsync">
                 ⚡ Armar cargas
             </button>
-            <button class="btn btn-ghost" @onclick="RepetirTour">
+            <button class="btn btn-ghost" @onclick="TutorialTour">
                 🤖 Ver tour de bienvenida
             </button>
         </div>
@@ -154,7 +149,7 @@ else if (_dashboard is not null)
                 <div class="dash-feed">
                     @foreach (var p in _dashboard.UltimosPedidos)
                     {
-                        <div @onclick="() => ShowPreviw(p.Id)" class="dash-feed-item">
+                        <div @onclick="() => ShowPreview(p.Id)" class="dash-feed-item">
                             <div class="dash-feed-left">
                                 <span class="codigo-seguimiento">@p.TrackingCode</span>
                                 <span class="dash-feed-name">@p.RecipientName</span>
@@ -256,79 +251,13 @@ else if (_dashboard is not null)
         _loading = false;
     }
 
-    // Cuando SignalR notifica un cambio, recargamos silenciosamente
-    // _loading queda en true brevemente para mostrar el spinner pequeño
-    private void OnDashboardUpdate()
-    {
-        InvokeAsync(async () =>
-        {
-            await LoadAsync();
-            StateHasChanged();
-        });
-    }
+    private void OnDashboardUpdate() => InvokeAsync(async () => { await LoadAsync(); StateHasChanged(); });
 
-    public void Dispose()
-    {
-        _NotificationService.OnDashboardUpdate -= OnDashboardUpdate;
-    }
-
-    private static string GetRoleColor(string role) => role switch
-    {
-        "Admin"      => "var(--color-danger)",
-        "Supervisor" => "var(--color-warning)",
-        "Operator"   => "var(--color-info)",
-        "Driver"     => "var(--color-success)",
-        _            => "var(--color-text-muted)"
-    };
-
-    private static string GetStatusLabel(string status) => status switch
-    {
-        "Registered"      => "Registrado",
-        "Assigned"        => "Asignado",
-        "PickedUp"        => "Retirado",
-        "OnTheWay"        => "En camino",
-        "Delivered"       => "Entregado",
-        "RecipientAbsent" => "Dest. ausente",
-        "Rescheduled"     => "Reprogramado",
-        "Returning"       => "En retorno",
-        "OnStorage"       => "En almacén",
-        "Failed"          => "Fallido",
-        _                 => status
-    };
-
-    private static string Initials(string name)
-    {
-        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return parts.Length >= 2
-            ? $"{parts[0][0]}{parts[1][0]}"
-            : name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
-    }
-
+    public void Dispose() => _NotificationService.OnDashboardUpdate -= OnDashboardUpdate;
     
     private async Task SimularRecepcionMasiva()
     {
-        Random random = new();
-        List<ExternalOrderDTO> listaPedidos = [];
-        string[] empresas = { "naruto@yopmail.com", "angelina@yopmail.com" };
-        string[] productos = { "Caja de Herramientas", "Monitor 24p", "Zapatillas Running", "Kit de Limpieza", "Teclado Mecánico", "Cafetera Express" };
-        string[] nombres = { "Monkey D. Luffy", "Roronoa Zoro", "Nami Swan", "Sanji Vinsmoke", "Tony Chopper", "Nico Robin" };
-        string[] distritos = { "Miraflores", "San Isidro", "Surco", "Los Olivos", "Lince" };
-
-        for (int i = 1; i <= 30; i++)
-        {
-            listaPedidos.Add(new ExternalOrderDTO
-            {
-                CompanyEmail = empresas[random.Next(empresas.Length)],
-                ProductName = $"{productos[random.Next(productos.Length)]} #{i}",
-                Quantity = random.Next(1, 5),
-                Recipient = nombres[random.Next(nombres.Length)],
-                Address = $"Calle Ficticia {random.Next(100, 999)}",
-                District = distritos[random.Next(distritos.Length)],
-                Phone = $"9{random.Next(10000000, 99999999)}"
-            });
-        }
-
-        var response = await _OrderService.SimularRecepcionMasiva(listaPedidos);
+        var response = await _OrderService.SimularRecepcionMasiva();
 
         if (!response)
         {
@@ -364,23 +293,53 @@ else if (_dashboard is not null)
         });
     }
 
-    private void ShowPreviw(int ID)
+    private void ShowPreview(int ID)
     {
         _pedidoSeleccionadoId = ID;
         _mostrarPreview = true;
     }
     
-    private async Task CerrarPreview() => _mostrarPreview = false;
-
-    public class AssignmentResponse
+    private async Task CerrarPreview()
     {
-        public string Message { get; set; } = "";
-        public int DriversUsed { get; set; }
-        public int OrdersPending { get; set; }
+        _pedidoSeleccionadoId = 0;
+        _mostrarPreview = false;
     }
 
-    private async Task RepetirTour()
+    private async Task TutorialTour()
     {
         Console.WriteLine("Tour de Bienvenida para Admin...");
     }
+
+    private static string GetRoleColor(string role) => role switch
+    {
+        "Admin"      => "var(--color-danger)",
+        "Supervisor" => "var(--color-warning)",
+        "Operator"   => "var(--color-info)",
+        "Driver"     => "var(--color-success)",
+        _            => "var(--color-text-muted)"
+    };
+
+    private static string GetStatusLabel(string status) => status switch
+    {
+        "Registered"      => "Registrado",
+        "Assigned"        => "Asignado",
+        "PickedUp"        => "Retirado",
+        "OnTheWay"        => "En camino",
+        "Delivered"       => "Entregado",
+        "RecipientAbsent" => "Dest. ausente",
+        "Rescheduled"     => "Reprogramado",
+        "Returning"       => "En retorno",
+        "OnStorage"       => "En almacén",
+        "Failed"          => "Fallido",
+        _                 => status
+    };
+
+    private static string Initials(string name)
+    {
+        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{parts[0][0]}{parts[1][0]}"
+            : name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
+    }
+
 }
