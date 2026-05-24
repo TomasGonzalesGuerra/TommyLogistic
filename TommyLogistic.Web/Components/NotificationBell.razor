@@ -1,5 +1,4 @@
 ﻿@implements IDisposable
-@inject NotificationService _NotificationService
 
 <div class="notif-bell-wrapper">
 
@@ -87,10 +86,7 @@
         StateHasChanged();
     }
 
-    private void Actualizar()
-    {
-        InvokeAsync(StateHasChanged);
-    }
+    private void Actualizar() => InvokeAsync(StateHasChanged);
 
     private static string TiempoRelativo(DateTime tiempo)
     {
@@ -101,8 +97,5 @@
         return tiempo.ToString("dd/MM HH:mm");
     }
 
-    public void Dispose()
-    {
-        _NotificationService.OnNotificacionCambiada -= Actualizar;
-    }
+    public void Dispose() =>_NotificationService.OnNotificacionCambiada -= Actualizar;
 }

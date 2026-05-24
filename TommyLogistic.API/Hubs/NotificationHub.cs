@@ -11,19 +11,24 @@ public class NotificationHub(LogisticDataContext context) : Hub
     private static readonly Dictionary<string, string> _driversConectados = [];
     private static readonly object _lock = new();
 
-    // Driver ──────────────────────────────────────────────────
-    public async Task JoinDriversGroup() => await Groups.AddToGroupAsync(Context.ConnectionId, "Drivers");
-    public async Task LeaveDriversGroup() => await Groups.RemoveFromGroupAsync(Context.ConnectionId, "Drivers");
-    public async Task JoinPersonalGroup(string userID) => await Groups.AddToGroupAsync(Context.ConnectionId, $"Driver_{userID}");
-    public async Task LeavePersonalGroup(string userID) => await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"Driver_{userID}");
 
     // Admins ──────────────────────────────────────────────────
     public async Task JoinAdminGroup() => await Groups.AddToGroupAsync(Context.ConnectionId, "Admins");
     public async Task LeaveAdminGroup() => await Groups.RemoveFromGroupAsync(Context.ConnectionId, "Admins");
 
+    // Supers ──────────────────────────────────────────────────
+    public async Task JoinSupervisorGroup() => await Groups.AddToGroupAsync(Context.ConnectionId, "Supervisors");
+    public async Task LeaveSupervisorGroup() => await Groups.RemoveFromGroupAsync(Context.ConnectionId, "Supervisors");
+
+    // Driver ──────────────────────────────────────────────────
+    public async Task JoinDriversGroup() => await Groups.AddToGroupAsync(Context.ConnectionId, "Drivers");
+    public async Task LeaveDriversGroup() => await Groups.RemoveFromGroupAsync(Context.ConnectionId, "Drivers");
+    public async Task JoinPersonalGroup(string userID) => await Groups.AddToGroupAsync(Context.ConnectionId, $"Driver_{userID}");
+    public async Task LeavePersonalGroup(string userID) => await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"Driver_{userID}");
+    
     // Operators ────────────────────────────────────────────────
     public async Task JoinOperatorGroup() => await Groups.AddToGroupAsync(Context.ConnectionId, "Operators");
-    public async Task JoinSupervisorGroup() => await Groups.AddToGroupAsync(Context.ConnectionId, "Supervisors");
+    public async Task LeaveOperatorGroup() => await Groups.RemoveFromGroupAsync(Context.ConnectionId, "Operators");
 
     // 👇 Driver anuncia que está online
     public async Task DriverOnline(string userID)

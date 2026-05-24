@@ -3,7 +3,7 @@
 @implements IDisposable
 @inject IRepository _IRepository
 @inject OrderService _OrderService
-@attribute [Authorize(Roles = $"{nameof(UserEnum.Admin)}, {nameof(UserEnum.Supervisor)}")]
+@attribute [Authorize(Roles = nameof(UserEnum.Admin))]
 
 <PageTitle>Admin Dashboard — Tommy Logistic</PageTitle>
 
@@ -252,7 +252,6 @@ else if (_dashboard is not null)
     }
 
     private void OnDashboardUpdate() => InvokeAsync(async () => { await LoadAsync(); StateHasChanged(); });
-
     public void Dispose() => _NotificationService.OnDashboardUpdate -= OnDashboardUpdate;
     
     private async Task SimularRecepcionMasiva()

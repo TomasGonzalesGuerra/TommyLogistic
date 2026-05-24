@@ -83,6 +83,11 @@
     flex-wrap: wrap;
 }
 
+.adm-modal__body {
+    margin: 3rem;
+    padding: 2rem;
+}
+
 @media (max-width: 768px) {
     .driver-stats-grid {
         grid-template-columns: repeat(2, 1fr);

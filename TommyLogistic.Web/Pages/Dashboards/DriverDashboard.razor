@@ -1,10 +1,7 @@
 ﻿@page "/DriverDashboard"
 @layout MainLayout
-@inject SweetAlertService _Swal
 @inject DriverService _DriverService
 @inject SesionService _SesionService
-@inject NavigationManager _NavigationManager
-@inject NotificationService _NotificationService
 @attribute [Authorize(Roles = nameof(UserEnum.Driver))]
 
 <PageTitle>Mi día — Tommy Logistic</PageTitle>
@@ -90,9 +87,29 @@ else
     </div>
 
     <!-- Pedidos de hoy -->
-    <div class="section-title mt-6">🔴 Mis pedidos de hoy</div>
+    <div class="section-title mt-6">
+        🔴 Mis pedidos de hoy
+        @if (_dashboard.Carga.Pedidos.Any(o => o.OrderStatus == OrderStatus.Assigned))
+        {
+            <div class="blockDoit" @onclick="() => DoitAll(OrderStatus.PickedUp)">
+                <button class="btn btn-primary btn-sm">📦 Retirar Todos</button>
+            </div>
+        }
+        else if (_dashboard.Carga.Pedidos.Any(o => o.OrderStatus == OrderStatus.PickedUp))
+        {
+            <div class="blockDoit" @onclick="() => DoitAll(OrderStatus.OnTheWay)">
+                <button class="btn btn-primary btn-sm">🚗 Salir a Repartir</button>
+            </div>
+        }
+        else if (_dashboard.Carga.Pedidos.All(o => o.OrderStatus == OrderStatus.Delivered))
+        {
+            <div class="blockDoit" @onclick="() => SolicitarConclusionAsync(_dashboard.Carga.Id)">
+                <button class="btn btn-success btn-sm">🚗 Cerrar Carga</button>
+            </div>
+        }
+    </div>
 
-    @if (!_dashboard.PedidosHoy.Any())
+    @if (!_dashboard.Carga.Pedidos.Any())
     {
         <div class="empty-state">
             <span class="empty-icon">🎉</span>
@@ -103,7 +120,7 @@ else
     else
     {
         <div class="driver-orders-list">
-            @foreach (var pedido in _dashboard.PedidosHoy)
+            @foreach (var pedido in _dashboard.Carga.Pedidos)
             {
                 <div class="driver-order-card @(_nuevosIds.Contains(pedido.Id) ? "driver-order-card--nuevo" : "")">
                     <div class="driver-order-top">
@@ -151,10 +168,7 @@ else
             {
                 <div class="form-group">
                     <label class="form-label required">Motivo / Nota</label>
-                    <textarea @bind="_nota"
-                              class="form-control"
-                              rows="3"
-                              placeholder="Describe el motivo..."></textarea>
+                    <textarea @bind="_nota" class="form-control" rows="3" placeholder="Describe el motivo..."></textarea>
                 </div>
             }
             @if (_error is not null)
@@ -166,8 +180,7 @@ else
         </div>
         <div class="adm-modal__footer">
             <button class="btn btn-ghost btn-sm" @onclick="CerrarModal">Cancelar</button>
-            <button class="btn @_modalBtnClass btn-sm"
-                    disabled="@(_guardando || (_requiereNota && string.IsNullOrWhiteSpace(_nota)))"
+            <button class="btn @_modalBtnClass btn-sm" disabled="@(_guardando || (_requiereNota && string.IsNullOrWhiteSpace(_nota)))"
                     @onclick="ConfirmarAccionAsync">
                 @if (_guardando)
                 {
@@ -222,6 +235,32 @@ else
     }
 
     // ── Acciones disponibles por estado ──────────────────────────────────
+    private async Task DoitAll(OrderStatus nuevoEstado)
+    {
+        _guardando = true;
+        _error = string.Empty;
+
+        var dto = new DriverUpdateStatusDTO
+        {
+            NewStatus = nuevoEstado,
+            Note = string.IsNullOrWhiteSpace(_nota) ? null : _nota
+        };
+
+        var ok = await _DriverService.UpdateAllAsync(_dashboard!.Carga.Pedidos, dto);
+
+        if (ok)
+        {
+            CerrarModal();
+            await LoadAsync();
+        }
+        else
+        {
+            _error = "No se pudo actualizar el pedido. Intenta de nuevo.";
+        }
+
+        _guardando = false;
+    }
+
     private static List<AccionDTO> GetAcciones(OrderStatus status) => status switch
     {
         OrderStatus.Assigned => [
@@ -314,7 +353,7 @@ else
 
         // 2. Notificar al Operator via SignalR directamente
         var nombre = _dashboard?.FullName ?? "Driver";
-        var total = _dashboard?.PedidosHoy.Count ?? 0;
+        var total = _dashboard?.Carga.Pedidos.Count ?? 0;
         await _NotificationService.SolicitarConclusionCargaAsync(cargaId, nombre, total);
 
         CerrarModal();
@@ -334,13 +373,9 @@ else
     private static readonly string[] _avatarColors =
         ["#1a56db","#0e9f6e","#7c3aed","#e3a008","#0694a2","#e02424","#d97706"];
 
-    private static string AvatarColor(string name)
-        => _avatarColors[Math.Abs(name.GetHashCode()) % _avatarColors.Length];
+    private static string AvatarColor(string name) => _avatarColors[Math.Abs(name.GetHashCode()) % _avatarColors.Length];
 
-    public void Dispose()
-    {
-        _NotificationService.OnNewOrder -= OnNuevoPedidoAsignado;
-    }
+    public void Dispose() => _NotificationService.OnNewOrder -= OnNuevoPedidoAsignado;
 
     // Record interno para las acciones
     private record AccionDTO(string CssClass, OrderStatus NuevoEstado, string Icono, string Label);

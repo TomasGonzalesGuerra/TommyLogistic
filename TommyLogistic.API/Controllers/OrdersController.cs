@@ -196,7 +196,7 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
                         newStatus: OrderStatus.Assigned,
                         userId: CurrentUserId,
                         assignedDriverId: currentDriver.UserID,
-                        note: "Pedido asignado al repartidor"
+                        note: $"Pedido asignado al Repartidor {currentDriver.User.FullName}"
                     );
 
                     // 🔔 Notificar SOLO a ese driver
@@ -223,6 +223,7 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
 
         await _dataContext.SaveChangesAsync();
         await _hubContext.Clients.Group("Admins").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Supervisors").SendAsync("DashboardUpdate");
         int ordersLeft = registeredOrders.Count - totalAssigned;
 
         return Ok(new

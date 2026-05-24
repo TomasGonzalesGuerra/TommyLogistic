@@ -39,9 +39,9 @@ public class NotificationService(IJSRuntime jsRuntime) : IAsyncDisposable
             .WithAutomaticReconnect()
             .Build();
 
+        _hubConnection.On("DashboardUpdate", () => OnDashboardUpdate?.Invoke());
         _hubConnection.On<object>("NewDriverJoined", data => OnNewDriver?.Invoke(data.ToString()!));
         _hubConnection.On<object>("NewOrderAssigned", data => OnNewOrder?.Invoke(data.ToString()!));
-        _hubConnection.On("DashboardUpdate", () => OnDashboardUpdate?.Invoke());
         _hubConnection.On<object>("DriverConectado", data =>
         {
             var json = data.ToString()!;

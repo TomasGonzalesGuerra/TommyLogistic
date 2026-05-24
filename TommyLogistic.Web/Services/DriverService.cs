@@ -70,6 +70,13 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
         return r.Error ? [] : r.Response!;
     }
 
+    public async Task<bool> UpdateAllAsync(List<DriverOrderDTO> orders, DriverUpdateStatusDTO dto)
+    {
+        var tasks = orders.Select(order => UpdateOrderStatusAsync(order.Id, dto));
+        var results = await Task.WhenAll(tasks);
+        return results.All(r => r);
+    }
+
     public async Task<bool> UpdateOrderStatusAsync(int orderId, DriverUpdateStatusDTO dto)
     {
         var r = await _repository.PutAsync($"api/Drivers/UpdateOrderStatus/{orderId}", dto);

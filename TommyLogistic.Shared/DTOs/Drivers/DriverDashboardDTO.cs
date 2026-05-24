@@ -1,4 +1,6 @@
-﻿namespace TommyLogistic.Shared.DTOs.Drivers;
+﻿using TommyLogistic.Shared.DTOs.Cargas;
+
+namespace TommyLogistic.Shared.DTOs.Drivers;
 
 public class DriverDashboardDTO
 {
@@ -12,5 +14,5 @@ public class DriverDashboardDTO
     public string Placa { get; set; } = null!;
     public string? Photo { get; set; }
     public bool Available { get; set; }
-    public List<DriverOrderDTO> PedidosHoy { get; set; } = [];
+    public CargaDetailDTO Carga { get; set; } = null!;
 }

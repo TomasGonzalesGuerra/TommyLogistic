@@ -7,6 +7,7 @@ using System.Security.Claims;
 using TommyLogistic.API.Data;
 using TommyLogistic.API.Hubs;
 using TommyLogistic.API.Services;
+using TommyLogistic.Shared.DTOs.Cargas;
 using TommyLogistic.Shared.DTOs.Drivers;
 using TommyLogistic.Shared.Entities;
 using TommyLogistic.Shared.Enums;
@@ -51,13 +52,12 @@ public class DriversController(LogisticDataContext dadaContext, IHubContext<Noti
 
         Driver? driver = await _dadaContext.Drivers
             .Include(d => d.User)
-            .Include(d => d.Orders!.Where(o => o.RegistrationDate.Date == hoy))
-                .ThenInclude(o => o.Company).ThenInclude(c => c!.User)
+            .Include(d => d.Cargas!).ThenInclude(c => c.Orders!).ThenInclude(o => o.Company).ThenInclude(co => co!.User)
             .FirstOrDefaultAsync(d => d.UserID == userID);
 
         if (driver is null) return NotFound();
 
-        var pedidosHoy = driver.Orders ?? [];
+        var pedidosHoy = driver.Cargas?.SelectMany(c => c.Orders!.Where(o => o.RegistrationDate.Date == hoy).ToList()) ?? [];
 
         return Ok(new DriverDashboardDTO
         {
@@ -71,7 +71,10 @@ public class DriversController(LogisticDataContext dadaContext, IHubContext<Noti
             Entregados = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.Delivered),
             Fallidos = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.Failed),
             EnRetorno = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.Returning),
-            PedidosHoy = pedidosHoy.OrderBy(o => o.OrderStatus).Select(o => MapToDriverOrderDTO(o)).ToList()
+            Carga = new CargaDetailDTO
+            {
+                Pedidos = [.. pedidosHoy.OrderBy(o => o.OrderStatus).Select(o => MapToDriverOrderDTO(o))]
+            }
         });
     }
 
@@ -98,9 +101,8 @@ public class DriversController(LogisticDataContext dadaContext, IHubContext<Noti
     public async Task<ActionResult> UpdateOrderStatus(int OrderID, [FromBody] DriverUpdateStatusDTO model)
     {
         string userID = CurrentUserId;
-        var order = await _dadaContext.Orders
-            .FirstOrDefaultAsync(o => o.Id == OrderID && o.DriverID == userID);
-        if (order is null) return NotFound("Pedido no encontrado o no te pertenece");
+        Order? order = await _dadaContext.Orders.FirstOrDefaultAsync(o => o.Id == OrderID && o.DriverID == userID);
+        if (order is null) return NotFound("Pedido NO Encontrado");
 
         // Validar transiciones permitidas para el driver
         var transicionValida = (order.OrderStatus, model.NewStatus) switch
@@ -115,8 +117,7 @@ public class DriversController(LogisticDataContext dadaContext, IHubContext<Noti
             _ => false
         };
 
-        if (!transicionValida)
-            return BadRequest($"No puedes pasar de {order.OrderStatus} a {model.NewStatus}");
+        if (!transicionValida) return BadRequest($"No puedes pasar de {order.OrderStatus} a {model.NewStatus}");
 
         order.OrderStatus = model.NewStatus;
 
@@ -140,7 +141,7 @@ public class DriversController(LogisticDataContext dadaContext, IHubContext<Noti
         );
 
         await _hubContext.Clients.Group("Admins").SendAsync("DashboardUpdate");
-
+        await _hubContext.Clients.Group("Supervisors").SendAsync("DashboardUpdate");
         return Ok();
     }
 
