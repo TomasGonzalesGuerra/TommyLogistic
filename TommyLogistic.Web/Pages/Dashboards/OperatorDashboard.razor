@@ -2,8 +2,6 @@
 @layout MainLayout
 @implements IDisposable
 @inject IRepository _Repository
-@inject NavigationManager _NavigationManager
-@inject NotificationService _NotificationService
 @attribute [Authorize(Roles = $"{nameof(UserEnum.Admin)},{nameof(UserEnum.Operator)}")]
 
 <PageTitle>Panel Operador — Tommy Logistic</PageTitle>
@@ -254,9 +252,7 @@ else
         if (_pedidoRetorno is null) return;
         _guardando = true;
 
-        var r = await _Repository.PostAsync(
-            $"api/Cargas/RecibirRetorno/{_pedidoRetorno.Id}",
-            new CargaConcluirDTO { Nota = _notaRetorno });
+        var r = await _Repository.PostAsync($"api/Cargas/RecibirRetorno/{_pedidoRetorno.Id}", new CargaConcluirDTO { Nota = _notaRetorno });
 
         if (!r.Error)
         {
@@ -278,9 +274,7 @@ else
     {
         _guardando = true;
 
-        var r = await _Repository.PostAsync(
-            $"api/Cargas/Concluir/{_cargaAConcluirId}",
-            new CargaConcluirDTO { Nota = _notaConclusion });
+        var r = await _Repository.PostAsync($"api/Cargas/Concluir/{_cargaAConcluirId}", new CargaConcluirDTO { Nota = _notaConclusion });
 
         if (!r.Error)
         {
@@ -291,8 +285,7 @@ else
         _guardando = false;
     }
 
-    private void OnNuevaNotificacion(string _)
-        => InvokeAsync(async () => { await LoadAsync(); StateHasChanged(); });
+    private void OnNuevaNotificacion(string _) => InvokeAsync(async () => { await LoadAsync(); StateHasChanged(); });
 
     private static string Initials(string name)
     {
