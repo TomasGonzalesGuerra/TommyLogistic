@@ -2,7 +2,7 @@
 @layout MainLayout
 @implements IDisposable
 @inject IRepository _Repository
-@attribute [Authorize(Roles = $"{nameof(UserEnum.Admin)},{nameof(UserEnum.Operator)}")]
+@attribute [Authorize(Roles = nameof(UserEnum.Operator))]
 
 <PageTitle>Panel Operador — Tommy Logistic</PageTitle>
 
@@ -227,13 +227,11 @@ else
         _loading = true;
 
         // Pedidos en retorno
-        var r1 = await _Repository
-            .GetAsync<List<DriverOrderDTO>>("api/Orders/GetByStatus?status=Returning");
+        var r1 = await _Repository.GetAsync<List<DriverOrderDTO>>("api/Orders/GetByStatus?status=Returning");
         if (!r1.Error) _retornos = r1.Response!;
 
         // Cargas pendientes de conclusión
-        var r2 = await _Repository
-            .GetAsync<List<CargaSummaryDTO>>("api/Cargas/GetAll?status=PendienteConclusion");
+        var r2 = await _Repository.GetAsync<List<CargaSummaryDTO>>("api/Cargas/GetAllCargas");
         if (!r2.Error) _cargasPendientes = r2.Response!;
 
         _pendientesConclusion = _cargasPendientes.Count;

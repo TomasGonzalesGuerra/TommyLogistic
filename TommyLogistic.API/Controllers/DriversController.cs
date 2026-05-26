@@ -73,6 +73,7 @@ public class DriversController(LogisticDataContext dadaContext, IHubContext<Noti
             EnRetorno = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.Returning),
             Carga = new CargaDetailDTO
             {
+                Id = driver.Cargas?.FirstOrDefault(c => c.Orders!.Any(o => o.RegistrationDate.Date == hoy))?.Id ?? 0,
                 Pedidos = [.. pedidosHoy.OrderBy(o => o.OrderStatus).Select(o => MapToDriverOrderDTO(o))]
             }
         });

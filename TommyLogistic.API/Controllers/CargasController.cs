@@ -19,7 +19,8 @@ namespace TommyLogistic.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = $"{nameof(UserEnum.Admin)}, {nameof(UserEnum.Supervisor)}")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+//[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = $"{nameof(UserEnum.Admin)}, {nameof(UserEnum.Supervisor)}")]
 public class CargasController(LogisticDataContext context, IHubContext<NotificationHub> hubContext, OrderEventService eventService) : ControllerBase
 {
     private readonly LogisticDataContext _dadaContext = context;
@@ -195,7 +196,7 @@ public class CargasController(LogisticDataContext context, IHubContext<Notificat
 
     // ── Driver: solicitar conclusión ──────────────────────────────────────
     [HttpPost("SolicitarConclusion/{id}")]
-    [Authorize(Roles = "Driver")]
+    [Authorize(Roles = nameof(UserEnum.Driver))]
     public async Task<ActionResult> SolicitarConclusion(int id)
     {
         var carga = await _dadaContext.Cargas
@@ -204,13 +205,11 @@ public class CargasController(LogisticDataContext context, IHubContext<Notificat
             .FirstOrDefaultAsync(c => c.Id == id && c.DriverID == CurrentUserId);
 
         if (carga is null) return NotFound("Carga no encontrada");
-        if (carga.Status != CargaStatus.Activa)
-            return BadRequest("La carga no está activa");
+        if (carga.Status != CargaStatus.Activa) return BadRequest("La carga no está activa");
 
         // Verificar que todos los pedidos están en estado final
         var pendientes = carga.Orders
-            .Where(o => o.OrderStatus != OrderStatus.Delivered &&
-                        o.OrderStatus != OrderStatus.OnStorage)
+            .Where(o => o.OrderStatus != OrderStatus.Delivered && o.OrderStatus != OrderStatus.OnStorage)
             .ToList();
 
         if (pendientes.Any())
