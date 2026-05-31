@@ -1,7 +1,6 @@
 ﻿@page "/DriverDashboard"
 @layout MainLayout
 @inject DriverService _DriverService
-@inject SesionService _SesionService
 @attribute [Authorize(Roles = nameof(UserEnum.Driver))]
 
 <PageTitle>Mi día — Tommy Logistic</PageTitle>
@@ -215,7 +214,8 @@ else
     protected override async Task OnInitializedAsync()
     {
         await LoadAsync();
-        _NotificationService.OnNewOrder += OnNuevoPedidoAsignado;
+        _NotificationService.OnNewCarga += HandleNewCarga;
+        _NotificationService.OnDashboardUpdate += OnDashboardUpdate;
     }
 
     private async Task LoadAsync()
@@ -225,14 +225,8 @@ else
         _loading = false;
     }
 
-    private void OnNuevoPedidoAsignado(string _)
-    {
-        InvokeAsync(async () =>
-        {
-            await LoadAsync();
-            StateHasChanged();
-        });
-    }
+    private void HandleNewCarga(NewOrderAssignedDTO _) => InvokeAsync(async () => { await LoadAsync(); StateHasChanged(); });
+    private void OnDashboardUpdate() => InvokeAsync(async () => { await LoadAsync(); StateHasChanged(); });
 
     // ── Acciones disponibles por estado ──────────────────────────────────
     private async Task DoitAll(OrderStatus nuevoEstado)
@@ -331,7 +325,6 @@ else
 
     private void CerrarModal()
     {
-        _mostrarModal  = false;
         _pedidoActivo  = null;
         _nota          = string.Empty;
         _error         = string.Empty;
@@ -340,9 +333,6 @@ else
     private async Task SolicitarConclusionAsync(int cargaId)
     {
         _guardando = true;
-        
-        Console.WriteLine($"Ya me Tokaste MIARDA!!! la Carga es {cargaId}");
-
         var r = await _DriverService.SolicitarConclusionAsync(cargaId);
 
         if (!r)
@@ -352,12 +342,7 @@ else
             return;
         }
 
-        // 2. Notificar al Operator via SignalR directamente
-        var nombre = _dashboard?.FullName ?? "Driver";
-        var total = _dashboard?.Carga.Pedidos.Count ?? 0;
-        await _NotificationService.SolicitarConclusionCargaAsync(cargaId, nombre, total);
-
-        CerrarModal();
+        Console.WriteLine($"Ya me Tokaste MIARDA!!! la Carga es {cargaId}");
         await LoadAsync();
         _guardando = false;
     }
@@ -370,13 +355,13 @@ else
             ? $"{parts[0][0]}{parts[1][0]}"
             : name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
     }
-
-    private static readonly string[] _avatarColors =
-        ["#1a56db","#0e9f6e","#7c3aed","#e3a008","#0694a2","#e02424","#d97706"];
-
+    private static readonly string[] _avatarColors = ["#1a56db","#0e9f6e","#7c3aed","#e3a008","#0694a2","#e02424","#d97706"];
     private static string AvatarColor(string name) => _avatarColors[Math.Abs(name.GetHashCode()) % _avatarColors.Length];
-
-    public void Dispose() => _NotificationService.OnNewOrder -= OnNuevoPedidoAsignado;
+    public void Dispose()
+    {
+        _NotificationService.OnNewCarga -= HandleNewCarga;
+        _NotificationService.OnDashboardUpdate -= OnDashboardUpdate;
+    }
 
     // Record interno para las acciones
     private record AccionDTO(string CssClass, OrderStatus NuevoEstado, string Icono, string Label);

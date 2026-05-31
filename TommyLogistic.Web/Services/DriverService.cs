@@ -95,9 +95,9 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
         return !r.Error;
     }
 
-    public async Task<bool> SolicitarConclusionAsync(int cargaId)
+    public async Task<bool> SolicitarConclusionAsync(int CargaID)
     {
-        var r = await _repository.PostAsync<object>( $"api/Cargas/SolicitarConclusion/{cargaId}", null!);
+        var r = await _repository.PostAsync<object>( $"api/Drivers/SolicitarConclusion/{CargaID}", null!);
         return !r.Error;
     }
 }

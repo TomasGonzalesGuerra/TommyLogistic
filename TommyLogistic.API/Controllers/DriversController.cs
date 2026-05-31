@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Humanizer;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -17,9 +18,9 @@ namespace TommyLogistic.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = nameof(UserEnum.Driver))]
-public class DriversController(LogisticDataContext dadaContext, IHubContext<NotificationHub> hubContext, OrderEventService eventService) : ControllerBase
+public class DriversController(LogisticDataContext dataContext, IHubContext<NotificationHub> hubContext, OrderEventService eventService) : ControllerBase
 {
-    private readonly LogisticDataContext _dadaContext = dadaContext;
+    private readonly LogisticDataContext _dataContext = dataContext;
     private readonly OrderEventService _eventService = eventService;
     private readonly IHubContext<NotificationHub> _hubContext = hubContext;
     private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Yop";
@@ -28,7 +29,7 @@ public class DriversController(LogisticDataContext dadaContext, IHubContext<Noti
     [HttpGet("Profile")]
     public async Task<ActionResult> GetProfile()
     {
-        Driver? driver = await _dadaContext.Drivers.Include(d => d.User).FirstOrDefaultAsync(d => d.UserID == CurrentUserId);
+        Driver? driver = await _dataContext.Drivers.Include(d => d.User).FirstOrDefaultAsync(d => d.UserID == CurrentUserId);
         if (driver is null) return NotFound();
 
         return Ok(new DriverProfileDTO
@@ -50,7 +51,7 @@ public class DriversController(LogisticDataContext dadaContext, IHubContext<Noti
         string userID = CurrentUserId;
         var hoy = DateTime.UtcNow.Date;
 
-        Driver? driver = await _dadaContext.Drivers
+        Driver? driver = await _dataContext.Drivers
             .Include(d => d.User)
             .Include(d => d.Cargas!).ThenInclude(c => c.Orders!).ThenInclude(o => o.Company).ThenInclude(co => co!.User)
             .FirstOrDefaultAsync(d => d.UserID == userID);
@@ -84,7 +85,7 @@ public class DriversController(LogisticDataContext dadaContext, IHubContext<Noti
     public async Task<ActionResult> GetMyOrders([FromQuery] string? status = null)
     {
         string userID = CurrentUserId;
-        var query = _dadaContext.Orders.Include(o => o.Company).Where(o => o.DriverID == userID);
+        var query = _dataContext.Orders.Include(o => o.Company).Where(o => o.DriverID == userID);
 
         if (!string.IsNullOrEmpty(status) && Enum.TryParse<OrderStatus>(status, out var s))
             query = query.Where(o => o.OrderStatus == s);
@@ -98,11 +99,11 @@ public class DriversController(LogisticDataContext dadaContext, IHubContext<Noti
     }
 
     // PUT: api/Drivers/UpdateOrderStatus/{OrderID}
-    [HttpPut("UpdateOrderStatus/{OrderID}")]
+    [HttpPut("UpdateOrderStatus/{OrderID:int}")]
     public async Task<ActionResult> UpdateOrderStatus(int OrderID, [FromBody] DriverUpdateStatusDTO model)
     {
         string userID = CurrentUserId;
-        Order? order = await _dadaContext.Orders.FirstOrDefaultAsync(o => o.Id == OrderID && o.DriverID == userID);
+        Order? order = await _dataContext.Orders.FirstOrDefaultAsync(o => o.Id == OrderID && o.DriverID == userID);
         if (order is null) return NotFound("Pedido NO Encontrado");
 
         // Validar transiciones permitidas para el driver
@@ -123,15 +124,13 @@ public class DriversController(LogisticDataContext dadaContext, IHubContext<Noti
         order.OrderStatus = model.NewStatus;
 
         // Si es entrega fallida o retorno, incrementar intentos
-        if (model.NewStatus == OrderStatus.Failed ||
-            model.NewStatus == OrderStatus.RecipientAbsent)
+        if (model.NewStatus == OrderStatus.Failed || model.NewStatus == OrderStatus.RecipientAbsent)
             order.DeliveryAttempts++;
 
         // Si es entregado, registrar fecha
-        if (model.NewStatus == OrderStatus.Delivered)
-            order.DeliveryDate = DateTime.UtcNow;
+        if (model.NewStatus == OrderStatus.Delivered) order.DeliveryDate = DateTime.UtcNow;
 
-        await _dadaContext.SaveChangesAsync();
+        await _dataContext.SaveChangesAsync();
 
         // Registrar en historial
         await _eventService.RegisterAsync(
@@ -142,9 +141,39 @@ public class DriversController(LogisticDataContext dadaContext, IHubContext<Noti
         );
 
         await _hubContext.Clients.Group("Admins").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Drivers").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Operators").SendAsync("DashboardUpdate");
         await _hubContext.Clients.Group("Supervisors").SendAsync("DashboardUpdate");
         return Ok();
     }
+
+    // POST: api/Drivers/SolicitarConclusion/{CargaID:int}
+    [HttpPost("SolicitarConclusion/{CargaID:int}")]
+    public async Task<ActionResult> SolicitarConclusion(int CargaID)
+    {
+        Carga? carga = await _dataContext.Cargas
+            .Include(c => c.Orders)
+            .Include(c => c.Driver).ThenInclude(d => d!.User)
+            .FirstOrDefaultAsync(c => c.Id == CargaID && c.DriverID == CurrentUserId);
+
+        if (carga is null) return NotFound("Carga NO Encontrada");
+        if (carga.Status != CargaStatus.Activa) return BadRequest("La carga NO está Activa");
+
+        // Verificar que todos los pedidos están en estado final
+        var pendientes = carga.Orders!.Where(o => o.OrderStatus != OrderStatus.Delivered && o.OrderStatus != OrderStatus.OnStorage).ToList();
+        if (pendientes.Count != 0) return BadRequest($"Aún Tienes {pendientes.Count} Pedido(s) sin Finalizar");
+
+        carga.Status = CargaStatus.PendienteConclusion;
+        await _dataContext.SaveChangesAsync();
+
+        // Notificar a todos los Operators
+        await _hubContext.Clients.Group("Operators").SendAsync("SolicituddeConclusion", $"El driver {carga.Driver!.User.FullName} Solicita Concluir la Carga #{carga.Id}");
+        return Ok();
+    }
+
+
+
+
 
     // ── Helper privado ────────────────────────────────────────────────────
     private static DriverOrderDTO MapToDriverOrderDTO(Order o) => new()
@@ -163,5 +192,4 @@ public class DriversController(LogisticDataContext dadaContext, IHubContext<Noti
         Quantity = o.Quantity,
         CompanyName = o.Company!.User.FullName,
     };
-
 }

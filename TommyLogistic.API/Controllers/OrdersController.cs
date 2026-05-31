@@ -89,15 +89,15 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
                 note: "Pedido asignado al repartidor"
             );
 
-            await _hubContext.Clients
-                .Group($"Driver_{order.DriverID}")
-                .SendAsync("NewOrderAssigned", new
-                {
-                    Message = $"¡Tienes un Nuevo Pedido! Destinatario: {order.RecipientName}",
-                    OrderId = order.Id,
-                    Tracking = order.TrackingCode,
-                    Address = order.RecipientAddress,
-                });
+            //await _hubContext.Clients
+            //    .Group($"Driver_{order.DriverID}")
+            //    .SendAsync("NewOrderAssigned", new
+            //    {
+            //        Message = $"¡Tienes un Nuevo Pedido! Destinatario: {order.RecipientName}",
+            //        OrderId = order.Id,
+            //        Tracking = order.TrackingCode,
+            //        Address = order.RecipientAddress,
+            //    });
         }
 
         return Ok(order.Id);
@@ -153,6 +153,9 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
         _dataContext.Orders.AddRange(newOrders);
         await _dataContext.SaveChangesAsync();
         await _hubContext.Clients.Group("Admins").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Drivers").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Operators").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Supervisors").SendAsync("DashboardUpdate");
         return Ok();
     }
 
@@ -191,25 +194,19 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
                     order.OrderStatus = OrderStatus.Assigned;
 
                     // 📋 Registrar evento: asignación
-                    await _eventService.RegisterAsync(
-                        orderId: order.Id,
-                        newStatus: OrderStatus.Assigned,
-                        userId: CurrentUserId,
-                        assignedDriverId: currentDriver.UserID,
-                        note: $"Pedido asignado al Repartidor {currentDriver.User.FullName}"
-                    );
+                    await _eventService.RegisterAsync( order.Id, OrderStatus.Assigned, CurrentUserId, currentDriver.UserID, $"Pedido asignado al Repartidor {currentDriver.User.FullName}" );
 
                     // 🔔 Notificar SOLO a ese driver
-                    await _hubContext.Clients
-                            .Group($"Driver_{currentDriver.UserID}")
-                            .SendAsync("NewOrderAssigned", new
-                            {
-                                Message = $"¡Tienes un nuevo pedido asignado! Destinatario: {order.RecipientName}",
-                                OrderId = order.Id,
-                                Tracking = order.TrackingCode,
-                                Address = order.RecipientAddress,
-                                Timestamp = DateTime.Now
-                            });
+                    //await _hubContext.Clients
+                    //        .Group($"Driver_{currentDriver.UserID}")
+                    //        .SendAsync("NewOrderAssigned", new
+                    //        {
+                    //            Message = $"¡Tienes un nuevo pedido asignado! Destinatario: {order.RecipientName}",
+                    //            OrderId = order.Id,
+                    //            Tracking = order.TrackingCode,
+                    //            Address = order.RecipientAddress,
+                    //            Timestamp = DateTime.Now
+                    //        });
 
                     totalAssigned++;
                 }
@@ -223,9 +220,11 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
 
         await _dataContext.SaveChangesAsync();
         await _hubContext.Clients.Group("Admins").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Drivers").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Operators").SendAsync("DashboardUpdate");
         await _hubContext.Clients.Group("Supervisors").SendAsync("DashboardUpdate");
-        int ordersLeft = registeredOrders.Count - totalAssigned;
 
+        int ordersLeft = registeredOrders.Count - totalAssigned;
         return Ok(new
         {
             Message = $"Asignación completada: {totalAssigned} órdenes asignadas.",
@@ -294,15 +293,15 @@ public class OrdersController(LogisticDataContext dataContext, IHubContext<Notif
         // 🔔 Notificar al driver si fue Reasignado
         if (!string.IsNullOrEmpty(DTO.NewDriverID) && DTO.NewDriverID != previousDriverId)
         {
-            await _hubContext.Clients
-                .Group($"Driver_{DTO.NewDriverID}")
-                .SendAsync("NewOrderAssigned", new
-                {
-                    Message = $"¡Te Reasignaron un Pedido! Destinatario: {order.RecipientName}",
-                    OrderId = order.Id,
-                    Tracking = order.TrackingCode,
-                    Address = order.RecipientAddress,
-                });
+            //await _hubContext.Clients
+            //    .Group($"Driver_{DTO.NewDriverID}")
+            //    .SendAsync("NewOrderAssigned", new
+            //    {
+            //        Message = $"¡Te Reasignaron un Pedido! Destinatario: {order.RecipientName}",
+            //        OrderId = order.Id,
+            //        Tracking = order.TrackingCode,
+            //        Address = order.RecipientAddress,
+            //    });
         }
 
         return Ok();

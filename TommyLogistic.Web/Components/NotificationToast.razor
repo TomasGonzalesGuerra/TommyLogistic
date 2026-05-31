@@ -30,26 +30,21 @@
         var rol = await _SesionService.GetRolAsync();
         if (rol is null) return;
 
-        var user = await _SesionService.ObtenerUsuarioAsync();
         var userId = await _SesionService.GetUserIdAsync();
+        var user = await _SesionService.ObtenerUsuarioAsync();
 
         if (userId is null) return;
 
         _NotificationService.OnNewDriver += HandleNewDriver;
-        _NotificationService.OnNewOrder  += HandleNewOrder;
+        _NotificationService.OnNewCarga += HandleNewCarga;
+        _NotificationService.OnSolicituddeConclusion += OnSolicituddeConclusion;
 
         await _NotificationService.StartAsync(rol, userId);
     }
 
-    private void HandleNewDriver(string _)
-    {
-        AddToast("🛵", "¡Tienes un nuevo compañero repartidor!");
-    }
-
-    private void HandleNewOrder(string _)
-    {
-        AddToast("📦", "¡Te asignaron un nuevo pedido!");
-    }
+    private void OnSolicituddeConclusion(string data) => AddToast("🛵", data);
+    private void HandleNewDriver(string _) => AddToast("🛵", "¡Tienes un nuevo compañero repartidor!");
+    private void HandleNewCarga(NewOrderAssignedDTO data) => AddToast("📦", $"¡Te Asignaron una Carga en {data.Distrito}. Total: {data.Total}");
 
     private void AddToast(string icon, string message)
     {
@@ -72,8 +67,9 @@
 
     public async ValueTask DisposeAsync()
     {
+        _NotificationService.OnNewCarga += HandleNewCarga;
         _NotificationService.OnNewDriver -= HandleNewDriver;
-        _NotificationService.OnNewOrder  -= HandleNewOrder;
+        _NotificationService.OnSolicituddeConclusion -= OnSolicituddeConclusion;
         await _NotificationService.DisposeAsync();
     }
 

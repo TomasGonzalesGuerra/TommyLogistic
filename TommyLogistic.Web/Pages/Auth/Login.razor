@@ -1,7 +1,6 @@
 ﻿@page "/"
 @inject IRepository _IRepository
 @inject ILoginService _ILoginService
-@inject SesionService _SesionService
 
 <PageTitle>Iniciar sesión — Tommy Logistic</PageTitle>
 
@@ -106,19 +105,19 @@
 
         switch (rol)
         {
-            case "Admin":
+            case nameof(UserEnum.Admin):
                 _NavigationManager.NavigateTo("/AdminDashboard");
                 break;
-            case "Supervisor":
+            case nameof(UserEnum.Supervisor):
                 _NavigationManager.NavigateTo("/SupervisorDashboard");
                 break;
-            case "Operator":
+            case nameof(UserEnum.Operator):
                 _NavigationManager.NavigateTo("/OperatorDashboard");
                 break;
-            case "Driver":
+            case nameof(UserEnum.Driver):
                 _NavigationManager.NavigateTo("/DriverDashboard");
                 break;
-            case "Client":
+            case nameof(UserEnum.Client):
                 _NavigationManager.NavigateTo("/ClientDashboard");
                 break;
             default:

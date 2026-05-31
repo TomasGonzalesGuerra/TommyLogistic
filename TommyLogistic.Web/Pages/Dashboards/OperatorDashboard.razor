@@ -219,7 +219,9 @@ else
     protected override async Task OnInitializedAsync()
     {
         await LoadAsync();
-        _NotificationService.OnNewOrder += OnNuevaNotificacion;
+        _NotificationService.OnNewCarga += HandleNewCarga;
+        _NotificationService.OnDashboardUpdate += OnDashboardUpdate;
+        _NotificationService.OnSolicituddeConclusion += OnSolicituddeConclusion;
     }
 
     private async Task LoadAsync()
@@ -283,8 +285,9 @@ else
         _guardando = false;
     }
 
-    private void OnNuevaNotificacion(string _) => InvokeAsync(async () => { await LoadAsync(); StateHasChanged(); });
-
+    private void OnDashboardUpdate() => InvokeAsync(async () => { await LoadAsync(); StateHasChanged(); });
+    private void OnSolicituddeConclusion(string _) => InvokeAsync(async () => { await LoadAsync(); StateHasChanged(); });
+    private void HandleNewCarga(NewOrderAssignedDTO _) => InvokeAsync(async () => { await LoadAsync(); StateHasChanged(); });
     private static string Initials(string name)
     {
         var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -292,9 +295,10 @@ else
             ? $"{parts[0][0]}{parts[1][0]}"
             : name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
     }
-
     public void Dispose()
     {
-        _NotificationService.OnNewOrder -= OnNuevaNotificacion;
+        _NotificationService.OnNewCarga -= HandleNewCarga;
+        _NotificationService.OnDashboardUpdate -= OnDashboardUpdate;
+        _NotificationService.OnSolicituddeConclusion -= OnSolicituddeConclusion;
     }
 }

@@ -1,16 +1,13 @@
 ﻿@page "/CargaNueva"
 @layout MainLayout
 @inject IRepository _Repository
-@inject NavigationManager _NavigationManager
-@inject NotificationService _NotificationService
 @attribute [Authorize(Roles = $"{nameof(UserEnum.Admin)}, {nameof(UserEnum.Supervisor)}")]
 
 <PageTitle>Nueva carga — Tommy Logistic</PageTitle>
 
 <!-- Breadcrumb -->
 <div class="detail-breadcrumb">
-    <button class="btn btn-ghost btn-sm"
-            @onclick='() => _NavigationManager.NavigateTo("/AdminDashboard")'>
+    <button class="btn btn-ghost btn-sm" @onclick='GoToBackRole'>
         ← Dashboard
     </button>
     <span class="text-muted">/</span>
@@ -69,23 +66,21 @@
             @_drivers.Count driver(s) disponible(s). Selecciona uno para asignarle la carga.
         </p>
         <div class="drivers-select-grid">
-            @foreach (var d in _drivers)
+            @foreach (var item in _drivers)
             {
-                <div class="driver-select-card @(_driverSeleccionado?.Id == d.Id ? "driver-select-card--selected" : "")"
-                     @onclick="() => SeleccionarDriver(d)">
-                    <div class="driver-select-avatar"
-                         style="@(string.IsNullOrEmpty(d.Photo) ? $"background:{AvatarColor(d.FullName)}" : $"background-image:url('{d.Photo}')")">
-                        @(string.IsNullOrEmpty(d.Photo) ? Initials(d.FullName) : "")
+                <div @onclick="() => SeleccionarDriver(item)" class="driver-select-card @(_driverSeleccionado?.Id == item.Id ? "driver-select-card--selected" : "")">
+                    <div class="driver-select-avatar" style="@(string.IsNullOrEmpty(item.Photo) ? $"background:{AvatarColor(item.FullName)}" : $"background-image:url('{item.Photo}')")">
+                        @(string.IsNullOrEmpty(item.Photo) ? Initials(item.FullName) : "")
                     </div>
                     <div class="driver-select-info">
-                        <p class="driver-select-name">@d.FullName</p>
-                        <p class="text-xs text-muted">🚗 @d.Placa</p>
-                        @if (!string.IsNullOrEmpty(d.Phone))
+                        <p class="driver-select-name">@item.FullName</p>
+                        <p class="text-xs text-muted">🚗 @item.Placa</p>
+                        @if (!string.IsNullOrEmpty(item.Phone))
                         {
-                            <p class="text-xs text-muted">📞 @d.Phone</p>
+                            <p class="text-xs text-muted">📞 @item.Phone</p>
                         }
                     </div>
-                    @if (_driverSeleccionado?.Id == d.Id)
+                    @if (_driverSeleccionado?.Id == item.Id)
                     {
                         <span class="driver-select-check">✓</span>
                     }
@@ -128,20 +123,19 @@
         </p>
 
         <div class="distritos-grid">
-            @foreach (var d in _distritos)
+            @foreach (var item in _distritos)
             {
-                bool seleccionado = _distritoSeleccionado == d.Distrito;
-                <div class="distrito-card @(seleccionado ? "distrito-card--selected" : "")"
-                     @onclick="() => SeleccionarDistrito(d.Distrito)">
+                bool seleccionado = _distritoSeleccionado == item.Distrito;
+                <div @onclick="() => SeleccionarDistrito(item.Distrito)" class="distrito-card @(seleccionado ? "distrito-card--selected" : "")">
                     <div class="distrito-card-top">
-                        <span class="distrito-nombre">📍 @d.Distrito</span>
+                        <span class="distrito-nombre">📍 @item.Distrito</span>
                         @if (seleccionado)
                         {
                             <span class="driver-select-check">✓</span>
                         }
                     </div>
-                    <span class="badge badge-encamino">@d.Count pedido(s)</span>
-                    @if (d.Count > 10)
+                    <span class="badge badge-encamino">@item.Count pedido(s)</span>
+                    @if (item.Count > 10)
                     {
                         <p class="text-xs text-muted mt-2">
                             ⚠️ Solo se asignarán los primeros 10
@@ -244,58 +238,44 @@
     private bool _loadingPedidos;
     private bool _guardando;
     private string? _error;
-
-    // Datos
     private List<DriverDisponibleDTO> _drivers = [];
     private List<DistritoGrupoDTO> _distritos = [];
     private List<PedidoDisponibleDTO> _pedidosDelDistrito = [];
-
-    // Selecciones
     private DriverDisponibleDTO? _driverSeleccionado;
     private string? _distritoSeleccionado;
     private HashSet<int> _pedidosSeleccionados = [];
 
-    protected override async Task OnInitializedAsync()
-    {
-        await CargarDriversAsync();
-    }
+    protected override async Task OnInitializedAsync() => await CargarDriversAsync();
 
     // ── PASO 1 ────────────────────────────────────────────────────────────
     private async Task CargarDriversAsync()
     {
         _loadingDrivers = true;
-        var r = await _Repository.GetAsync<List<DriverDisponibleDTO>>(
-            "api/Cargas/DriversDisponibles");
+
+        var r = await _Repository.GetAsync<List<DriverDisponibleDTO>>("api/Cargas/DriversDisponibles");
         if (!r.Error) _drivers = r.Response!;
+        else _error = "No se Pudo Cargar los Datos";
+
         _loadingDrivers = false;
     }
 
-    private void SeleccionarDriver(DriverDisponibleDTO driver)
-    {
-        _driverSeleccionado = driver;
-    }
+    private void SeleccionarDriver(DriverDisponibleDTO driver) => _driverSeleccionado = driver;
 
     private async Task IrAPaso2()
     {
         _paso = 2;
         _loadingPedidos = true;
-        StateHasChanged();
 
-        var r = await _Repository.GetAsync<List<DistritoGrupoDTO>>(
-            "api/Cargas/PedidosDisponibles");
-
+        var r = await _Repository.GetAsync<List<DistritoGrupoDTO>>("api/Cargas/PedidosDisponibles");
         if (!r.Error) _distritos = r.Response!;
-        else _error = "No se pudieron cargar los pedidos";
+        else _error = "No se Pudo Cargar los Datos";
 
+        StateHasChanged();
         _loadingPedidos = false;
     }
 
     // ── PASO 2 ────────────────────────────────────────────────────────────
-    private void SeleccionarDistrito(string distrito)
-    {
-        _distritoSeleccionado = distrito;
-        _pedidosSeleccionados.Clear();
-    }
+    private void SeleccionarDistrito(string distrito) =>_distritoSeleccionado = distrito;
 
     private void IrAPaso3()
     {
@@ -307,10 +287,8 @@
     // ── PASO 3 ────────────────────────────────────────────────────────────
     private void TogglePedido(int id)
     {
-        if (_pedidosSeleccionados.Contains(id))
-            _pedidosSeleccionados.Remove(id);
-        else if (_pedidosSeleccionados.Count < 10)
-            _pedidosSeleccionados.Add(id);
+        if (_pedidosSeleccionados.Contains(id))_pedidosSeleccionados.Remove(id);
+        else if (_pedidosSeleccionados.Count < 10) _pedidosSeleccionados.Add(id);
     }
 
     private void SeleccionarTodos()
@@ -328,14 +306,9 @@
         _guardando = true;
         _error     = null;
 
-        var dto = new CargaCreateDTO
-        {
-            DriverID  = _driverSeleccionado!.Id,
-            OrderIds  = [.. _pedidosSeleccionados]
-        };
+        CargaCreateDTO DTO = new() { DriverID  = _driverSeleccionado!.Id, OrderIds  = [.. _pedidosSeleccionados] };
 
-        var r = await _Repository.PostAsync<CargaCreateDTO, int>(
-            "api/Cargas/Create", dto);
+        var r = await _Repository.PostAsync<CargaCreateDTO, int>("api/Cargas/CreateCarga", DTO);
 
         if (r.Error)
         {
@@ -344,25 +317,39 @@
             return;
         }
 
-        // Notificar via SignalR que hay nueva carga
-        await _NotificationService.SolicitarConclusionCargaAsync(
-            r.Response, _driverSeleccionado!.FullName, _pedidosSeleccionados.Count);
-
-        _NavigationManager.NavigateTo("/AdminDashboard");
+        await GoToBackRole();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
     private static string Initials(string name)
     {
         var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        return parts.Length >= 2
-            ? $"{parts[0][0]}{parts[1][0]}"
-            : name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
+        return parts.Length >= 2 ? $"{parts[0][0]}{parts[1][0]}" : name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
     }
+    private static readonly string[] _colors = ["#1a56db","#0e9f6e","#7c3aed","#e3a008","#0694a2","#e02424","#d97706"];
+    private static string AvatarColor(string name) => _colors[Math.Abs(name.GetHashCode()) % _colors.Length];
+    private async Task GoToBackRole()
+    {
+        string? rol = await _SesionService.GetRolAsync();
 
-    private static readonly string[] _colors =
-        ["#1a56db","#0e9f6e","#7c3aed","#e3a008","#0694a2","#e02424","#d97706"];
+        if (string.IsNullOrEmpty(rol))
+        {
+            await _Swal.FireAsync("Error", "No se pudo determinar el rol del usuario.", SweetAlertIcon.Error);
+            _NavigationManager.NavigateTo("/WhoAreYou");
+            return;
+        }
 
-    private static string AvatarColor(string name)
-        => _colors[Math.Abs(name.GetHashCode()) % _colors.Length];
+        switch (rol)
+        {
+            case nameof(UserEnum.Admin):
+                _NavigationManager.NavigateTo("/AdminDashboard");
+                break;
+            case nameof(UserEnum.Supervisor):
+                _NavigationManager.NavigateTo("/SupervisorDashboard");
+                break;
+            default:
+                _NavigationManager.NavigateTo("/WhoAreYou");
+                break;
+        }
+    }
 }

@@ -107,7 +107,7 @@ public class AdminsController(LogisticDataContext dadaContext, IUserHelper userH
         if (users.Count == 0) return Ok(new List<DriverDTO>());
         if (users == null) return NotFound();
 
-        List<DriverDTO> driverDTOs = users.Select(u => new DriverDTO
+        List<DriverDTO> driverDTOs = [.. users.Select(u => new DriverDTO
         {
             Id = u.Id,
             FullName = u.FullName,
@@ -118,7 +118,7 @@ public class AdminsController(LogisticDataContext dadaContext, IUserHelper userH
             Placa = u.Driver.Placa,
             DeliveredToday = (int)(u.Driver!.Orders?.Count(o => o.OrderStatus == OrderStatus.Delivered))!,
             ActiveOrderToday = (int)(u.Driver!.Orders?.Count(o => o.OrderStatus == OrderStatus.Assigned))!
-        }).ToList();
+        })];
 
         return Ok(driverDTOs);
     }

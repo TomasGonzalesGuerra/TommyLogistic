@@ -1,5 +1,4 @@
-﻿using DocumentFormat.OpenXml.InkML;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -19,97 +18,135 @@ namespace TommyLogistic.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-//[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = $"{nameof(UserEnum.Admin)}, {nameof(UserEnum.Supervisor)}")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = $"{nameof(UserEnum.Admin)}, {nameof(UserEnum.Supervisor)}")]
 public class CargasController(LogisticDataContext context, IHubContext<NotificationHub> hubContext, OrderEventService eventService) : ControllerBase
 {
-    private readonly LogisticDataContext _dadaContext = context;
+    private readonly LogisticDataContext _dataContext = context;
     private readonly OrderEventService _eventService = eventService;
     private readonly IHubContext<NotificationHub> _hubContext = hubContext;
     private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Yop";
 
-    // ── Supervisor/Admin: crear carga ─────────────────────────────────────
-    [HttpPost("Create")]
-    public async Task<ActionResult> CreateCarga([FromBody] CargaCreateDTO model)
-    {
-        if (model.OrderIds.Count > 10)return BadRequest("Una carga no puede tener más de 10 pedidos");
-        if (model.OrderIds.Count == 0)return BadRequest("Debes seleccionar al menos un pedido");
 
-        Driver? driver = await _dadaContext.Drivers.Include(d => d.User).FirstOrDefaultAsync(d => d.UserID == model.DriverID);
+    // GET:api/Cargas/DriversDisponibles ────────────────────────────────────────────────────
+    [HttpGet("DriversDisponibles")]
+    public async Task<ActionResult<List<DriverDisponibleDTO>>> GetDriversDisponiblesAsync()
+    {
+        List<DriverDisponibleDTO> drivers = await _dataContext.Drivers
+            .Where(d => d.Available)
+            .Select(d => new DriverDisponibleDTO
+            {
+                Id = d.UserID,
+                FullName = d.User.FullName,
+                Placa = d.Placa,
+                Photo = d.User.Photo,
+                Phone = d.User.PhoneNumber
+            }).ToListAsync();
+
+        return Ok(drivers);
+    }
+
+    // GET:api/Cargas/PedidosDisponibles ────────────────────────────────────────────────────
+    [HttpGet("PedidosDisponibles")]
+    public async Task<ActionResult> GetPedidosDisponiblesAsync([FromQuery] string? distrito = null)
+    {
+        var query = _dataContext.Orders.Include(o => o.Company).Where(o => o.OrderStatus == OrderStatus.Registered && o.CargaID == null);
+
+        if (!string.IsNullOrEmpty(distrito)) query = query.Where(o => o.RecipientDistrict == distrito);
+
+        var pedidos = await query
+            .OrderBy(o => o.RecipientDistrict)
+            .ThenBy(o => o.RegistrationDate)
+            .Select(o => new
+            {
+                o.Id,
+                o.TrackingCode,
+                o.RecipientName,
+                o.RecipientAddress,
+                o.RecipientDistrict,
+                o.PackageDescription,
+                o.Quantity,
+                CompanyName = o.Company!.User.FullName,
+                o.RegistrationDate,
+            })
+            .ToListAsync();
+
+        // Agrupar por distrito para el selector
+        var agrupados = pedidos
+            .GroupBy(p => p.RecipientDistrict)
+            .Select(g => new
+            {
+                Distrito = g.Key,
+                Count = g.Count(),
+                Pedidos = g.ToList()
+            })
+            .OrderBy(g => g.Distrito)
+            .ToList();
+
+        return Ok(agrupados);
+    }
+
+    // POST:api/Cargas/CreateCarga ──────────────────────────────────────────────────────────
+    [HttpPost("CreateCarga")]
+    public async Task<ActionResult> CreateCargaAsync([FromBody] CargaCreateDTO DTO)
+    {
+        if (DTO.OrderIds.Count > 10) return BadRequest("Una carga no puede tener más de 10 pedidos");
+        if (DTO.OrderIds.Count == 0) return BadRequest("Debes seleccionar al menos un pedido");
+
+        Driver? driver = await _dataContext.Drivers.Include(d => d.User).FirstOrDefaultAsync(d => d.UserID == DTO.DriverID);
         if (driver is null) return NotFound("Driver no Encontrado");
         if (!driver.Available) return BadRequest("El Driver no está Disponible");
 
-        var orders = await _dadaContext.Orders
-            .Where(o => model.OrderIds.Contains(o.Id))
-            .ToListAsync();
-
-        if (orders.Count != model.OrderIds.Count)
-            return BadRequest("Algunos pedidos no existen");
-
-        if (orders.Any(o => o.OrderStatus != OrderStatus.Registered))
-            return BadRequest("Solo se pueden asignar pedidos en estado Registrado");
-
-        if (orders.Any(o => o.CargaID is not null))
-            return BadRequest("Algunos pedidos ya pertenecen a una carga");
+        List<Order> orders = await _dataContext.Orders.Where(o => DTO.OrderIds.Contains(o.Id)).ToListAsync();
+        if (orders.Count != DTO.OrderIds.Count) return BadRequest("Algunos pedidos NO Existen");
+        if (orders.Any(o => o.CargaID is not null)) return BadRequest("Algunos Pedidos Ya Tienen Carga");
+        if (orders.Any(o => o.OrderStatus != OrderStatus.Registered)) return BadRequest("Solo se pueden Asignar Pedidos Registrados");
 
         // Validar mismo distrito
-        var distritos = orders.Select(o => o.RecipientDistrict).Distinct().ToList();
-        if (distritos.Count > 1)
-            return BadRequest($"Todos los pedidos deben ser del mismo distrito. Encontrados: {string.Join(", ", distritos)}");
+        List<string> distritos = [.. orders.Select(o => o.RecipientDistrict).Distinct()];
+        if (distritos.Count > 1) return BadRequest($"Todos los pedidos deben ser del mismo Distrito. Encontrados: {string.Join(", ", distritos)}");
 
         // Crear la carga
-        var carga = new Carga
+        Carga carga = new()
         {
-            DriverID = model.DriverID,
+            DriverID = DTO.DriverID,
             SupervisorID = CurrentUserId,
             Status = CargaStatus.Activa,
             FechaCreacion = DateTime.UtcNow,
         };
 
-        _dadaContext.Cargas.Add(carga);
-        await _dadaContext.SaveChangesAsync();
+        _dataContext.Cargas.Add(carga);
+        await _dataContext.SaveChangesAsync();
 
         // Asignar pedidos a la carga
-        foreach (var order in orders)
+        foreach (var item in orders)
         {
-            order.CargaID = carga.Id;
-            order.DriverID = model.DriverID;
-            order.OrderStatus = OrderStatus.Assigned;
-
-            await _eventService.RegisterAsync(
-                orderId: order.Id,
-                newStatus: OrderStatus.Assigned,
-                userId: CurrentUserId,
-                assignedDriverId: model.DriverID,
-                note: $"Asignado en carga #{carga.Id}"
-            );
+            item.CargaID = carga.Id;
+            item.DriverID = DTO.DriverID;
+            item.OrderStatus = OrderStatus.Assigned;
+            await _eventService.RegisterAsync(item.Id, OrderStatus.Assigned, CurrentUserId, DTO.DriverID, $"Asignado en carga #{carga.Id}");
         }
 
         // Marcar driver como ocupado
         driver.Available = false;
-        await _dadaContext.SaveChangesAsync();
+        await _dataContext.SaveChangesAsync();
 
         // Notificar al driver
-        await _hubContext.Clients
-            .Group($"Driver_{model.DriverID}")
-            .SendAsync("NewOrderAssigned", new
-            {
-                Message = $"¡Tienes una nueva carga con {orders.Count} pedido(s) en {distritos[0]}!",
-                CargaId = carga.Id,
-                Total = orders.Count,
-                Distrito = distritos[0]
-            });
-
-        // Notificar al dashboard admin
         await _hubContext.Clients.Group("Admins").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Drivers").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Operators").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Supervisors").SendAsync("DashboardUpdate");
+        NewOrderAssignedDTO notificacion = new(orders.Count, distritos[0]);
+        await _hubContext.Clients.Group($"Driver_{DTO.DriverID}").SendAsync("NewOrderAssigned", notificacion);
         return Ok(carga.Id);
     }
+
+
 
     // GET: api/Cargas/GetAllCargas
     [HttpGet("GetAllCargas")]
     public async Task<ActionResult<IEnumerable<CargaSummaryDTO>>> GetAllCargasAsync()
     {
-        List<CargaSummaryDTO> query = await _dadaContext.Cargas
+        List<CargaSummaryDTO> query = await _dataContext.Cargas
             .Where(c => c.Status == CargaStatus.Activa)
             .OrderByDescending(c => c.FechaCreacion)
             .Select(c => new CargaSummaryDTO
@@ -141,7 +178,7 @@ public class CargasController(LogisticDataContext context, IHubContext<Notificat
     [Authorize(Roles = "Supervisor,Admin,Operator")]
     public async Task<ActionResult> GetDetail(int id)
     {
-        var carga = await _dadaContext.Cargas
+        var carga = await _dataContext.Cargas
             .Include(c => c.Driver).ThenInclude(d => d!.User)
             .Include(c => c.Supervisor)
             .Include(c => c.ConcluidaPor)
@@ -194,49 +231,12 @@ public class CargasController(LogisticDataContext context, IHubContext<Notificat
         return Ok(detail);
     }
 
-    // ── Driver: solicitar conclusión ──────────────────────────────────────
-    [HttpPost("SolicitarConclusion/{id}")]
-    [Authorize(Roles = nameof(UserEnum.Driver))]
-    public async Task<ActionResult> SolicitarConclusion(int id)
-    {
-        var carga = await _dadaContext.Cargas
-            .Include(c => c.Orders)
-            .Include(c => c.Driver).ThenInclude(d => d.User)
-            .FirstOrDefaultAsync(c => c.Id == id && c.DriverID == CurrentUserId);
-
-        if (carga is null) return NotFound("Carga no encontrada");
-        if (carga.Status != CargaStatus.Activa) return BadRequest("La carga no está activa");
-
-        // Verificar que todos los pedidos están en estado final
-        var pendientes = carga.Orders
-            .Where(o => o.OrderStatus != OrderStatus.Delivered && o.OrderStatus != OrderStatus.OnStorage)
-            .ToList();
-
-        if (pendientes.Any())
-            return BadRequest($"Aún tienes {pendientes.Count} pedido(s) sin finalizar");
-
-        carga.Status = CargaStatus.PendienteConclusion;
-        await _dadaContext.SaveChangesAsync();
-
-        // Notificar a todos los Operators
-        await _hubContext.Clients.Group("Operators")
-            .SendAsync("CargaPendienteConclusion", new
-            {
-                CargaId = carga.Id,
-                DriverName = carga.Driver.User.FullName,
-                Total = carga.Orders.Count,
-                Message = $"El driver {carga.Driver.User.FullName} solicita concluir la carga #{carga.Id}"
-            });
-
-        return Ok();
-    }
-
     // ── Operator: confirmar conclusión ────────────────────────────────────
     [HttpPost("Concluir/{id}")]
     [Authorize(Roles = "Operator,Admin")]
     public async Task<ActionResult> Concluir(int id, [FromBody] CargaConcluirDTO model)
     {
-        var carga = await _dadaContext.Cargas
+        var carga = await _dataContext.Cargas
             .Include(c => c.Orders)
             .FirstOrDefaultAsync(c => c.Id == id);
 
@@ -250,13 +250,13 @@ public class CargasController(LogisticDataContext context, IHubContext<Notificat
         carga.NotaConclusion = model.Nota;
 
         // Liberar al driver
-        var driver = await _dadaContext.Drivers
+        var driver = await _dataContext.Drivers
             .FirstOrDefaultAsync(d => d.UserID == carga.DriverID);
 
         if (driver is not null)
             driver.Available = true;
 
-        await _dadaContext.SaveChangesAsync();
+        await _dataContext.SaveChangesAsync();
 
         // Notificar al driver que quedó libre
         await _hubContext.Clients
@@ -269,6 +269,8 @@ public class CargasController(LogisticDataContext context, IHubContext<Notificat
 
         // Notificar al dashboard
         await _hubContext.Clients.Group("Admins").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Drivers").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Operators").SendAsync("DashboardUpdate");
         await _hubContext.Clients.Group("Supervisors").SendAsync("DashboardUpdate");
 
         return Ok();
@@ -278,7 +280,7 @@ public class CargasController(LogisticDataContext context, IHubContext<Notificat
     [HttpPost("Facturar/{id}")]
     public async Task<ActionResult> Facturar(int id, [FromBody] CargaFacturarDTO model)
     {
-        var carga = await _dadaContext.Cargas
+        var carga = await _dataContext.Cargas
             .FirstOrDefaultAsync(c => c.Id == id);
 
         if (carga is null) return NotFound();
@@ -290,9 +292,11 @@ public class CargasController(LogisticDataContext context, IHubContext<Notificat
         carga.FacturadaPorID = CurrentUserId;
         carga.NotaFacturacion = model.Nota;
 
-        await _dadaContext.SaveChangesAsync();
-
+        await _dataContext.SaveChangesAsync();
         await _hubContext.Clients.Group("Admins").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Drivers").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Operators").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Supervisors").SendAsync("DashboardUpdate");
 
         return Ok();
     }
@@ -302,7 +306,7 @@ public class CargasController(LogisticDataContext context, IHubContext<Notificat
     [Authorize(Roles = "Operator,Admin")]
     public async Task<ActionResult> RecibirRetorno(int orderId, [FromBody] CargaConcluirDTO model)
     {
-        var order = await _dadaContext.Orders
+        var order = await _dataContext.Orders
             .Include(o => o.Carga)
             .FirstOrDefaultAsync(o => o.Id == orderId);
 
@@ -320,75 +324,13 @@ public class CargasController(LogisticDataContext context, IHubContext<Notificat
             note: model.Nota ?? "Recibido por operario en almacén"
         );
 
-        await _dadaContext.SaveChangesAsync();
-
-        // Notificar al dashboard
+        await _dataContext.SaveChangesAsync();
         await _hubContext.Clients.Group("Admins").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Drivers").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Operators").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Supervisors").SendAsync("DashboardUpdate");
 
         return Ok();
-    }
-
-    // ── Drivers disponibles para asignar carga ────────────────────────────
-    [HttpGet("DriversDisponibles")]
-    public async Task<ActionResult> GetDriversDisponibles()
-    {
-        var drivers = await _dadaContext.Drivers
-            .Include(d => d.User)
-            .Where(d => d.Available)
-            .Select(d => new
-            {
-                Id = d.UserID,
-                FullName = d.User.FullName,
-                Placa = d.Placa,
-                Photo = d.User.Photo,
-                Phone = d.User.PhoneNumber,
-            })
-            .ToListAsync();
-
-        return Ok(drivers);
-    }
-
-    // ── Pedidos disponibles filtrados por distrito ────────────────────────
-    [HttpGet("PedidosDisponibles")]
-    public async Task<ActionResult> GetPedidosDisponibles([FromQuery] string? distrito = null)
-    {
-        var query = _dadaContext.Orders
-            .Include(o => o.Company)
-            .Where(o => o.OrderStatus == OrderStatus.Registered && o.CargaID == null);
-
-        if (!string.IsNullOrEmpty(distrito))
-            query = query.Where(o => o.RecipientDistrict == distrito);
-
-        var pedidos = await query
-            .OrderBy(o => o.RecipientDistrict)
-            .ThenBy(o => o.RegistrationDate)
-            .Select(o => new
-            {
-                o.Id,
-                o.TrackingCode,
-                o.RecipientName,
-                o.RecipientAddress,
-                o.RecipientDistrict,
-                o.PackageDescription,
-                o.Quantity,
-                CompanyName = o.Company!.User.FullName,
-                o.RegistrationDate,
-            })
-            .ToListAsync();
-
-        // Agrupar por distrito para el selector
-        var agrupados = pedidos
-            .GroupBy(p => p.RecipientDistrict)
-            .Select(g => new
-            {
-                Distrito = g.Key,
-                Count = g.Count(),
-                Pedidos = g.ToList()
-            })
-            .OrderBy(g => g.Distrito)
-            .ToList();
-
-        return Ok(agrupados);
     }
 
     // ── Helper ────────────────────────────────────────────────────────────
