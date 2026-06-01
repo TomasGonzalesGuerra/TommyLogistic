@@ -1,2 +1,23 @@
-﻿body {
+﻿.badge-ausente {
+    font-size: var(--font-size-sm);
+    padding: var(--space-2) var(--space-3)
+}
+
+
+
+.timeline-avatar {
+    background: var(--color-primary);
+    width: 2rem;
+    height: 2rem;
+    font-size: .65rem
+}
+
+
+
+
+.text-xs.entregado {
+    color: var(--estado-entregado)
+}
+.text-xs.pendiente {
+    color: var(--estado-almacen)
 }

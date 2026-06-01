@@ -1,0 +1,67 @@
+﻿@inject OperatorService _OperatorService
+
+@if (_loading)
+{
+    <div class="adm-modal__body">
+        <div class="loading-overlay" style="padding: var(--space-8)">
+            <div class="spinner"></div>
+            <span>Cargando...</span>
+        </div>
+    </div>
+}
+else if (_ordersByCarga == null || _ordersByCarga!.Count == 0)
+{
+    <div class="adm-modal__body">
+        <div class="loading-overlay" style="padding: var(--space-8)">
+            <span>Sorry esta Carga NO tiene Pedidos</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="adm-modal__body">
+        @foreach (var item in _ordersByCarga)
+        {
+            <div class="order-item">
+                <h4>@item.TrackingCode</h4>
+                <p>@item.RecipientAddress</p>
+                <p>@item.RecipientPhone</p>
+            </div>
+        }
+    </div>
+
+    <!-- Footer con acciones -->
+    <div class="adm-modal__footer">
+        <button class="btn btn-ghost btn-sm" @onclick="OnClose">
+            Cerrar
+        </button>
+        <button class="btn btn-primary btn-sm" @onclick="IrADetalle">
+            Ver detalle completo →
+        </button>
+    </div>
+}
+
+@code {
+
+    [Parameter, EditorRequired] public int CargaID { get; set; }
+    [Parameter, EditorRequired] public EventCallback OnClose { get; set; }
+    private List<DriverOrderDTO> _ordersByCarga = [];
+    private bool _loading;
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (CargaID <= 0) return;
+        _loading = true;
+
+        _ordersByCarga = await _OperatorService.GetOrdersByCargaAsync(CargaID);
+        
+        _loading = false;
+    }
+
+    private void IrADetalle()
+    {
+        Console.WriteLine($"Ir a detalle de CargaID: {CargaID}");
+    }
+
+}

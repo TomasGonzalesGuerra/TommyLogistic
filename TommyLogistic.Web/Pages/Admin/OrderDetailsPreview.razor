@@ -1,5 +1,4 @@
 @inject IRepository _Repository
-@inject NavigationManager _NavigationManager
 
 @if (_loading)
 {
@@ -104,11 +103,10 @@ else if (_preview is not null)
 
 
 @code {
-    [Parameter] public int OrderId { get; set; }
-    [Parameter] public EventCallback OnClose { get; set; }
-
+    [Parameter, EditorRequired] public int OrderId { get; set; }
+    [Parameter, EditorRequired] public EventCallback OnClose { get; set; }
     private OrderPreviewDTO? _preview;
-    private bool _loading = true;
+    private bool _loading;
 
     protected override async Task OnParametersSetAsync()
     {

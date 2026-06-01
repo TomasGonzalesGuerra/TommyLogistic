@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using DocumentFormat.OpenXml.Office2010.Excel;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -24,7 +25,7 @@ public class OperatorsController(LogisticDataContext dataContext, IHubContext<No
     private readonly IHubContext<NotificationHub> _hubContext = hubContext;
     private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Yop";
 
-    // GET: api/Operators/GetByStatus?status=Pending ─────────────────────────────────
+    // GET: api/Operators/GetByStatus?status=Pending ─────────────────────────────
     [HttpGet("GetByStatus")]
     public async Task<ActionResult> GetByStatus([FromQuery] string status)
     {
@@ -57,7 +58,7 @@ public class OperatorsController(LogisticDataContext dataContext, IHubContext<No
         return Ok(orders);
     }
 
-    // GET: api/Operators/GetAllCargas ───────────────────────────────────────────────
+    // GET: api/Operators/GetAllCargas ───────────────────────────────────────────
     [HttpGet("GetAllCargas")]
     public async Task<ActionResult<IEnumerable<CargaSummaryDTO>>> GetAllCargasAsync()
     {
@@ -128,5 +129,34 @@ public class OperatorsController(LogisticDataContext dataContext, IHubContext<No
         return Ok();
     }
 
+
+    // GET: api/Operators/GetOrdersByCarga/{CargaID} ─────────────────────────────
+    [HttpGet("GetOrdersByCarga/{CargaID:int}")]
+    public async Task<ActionResult<List<DriverOrderDTO>>> GetOrdersByCargaAsync(int CargaID)
+    {
+        Carga? carga = await _dataContext.Cargas
+            .Include(c => c.Orders!).ThenInclude(o => o.Driver).ThenInclude(d => d!.User)
+            .FirstOrDefaultAsync(c => c.Id == CargaID);
+        //if (carga is null) return BadRequest("La Carga no Está DISPONIBLE");
+
+        List<DriverOrderDTO> orders = [.. carga.Orders!.Select(o => new DriverOrderDTO
+        {
+            Id = o.Id,
+            TrackingCode = o.TrackingCode,
+            OrderStatus = o.OrderStatus,
+            DeliveryType = o.DeliveryType,
+            DeliveryAttempts = o.DeliveryAttempts,
+            RegistrationDate = o.RegistrationDate,
+            Quantity = o.Quantity,
+            CompanyName = o.Company!.User.FullName ?? "Company",
+            RecipientName = o.RecipientName,
+            RecipientPhone = o.RecipientPhone,
+            RecipientAddress = o.RecipientAddress,
+            RecipientDistrict = o.RecipientDistrict,
+            PackageDescription = o.PackageDescription,
+        })];
+
+        return Ok(orders);
+    }
 
 }
