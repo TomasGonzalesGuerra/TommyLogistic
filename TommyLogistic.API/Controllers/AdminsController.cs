@@ -9,6 +9,7 @@ using TommyLogistic.API.Data;
 using TommyLogistic.API.Hubs;
 using TommyLogistic.API.Services;
 using TommyLogistic.Shared.DTOs.Admin;
+using TommyLogistic.Shared.DTOs.Cargas;
 using TommyLogistic.Shared.DTOs.Drivers;
 using TommyLogistic.Shared.Entities;
 using TommyLogistic.Shared.Enums;
@@ -94,7 +95,7 @@ public class AdminsController(LogisticDataContext dadaContext, IUserHelper userH
     }
 
 
-    // DRIVERS ==========================================================================
+    // DRIVERS =========================================================================
     // GET: api/Admins/GetAllDrivers
     [HttpGet("GetAllDrivers")]
     public async Task<ActionResult<IEnumerable<DriverDTO>>> GetAllDriversAsync()
@@ -189,7 +190,37 @@ public class AdminsController(LogisticDataContext dadaContext, IUserHelper userH
     }
 
 
-    // ORDERS ==========================================================================
-    
+    // Cargas ==========================================================================
+    // GET: api/Admins/GetAllCargas
+    [HttpGet("GetAllCargas")]
+    public async Task<ActionResult<IEnumerable<CargaSummaryDTO>>> GetAllCargasAsync()
+    {
+        List<CargaSummaryDTO> query = await _dataContext.Cargas
+            .Where(c => c.Status == CargaStatus.Activa)
+            .OrderByDescending(c => c.FechaCreacion)
+            .Select(c => new CargaSummaryDTO
+            {
+                Id = c.Id,
+                Status = c.Status,
+                FechaCreacion = c.FechaCreacion,
+                FechaConcluida = c.FechaConcluida,
+                FechaFacturada = c.FechaFacturada,
+                DriverID = c.DriverID,
+                DriverName = c.Driver!.User.FullName,
+                DriverPlaca = c.Driver.Placa,
+                DriverPhoto = c.Driver.User.Photo,
+                SupervisorName = c.Supervisor!.FullName,
+                TotalPedidos = c.Orders!.Count,
+                Entregados = c.Orders.Count(o => o.OrderStatus == OrderStatus.Delivered),
+                EnOnStorage = c.Orders.Count(o => o.OrderStatus == OrderStatus.OnStorage),
+                Pendientes = c.Orders.Count(o => o.OrderStatus == OrderStatus.Assigned),
+                Distrito = c.Orders.Select(o => o.RecipientDistrict).FirstOrDefault()!,
+            }).ToListAsync();
+
+        if (query == null || query.Count == 0) return Ok(new List<CargaSummaryDTO>());
+
+        return Ok(query);
+    }
+
 
 }

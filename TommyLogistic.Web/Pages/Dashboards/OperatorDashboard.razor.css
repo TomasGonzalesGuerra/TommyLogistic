@@ -4,20 +4,170 @@
 }
 
 
+.repartidores-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(18.75rem, 1fr));
+    gap: var(--space-4);
+}
 
-.timeline-avatar {
+/* ── Card del repartidor ── */
+.rep-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+    position: relative;
+    overflow: hidden;
+}
+
+    .rep-card:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-1px);
+    }
+
+    /* Línea de disponibilidad */
+    .rep-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 0.1875rem;
+        background: var(--color-border);
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        transition: background var(--transition-fast);
+    }
+
+    .rep-card.carga--Activa::before {
+        background: var(--color-success);
+    }
+    .rep-card.carga--PendienteConclusion::before {
+        background: var(--color-warning);
+    }
+    .rep-card.carga--Concluida::before {
+        background: var(--color-danger);
+    }
+    .rep-card.carga--Facturada::before {
+        background: var(--color-info);
+    }
+
+/* Header: avatar + info + badge */
+.rep-card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.rep-avatar {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
     background: var(--color-primary);
-    width: 2rem;
-    height: 2rem;
-    font-size: .65rem
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-lg);
+    font-weight: 800;
+    flex-shrink: 0;
+    text-transform: uppercase;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border: 2px solid var(--color-border);
 }
 
-
-
-
-.text-xs.entregado {
-    color: var(--estado-entregado)
+.rep-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    min-width: 0;
 }
-.text-xs.pendiente {
-    color: var(--estado-almacen)
+
+.rep-nombre {
+    font-weight: 700;
+    font-size: var(--font-size-base);
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Datos del repartidor */
+.rep-meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.rep-meta-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+    .rep-meta-item .rep-meta-icon {
+        width: 1rem;
+        text-align: center;
+        font-size: 0.875rem;
+    }
+
+/* Stats: activos / entregados */
+.rep-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+    background: var(--color-surface-2);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--color-border);
+}
+
+.rep-stat-mini {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.rep-stat-value {
+    font-size: var(--font-size-xl);
+    font-weight: 800;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+}
+
+.rep-stat-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* Acciones */
+.rep-acciones {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+    .rep-acciones .btn {
+        flex: 1;
+        min-width: 7.5rem;
+    }
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+    .repartidores-grid {
+        grid-template-columns: 1fr;
+    }
 }

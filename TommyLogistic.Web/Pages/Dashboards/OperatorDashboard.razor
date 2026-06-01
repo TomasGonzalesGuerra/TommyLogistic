@@ -1,7 +1,7 @@
 ﻿@page "/OperatorDashboard"
 @layout MainLayout
 @implements IDisposable
-@inject IRepository _Repository
+@inject OperatorService _OperatorService
 @attribute [Authorize(Roles = nameof(UserEnum.Operator))]
 
 <PageTitle>Panel Operador — Tommy Logistic</PageTitle>
@@ -29,43 +29,59 @@ else if (!_cargas.Any())
 }
 else
 {
-    <div class="pedido-cards">
+    <div class="repartidores-grid">
         @foreach (var item in _cargas)
         {
-            <div class="pedido-card">
-                <div class="pedido-card-top">
-                    <div class="carga-card-driver">
-                        <div class="timeline-avatar">
-                            @Initials(item.DriverName)
-                        </div>
-
-                        <div>
-                            <p class="text-bold text-sm">@item.DriverName</p>
-                            <p class="text-xs text-muted">🚗 @item.DriverPlaca</p>
-                        </div>
+            <div class="rep-card @($"carga--{nameof(item.Status)}")">
+                <div class="rep-card-header">
+                    <div class="rep-avatar"
+                         style="@(string.IsNullOrEmpty(item.DriverPhoto) ? $"background:{item.DriverName}" : $"background-image:url('{item.DriverPhoto}')")">
+                        @(string.IsNullOrEmpty(item.DriverPhoto) ? Initials(item.DriverName) : "")
                     </div>
+
+                    <div class="rep-info">
+                        <span class="rep-nombre">@item.DriverName</span>
+                        <span class="text-xs text-muted">PLACA: @item.DriverPlaca</span>
+                    </div>
+
                     <BadgeCarga Status="@item.Status" />
                 </div>
 
-                <div class="pedido-card-meta">
-                    <span class="text-xs text-muted">📍 @item.Distrito</span>
+                <div class="rep-stats">
+                    <div class="rep-stat-mini">
+                        <span class="rep-stat-value" style="color: var(--color-primary)">
+                            📍 @item.Distrito
+                        </span>
+                        <span class="rep-stat-label">Distrito</span>
+                    </div>
 
-                    <span class="text-xs">
-                        ✅ @item.TotalPedidos Pedidos
-                    </span>
+                    <div class="rep-stat-mini">
+                        <span class="rep-stat-value" style="color: var(--color-primary)">
+                            ✅ @item.TotalPedidos
+                        </span>
+                        <span class="rep-stat-label">Pedidos</span>
+                    </div>
 
-                    <span class="text-xs entregado">
-                        ✅ @item.Entregados Entregados
-                    </span>
+                    <div class="rep-stat-mini">
+                        <span class="rep-stat-value" style="color: var(--color-success)">
+                            ✅ @item.Entregados
+                        </span>
+                        <span class="rep-stat-label">Entregados</span>
+                    </div>
 
-                    <span class="text-xs pendiente">
-                        🏭 @item.Pendientes Pendientes
-                    </span>
+                    <div class="rep-stat-mini">
+                        <span class="rep-stat-value" style="color: var(--color-primary)">
+                            🏭 @item.Pendientes
+                        </span>
+                        <span class="rep-stat-label">Pendientes</span>
+                    </div>
                 </div>
 
-                <button @onclick="() => ShowInsideCarga(item.Id)" class="btn btn-success btn-sm w-full mt-4">
-                    ✅ Ver Carga
-                </button>
+                <div class="rep-acciones">
+                    <button @onclick="() => ShowInsideCarga(item.Id)" class="btn btn-success btn-sm w-full mt-4">
+                        ✅ Ver Carga
+                    </button>
+                </div>
             </div>
         }
     </div>
@@ -101,8 +117,7 @@ else
         // var r1 = await _Repository.GetAsync<List<DriverOrderDTO>>("api/Orders/GetByStatus?status=Returning");
         // if (!r1.Error) _retornos = r1.Response!;
 
-        var r2 = await _Repository.GetAsync<List<CargaSummaryDTO>>("api/Operators/GetAllCargas");
-        if (!r2.Error) _cargas = r2.Response!;
+        _cargas = await _OperatorService.GetAllCargasAsync();
 
         _loading = false;
     }

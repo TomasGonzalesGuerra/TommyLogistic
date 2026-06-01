@@ -25,7 +25,7 @@ public class OperatorsController(LogisticDataContext dataContext, IHubContext<No
     private readonly IHubContext<NotificationHub> _hubContext = hubContext;
     private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Yop";
 
-    // GET: api/Operators/GetByStatus?status=Pending ─────────────────────────────
+    // GET: api/Operators/GetByStatus?status=Pending
     [HttpGet("GetByStatus")]
     public async Task<ActionResult> GetByStatus([FromQuery] string status)
     {
@@ -58,7 +58,7 @@ public class OperatorsController(LogisticDataContext dataContext, IHubContext<No
         return Ok(orders);
     }
 
-    // GET: api/Operators/GetAllCargas ───────────────────────────────────────────
+    // GET: api/Operators/GetAllCargas
     [HttpGet("GetAllCargas")]
     public async Task<ActionResult<IEnumerable<CargaSummaryDTO>>> GetAllCargasAsync()
     {
@@ -89,7 +89,7 @@ public class OperatorsController(LogisticDataContext dataContext, IHubContext<No
         return Ok(query);
     }
 
-    // POST: api/Operators/Concluir/{CargaID} ────────────────────────────────────
+    // POST: api/Operators/Concluir/{CargaID}
     [HttpPost("Concluir/{CargaID:int}")]
     public async Task<ActionResult> Concluir(int CargaID, [FromBody] CargaConcluirDTO model)
     {
@@ -129,15 +129,14 @@ public class OperatorsController(LogisticDataContext dataContext, IHubContext<No
         return Ok();
     }
 
-
-    // GET: api/Operators/GetOrdersByCarga/{CargaID} ─────────────────────────────
+    // GET: api/Operators/GetOrdersByCarga/{CargaID}
     [HttpGet("GetOrdersByCarga/{CargaID:int}")]
     public async Task<ActionResult<List<DriverOrderDTO>>> GetOrdersByCargaAsync(int CargaID)
     {
         Carga? carga = await _dataContext.Cargas
             .Include(c => c.Orders!).ThenInclude(o => o.Driver).ThenInclude(d => d!.User)
             .FirstOrDefaultAsync(c => c.Id == CargaID);
-        //if (carga is null) return BadRequest("La Carga no Está DISPONIBLE");
+        if (carga is null) return BadRequest("La Carga no Está DISPONIBLE");
 
         List<DriverOrderDTO> orders = [.. carga.Orders!.Select(o => new DriverOrderDTO
         {
@@ -148,7 +147,7 @@ public class OperatorsController(LogisticDataContext dataContext, IHubContext<No
             DeliveryAttempts = o.DeliveryAttempts,
             RegistrationDate = o.RegistrationDate,
             Quantity = o.Quantity,
-            CompanyName = o.Company!.User.FullName ?? "Company",
+            CompanyName = "Company",
             RecipientName = o.RecipientName,
             RecipientPhone = o.RecipientPhone,
             RecipientAddress = o.RecipientAddress,

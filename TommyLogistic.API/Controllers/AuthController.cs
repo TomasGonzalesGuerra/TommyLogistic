@@ -54,7 +54,7 @@ public class AuthController(LogisticDataContext datacontext, IUserHelper userHel
             new("Photo", user.Photo  ??  string.Empty),
         };
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["jwtKey"]!));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtKey"]!));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var expiration = DateTime.UtcNow.AddDays(30);
          var token = new JwtSecurityToken(

@@ -37,7 +37,7 @@ public class OrderService(IRepository repository, SweetAlertService sweetAlertSe
     {
         try
         {
-            var responseHppt = await _repository.GetAsync<List<CargaSummaryDTO>>("api/Cargas/GetAllCargas");
+            var responseHppt = await _repository.GetAsync<List<CargaSummaryDTO>>("api/Admins/GetAllCargas");
 
             if (responseHppt.Error)
             {

@@ -5,10 +5,10 @@
 
     private string CssClass => Status switch
     {
-        CargaStatus.Activa => "badge-encamino",
-        CargaStatus.PendienteConclusion => "badge-ausente",
-        CargaStatus.Concluida => "badge-entregado",
-        CargaStatus.Facturada => "badge-asignado",
+        CargaStatus.Activa => "badge-activa",
+        CargaStatus.PendienteConclusion => "badge-pendienteConclusion",
+        CargaStatus.Concluida => "badge-concluida",
+        CargaStatus.Facturada => "badge-facturada",
         _ => "badge-registrado"
     };
 

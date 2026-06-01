@@ -1,0 +1,70 @@
+﻿.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 0.1875rem 0.5rem;
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+}
+
+    .badge::before {
+        content: '';
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: currentColor;
+        flex-shrink: 0;
+    }
+
+.badge-registrado {
+    color: var(--estado-registrado);
+    background: #f1f5f9;
+}
+
+.badge-asignado {
+    color: var(--estado-asignado);
+    background: var(--color-info-light);
+}
+
+.badge-retirado {
+    color: var(--estado-retirado);
+    background: #f3e8ff;
+}
+
+.badge-encamino {
+    color: var(--estado-encamino);
+    background: var(--color-primary-light);
+}
+
+.badge-entregado {
+    color: var(--estado-entregado);
+    background: var(--color-success-light);
+}
+
+.badge-ausente {
+    color: var(--estado-ausente);
+    background: var(--color-warning-light);
+}
+
+.badge-reprogramado {
+    color: var(--estado-reprogramado);
+    background: #fef3c7;
+}
+
+.badge-retorno {
+    color: var(--estado-retorno);
+    background: #fff7ed;
+}
+
+.badge-almacen {
+    color: var(--estado-almacen);
+    background: #eef2ff;
+}
+
+.badge-fallido {
+    color: var(--estado-fallido);
+    background: var(--color-danger-light);
+}
