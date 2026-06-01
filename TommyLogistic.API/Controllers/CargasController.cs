@@ -142,36 +142,7 @@ public class CargasController(LogisticDataContext context, IHubContext<Notificat
 
 
 
-    // GET: api/Cargas/GetAllCargas
-    [HttpGet("GetAllCargas")]
-    public async Task<ActionResult<IEnumerable<CargaSummaryDTO>>> GetAllCargasAsync()
-    {
-        List<CargaSummaryDTO> query = await _dataContext.Cargas
-            .Where(c => c.Status == CargaStatus.Activa)
-            .OrderByDescending(c => c.FechaCreacion)
-            .Select(c => new CargaSummaryDTO
-            {
-                Id = c.Id,
-                Status = c.Status,
-                FechaCreacion = c.FechaCreacion,
-                FechaConcluida = c.FechaConcluida,
-                FechaFacturada = c.FechaFacturada,
-                DriverID = c.DriverID,
-                DriverName = c.Driver!.User.FullName,
-                DriverPlaca = c.Driver.Placa,
-                DriverPhoto = c.Driver.User.Photo,
-                SupervisorName = c.Supervisor!.FullName,
-                TotalPedidos = c.Orders!.Count,
-                Entregados = c.Orders.Count(o => o.OrderStatus == OrderStatus.Delivered),
-                EnOnStorage = c.Orders.Count(o => o.OrderStatus == OrderStatus.OnStorage),
-                Pendientes = c.Orders.Count(o => o.OrderStatus == OrderStatus.Assigned),
-                Distrito = c.Orders.Select(o => o.RecipientDistrict).FirstOrDefault()!,
-            }).ToListAsync();
-
-        if (query == null || query.Count == 0) return Ok(new List<CargaSummaryDTO>());
-
-        return Ok(query);
-    }
+    
 
     // ── Supervisor/Admin/Operator: detalle de carga ───────────────────────
     [HttpGet("Detail/{id}")]
@@ -229,51 +200,6 @@ public class CargasController(LogisticDataContext context, IHubContext<Notificat
         };
 
         return Ok(detail);
-    }
-
-    // ── Operator: confirmar conclusión ────────────────────────────────────
-    [HttpPost("Concluir/{id}")]
-    [Authorize(Roles = "Operator,Admin")]
-    public async Task<ActionResult> Concluir(int id, [FromBody] CargaConcluirDTO model)
-    {
-        var carga = await _dataContext.Cargas
-            .Include(c => c.Orders)
-            .FirstOrDefaultAsync(c => c.Id == id);
-
-        if (carga is null) return NotFound();
-        if (carga.Status != CargaStatus.PendienteConclusion)
-            return BadRequest("La carga no está pendiente de conclusión");
-
-        carga.Status = CargaStatus.Concluida;
-        carga.FechaConcluida = DateTime.UtcNow;
-        carga.ConcluidaPorID = CurrentUserId;
-        carga.NotaConclusion = model.Nota;
-
-        // Liberar al driver
-        var driver = await _dataContext.Drivers
-            .FirstOrDefaultAsync(d => d.UserID == carga.DriverID);
-
-        if (driver is not null)
-            driver.Available = true;
-
-        await _dataContext.SaveChangesAsync();
-
-        // Notificar al driver que quedó libre
-        await _hubContext.Clients
-            .Group($"Driver_{carga.DriverID}")
-            .SendAsync("CargaConcluida", new
-            {
-                CargaId = carga.Id,
-                Message = $"¡Tu carga #{carga.Id} fue concluida! Ya puedes recibir nuevas cargas."
-            });
-
-        // Notificar al dashboard
-        await _hubContext.Clients.Group("Admins").SendAsync("DashboardUpdate");
-        await _hubContext.Clients.Group("Drivers").SendAsync("DashboardUpdate");
-        await _hubContext.Clients.Group("Operators").SendAsync("DashboardUpdate");
-        await _hubContext.Clients.Group("Supervisors").SendAsync("DashboardUpdate");
-
-        return Ok();
     }
 
     // ── Supervisor/Admin: facturar ────────────────────────────────────────

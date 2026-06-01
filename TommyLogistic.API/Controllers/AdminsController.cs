@@ -21,7 +21,7 @@ namespace TommyLogistic.API.Controllers;
 public class AdminsController(LogisticDataContext dadaContext, IUserHelper userHelper, IHubContext<NotificationHub> hubContext, OrderEventService eventService) : ControllerBase
 {
     private readonly IUserHelper _userHelper = userHelper;
-    private readonly LogisticDataContext _dadaContext = dadaContext;
+    private readonly LogisticDataContext _dataContext = dadaContext;
     private readonly OrderEventService _eventService = eventService;
     private readonly IHubContext<NotificationHub> _hubContext = hubContext;
     private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Yop";
@@ -33,14 +33,14 @@ public class AdminsController(LogisticDataContext dadaContext, IUserHelper userH
         var hoy = DateTime.UtcNow.Date;
 
         // Pedidos de hoy
-        var pedidosHoy = await _dadaContext.Orders
+        var pedidosHoy = await _dataContext.Orders
             .Where(o => o.RegistrationDate.Date == hoy)
             .Include(o => o.Driver).ThenInclude(d => d!.User)
             .Include(o => o.Company).ThenInclude(d => d!.User)
             .ToListAsync();
 
         // Últimos 10 pedidos registrados
-        var ultimosPedidos = await _dadaContext.Orders
+        var ultimosPedidos = await _dataContext.Orders
             .OrderByDescending(o => o.RegistrationDate)
             .Take(5)
             .Include(o => o.Driver).ThenInclude(d => d!.User)
@@ -59,7 +59,7 @@ public class AdminsController(LogisticDataContext dadaContext, IUserHelper userH
             .ToListAsync();
 
         // Últimos 10 eventos de actividad
-        var actividad = await _dadaContext.OrderEvents
+        var actividad = await _dataContext.OrderEvents
             .OrderByDescending(e => e.Timestamp)
             .Take(5)
             .Include(e => e.User)
@@ -76,7 +76,7 @@ public class AdminsController(LogisticDataContext dadaContext, IUserHelper userH
             .ToListAsync();
 
         // Drivers
-        var drivers = await _dadaContext.Drivers.ToListAsync();
+        var drivers = await _dataContext.Drivers.ToListAsync();
 
         return Ok(new AdminDashboardDTO
         {
@@ -99,7 +99,7 @@ public class AdminsController(LogisticDataContext dadaContext, IUserHelper userH
     [HttpGet("GetAllDrivers")]
     public async Task<ActionResult<IEnumerable<DriverDTO>>> GetAllDriversAsync()
     {
-        List<User> users = await _dadaContext.Users
+        List<User> users = await _dataContext.Users
             .Include(u => u.Driver).ThenInclude(d => d!.Orders)
             .Where(u => u.UserType == UserEnum.Driver)
             .ToListAsync();
@@ -160,8 +160,8 @@ public class AdminsController(LogisticDataContext dadaContext, IUserHelper userH
             Orders = [],
         };
 
-        _dadaContext.Drivers.Add(newDriver);
-        await _dadaContext.SaveChangesAsync();
+        _dataContext.Drivers.Add(newDriver);
+        await _dataContext.SaveChangesAsync();
         return Ok();
     }
 
@@ -169,7 +169,7 @@ public class AdminsController(LogisticDataContext dadaContext, IUserHelper userH
     [HttpPut("UpdateProfile")]
     public async Task<ActionResult> UpdateProfileAsync([FromBody] DriverProfileUpdateDTO model)
     {
-        Driver? driver = await _dadaContext.Drivers.Include(d => d.User).FirstOrDefaultAsync(d => d.UserID == CurrentUserId);
+        Driver? driver = await _dataContext.Drivers.Include(d => d.User).FirstOrDefaultAsync(d => d.UserID == CurrentUserId);
         if (driver is null) return NotFound();
 
         driver.User.PhoneNumber = model.Phone;
@@ -184,7 +184,7 @@ public class AdminsController(LogisticDataContext dadaContext, IUserHelper userH
             // driver.User.Photo = await _fileStorage.SaveFileAsync(...);
         }
 
-        await _dadaContext.SaveChangesAsync();
+        await _dataContext.SaveChangesAsync();
         return Ok();
     }
 
