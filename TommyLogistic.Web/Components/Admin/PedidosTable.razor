@@ -1,7 +1,6 @@
 @using System.Linq
 
 <div class="pt-wrapper">
-
     <!-- Toolbar -->
     <div class="pt-toolbar">
         <div class="pt-search-wrap">
@@ -112,7 +111,7 @@
     [Parameter] public int PageSize { get; set; } = 10;
     [Parameter] public EventCallback<int> OnVerDetalle { get; set; }
 
-    private string _busqueda = "";
+    private string _busqueda = string.Empty;
     private int    _pagina   = 1;
 
     private IEnumerable<OrderSummaryDTO> Filtrados => string.IsNullOrWhiteSpace(_busqueda)
@@ -121,11 +120,7 @@
             p.TrackingCode.Contains(_busqueda, StringComparison.OrdinalIgnoreCase) ||
             p.RecipientName.Contains(_busqueda, StringComparison.OrdinalIgnoreCase));
 
-    private IEnumerable<OrderSummaryDTO> Paginados =>
-        Filtrados.Skip((_pagina - 1) * PageSize).Take(PageSize);
-
-    private int TotalPaginas =>
-        (int)Math.Ceiling(Filtrados.Count() / (double)PageSize);
-
+    private IEnumerable<OrderSummaryDTO> Paginados => Filtrados.Skip((_pagina - 1) * PageSize).Take(PageSize);
+    private int TotalPaginas => (int)Math.Ceiling(Filtrados.Count() / (double)PageSize);
     private void ResetPage() => _pagina = 1;
 }

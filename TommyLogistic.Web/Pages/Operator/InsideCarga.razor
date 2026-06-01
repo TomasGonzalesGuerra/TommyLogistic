@@ -20,14 +20,120 @@ else if (_ordersByCarga == null || _ordersByCarga!.Count == 0)
 else
 {
     <div class="adm-modal__body">
-        @foreach (var item in _ordersByCarga)
-        {
-            <div class="order-item">
-                <h4>@item.TrackingCode</h4>
-                <p>@item.RecipientAddress</p>
-                <p>@item.RecipientPhone</p>
+        <div class="wh-page">
+            <div class="wh-page__header">
+                <h1 class="page-title">Almacén</h1>
             </div>
-        }
+
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Pedidos</span>
+                </div>
+
+                <div class="pt-wrapper">
+                    <!-- Toolbar -->
+                    <div class="pt-toolbar">
+                        <div class="pt-search-wrap">
+                            <span class="pt-search-icon" aria-hidden="true">🔍</span>
+                            <input class="form-control pt-search-input"
+                                   type="search"
+                                   placeholder="Buscar por código o destinatario…"
+                                   @bind="_busqueda"
+                                   @bind:event="oninput"
+                                   @bind:after="ResetPage"
+                                   aria-label="Buscar pedidos" />
+                        </div>
+                        <span class="pt-count text-xs text-muted">
+                            @Paginados.Count() de @Filtrados.Count()
+                        </span>
+                    </div>
+
+                    <!-- Tabla -->
+                    <div class="table-wrapper">
+                        <table class="table" aria-label="Listado de pedidos">
+                            <thead>
+                                <tr>
+                                    <th>Tracking</th>
+                                    <th>Destinatario</th>
+                                    <th class="hide-mobile">Dirección</th>
+                                    <th>Estado</th>
+                                    <th class="hide-mobile">Fecha</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Paginados.Any())
+                                {
+                                    <tr>
+                                        <td colspan="6">
+                                            <div class="pt-empty">
+                                                <span>📦</span>
+                                                <p>No se encontraron pedidos</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var p in Paginados)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <span class="codigo-seguimiento">@p.TrackingCode</span>
+                                            </td>
+                                            <td>
+                                                <span class="text-bold">@p.RecipientName</span>
+                                            </td>
+                                            <td class="hide-mobile text-muted text-sm">@p.RecipientDistrict</td>
+                                            <td>
+                                                <BadgeEstado Estado="@p.OrderStatus" />
+                                            </td>
+                                            <td class="hide-mobile text-muted text-sm">
+                                                @p.RegistrationDate.ToLocalTime().ToString("dd/MM/yyyy")
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-ghost btn-sm">
+                                                    Ver →
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginación -->
+                    @if (TotalPaginas > 1)
+                    {
+                        <div class="pt-pagination">
+                            <button class="btn btn-ghost btn-sm"
+                                    disabled="@(_pagina <= 1)"
+                                    @onclick="() => _pagina--">
+                                ← Anterior
+                            </button>
+
+                            <div class="pt-page-numbers">
+                                @for (int i = 1; i <= TotalPaginas; i++)
+                                {
+                                    var page = i;
+                                    <button class="pt-page-btn @(_pagina == page ? "active" : "")"
+                                            @onclick="() => _pagina = page">
+                                        page
+                                    </button>
+                                }
+                            </div>
+
+                            <button class="btn btn-ghost btn-sm"
+                                    disabled="@(_pagina >= TotalPaginas)"
+                                    @onclick="() => _pagina++">
+                                Siguiente →
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Footer con acciones -->
@@ -47,6 +153,9 @@ else
     [Parameter, EditorRequired] public EventCallback OnClose { get; set; }
     private List<DriverOrderDTO> _ordersByCarga = [];
     private bool _loading;
+    private int _pagina = 1;
+    private int PageSize { get; set; } = 10;
+    private string _busqueda = string.Empty;
 
 
     protected override async Task OnParametersSetAsync()
@@ -59,6 +168,15 @@ else
         _loading = false;
     }
 
+    private IEnumerable<DriverOrderDTO> Filtrados => string.IsNullOrWhiteSpace(_busqueda)
+        ? _ordersByCarga
+        : _ordersByCarga.Where(p =>
+            p.TrackingCode.Contains(_busqueda, StringComparison.OrdinalIgnoreCase) ||
+            p.RecipientName.Contains(_busqueda, StringComparison.OrdinalIgnoreCase));
+
+    private IEnumerable<DriverOrderDTO> Paginados => Filtrados.Skip((_pagina - 1) * PageSize).Take(PageSize);
+    private int TotalPaginas => (int)Math.Ceiling(Filtrados.Count() / (double)PageSize);
+    private void ResetPage() => _pagina = 1;
     private void IrADetalle()
     {
         Console.WriteLine($"Ir a detalle de CargaID: {CargaID}");

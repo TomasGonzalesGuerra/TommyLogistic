@@ -14,7 +14,7 @@
     background: var(--color-surface);
     border-radius: var(--radius-xl);
     width: 100%;
-    max-width: 520px;
+    max-width: 90vw;
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: var(--shadow-xl);
