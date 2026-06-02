@@ -32,7 +32,7 @@ else
     <div class="repartidores-grid">
         @foreach (var item in _cargas)
         {
-            <div class="rep-card @($"carga--{nameof(item.Status)}")">
+            <div class="rep-card @($"carga--{item.Status.ToString()}")">
                 <div class="rep-card-header">
                     <div class="rep-avatar"
                          style="@(string.IsNullOrEmpty(item.DriverPhoto) ? $"background:{item.DriverName}" : $"background-image:url('{item.DriverPhoto}')")">
@@ -87,6 +87,81 @@ else
     </div>
 }
 
+@if (_loadingPendenting)
+{
+    <div class="loading-overlay"><div class="spinner"></div></div>
+}
+else if (!_cargasPendenting.Any())
+{
+    <div class="empty-state">
+        <span class="empty-icon">😴</span>
+        <p class="text-bold">Sin Cargas Pendientes</p>
+    </div>
+}
+else
+{
+    <div class="repartidores-grid">
+        @foreach (var item in _cargasPendenting)
+        {
+            <div class="rep-card @($"carga--{item.Status.ToString()}")">
+                <div class="rep-card-header">
+                    <div class="rep-avatar"
+                         style="@(string.IsNullOrEmpty(item.DriverPhoto) ? $"background:{item.DriverName}" : $"background-image:url('{item.DriverPhoto}')")">
+                        @(string.IsNullOrEmpty(item.DriverPhoto) ? Initials(item.DriverName) : "")
+                    </div>
+
+                    <div class="rep-info">
+                        <span class="rep-nombre">@item.DriverName</span>
+                        <span class="text-xs text-muted">PLACA: @item.DriverPlaca</span>
+                    </div>
+
+                    <BadgeCarga Status="@item.Status" />
+                </div>
+
+                <div class="rep-stats">
+                    <div class="rep-stat-mini">
+                        <span class="rep-stat-value" style="color: var(--color-primary)">
+                            📍 @item.Distrito
+                        </span>
+                        <span class="rep-stat-label">Distrito</span>
+                    </div>
+
+                    <div class="rep-stat-mini">
+                        <span class="rep-stat-value" style="color: var(--color-primary)">
+                            ✅ @item.TotalPedidos
+                        </span>
+                        <span class="rep-stat-label">Pedidos</span>
+                    </div>
+
+                    <div class="rep-stat-mini">
+                        <span class="rep-stat-value" style="color: var(--color-success)">
+                            ✅ @item.Entregados
+                        </span>
+                        <span class="rep-stat-label">Entregados</span>
+                    </div>
+
+                    <div class="rep-stat-mini">
+                        <span class="rep-stat-value" style="color: var(--color-primary)">
+                            🏭 @item.Pendientes
+                        </span>
+                        <span class="rep-stat-label">Pendientes</span>
+                    </div>
+                </div>
+
+                <div class="rep-acciones">
+                    <button @onclick="() => ShowInsideCarga(item.Id)" class="btn btn-outline btn-success btn-sm">
+                        ✅ Ver Carga
+                    </button>
+
+                    <button @onclick="() => ShowConcluirCarga(item.Id)" class="btn btn-outline btn-danger btn-sm">
+                        @(item.Status == CargaStatus.PendienteConclusion ? "Concluir Carga" : "Pedidos Pendientes")
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+}
+
 <GenericModal Title="Contenido de la Carga"
               IsVisible="_showInsideCarga"
               OnCancel="CloseInsideCarga">
@@ -95,10 +170,27 @@ else
     </BodyContent>
 </GenericModal>
 
+<GenericModal Title="Conclusión de Carga"
+              IsVisible="_guardandoCarga"
+              OnCancel="CloseInsideCarga">
+    <BodyContent>
+        <div class="p-4">
+            <h2 class="text-lg font-bold mb-4">¿Estas Seguro de Concluir esta Carga?</h2>
+            <p class="mb-6">Al concluir la Carga, se Cerrarán todos los Pedidos. ¿Deseas Continuar?</p>
+            <div class="flex justify-end gap-2">
+                <button @onclick="CloseInsideCarga" class="btn btn-outline btn-secondary">Cancelar</button>
+                <button @onclick="ConcluirCarga" class="btn btn-danger">Sí, Concluir Carga</button>
+            </div>
+        </div>
+    </BodyContent>
+</GenericModal>
+
 @code {
     private List<CargaSummaryDTO> _cargas = [];
+    private List<CargaSummaryDTO> _cargasPendenting = [];
     private bool _loading;
-    private bool _guardando;
+    private bool _loadingPendenting;
+    private bool _guardandoCarga;
     private bool _showInsideCarga;
     private int _cargaSelected = 0;
 
@@ -113,13 +205,13 @@ else
     private async Task LoadAsync()
     {
         _loading = true;
-
-        // var r1 = await _Repository.GetAsync<List<DriverOrderDTO>>("api/Orders/GetByStatus?status=Returning");
-        // if (!r1.Error) _retornos = r1.Response!;
+        _loadingPendenting = true;
 
         _cargas = await _OperatorService.GetAllCargasAsync();
+        _cargasPendenting = await _OperatorService.GetPendentingCargasAsync();
 
         _loading = false;
+        _loadingPendenting = false;
     }
 
     private void ShowInsideCarga(int cargaID)
@@ -127,27 +219,26 @@ else
         _cargaSelected = cargaID;
         _showInsideCarga = true;
     }
-
     private void CloseInsideCarga()
     {
         _cargaSelected = 0;
         _showInsideCarga = false;
+        _guardandoCarga = false;
     }
 
-    // private async Task ConfirmarConclusionAsync()
-    // {
-    //     _guardando = true;
+    private void ShowConcluirCarga(int cargaID)
+    {
+        _cargaSelected = cargaID;
+        _guardandoCarga = true;
+    }
 
-    //     var r = await _Repository.PostAsync($"api/Operators/Concluir/{_cargaAConcluirId}", new CargaConcluirDTO { Nota = _notaConclusion });
+    private async Task ConcluirCarga()
+    {
+        CargaConcluirDTO DTO = new() { Nota = "Carga concluida Automáticamente." };
+        await _OperatorService.ConcludeCargaAsync(_cargaSelected, DTO);
+        _guardandoCarga = false;
+    }
 
-    //     if (!r.Error)
-    //     {
-    //         _mostrarConcluirModal = false;
-    //         await LoadAsync();
-    //     }
-
-    //     _guardando = false;
-    // }
 
     private void OnDashboardUpdate() => InvokeAsync(async () => { await LoadAsync(); StateHasChanged(); });
     private void OnSolicituddeConclusion(string _) => InvokeAsync(async () => { await LoadAsync(); StateHasChanged(); });

@@ -27,7 +27,7 @@ public class CargasController(LogisticDataContext context, IHubContext<Notificat
     private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "Yop";
 
 
-    // GET:api/Cargas/DriversDisponibles ────────────────────────────────────────────────────
+    // GET:api/Cargas/DriversDisponibles
     [HttpGet("DriversDisponibles")]
     public async Task<ActionResult<List<DriverDisponibleDTO>>> GetDriversDisponiblesAsync()
     {
@@ -45,7 +45,7 @@ public class CargasController(LogisticDataContext context, IHubContext<Notificat
         return Ok(drivers);
     }
 
-    // GET:api/Cargas/PedidosDisponibles ────────────────────────────────────────────────────
+    // GET:api/Cargas/PedidosDisponibles
     [HttpGet("PedidosDisponibles")]
     public async Task<ActionResult> GetPedidosDisponiblesAsync([FromQuery] string? distrito = null)
     {
@@ -85,7 +85,7 @@ public class CargasController(LogisticDataContext context, IHubContext<Notificat
         return Ok(agrupados);
     }
 
-    // POST:api/Cargas/CreateCarga ──────────────────────────────────────────────────────────
+    // POST:api/Cargas/CreateCarga
     [HttpPost("CreateCarga")]
     public async Task<ActionResult> CreateCargaAsync([FromBody] CargaCreateDTO DTO)
     {
