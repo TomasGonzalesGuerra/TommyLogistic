@@ -23,8 +23,7 @@ else
 {
     <!-- Saludo -->
     <div class="driver-greeting">
-        <div class="driver-greeting-avatar"
-             style="@(string.IsNullOrEmpty(_dashboard.Photo) ? $"background:{AvatarColor(_dashboard.FullName)}" : $"background-image:url('{_dashboard.Photo}')")">
+        <div class="driver-greeting-avatar" style="@($"background-image:url('{_dashboard.Photo}')")">
             @(string.IsNullOrEmpty(_dashboard.Photo) ? Initials(_dashboard.FullName) : "")
         </div>
         <div>
@@ -100,7 +99,7 @@ else
                 <button class="btn btn-primary btn-sm">🚗 Salir a Repartir</button>
             </div>
         }
-        @if (_dashboard.Carga.Pedidos.Any(o => o.OrderStatus == OrderStatus.Delivered))
+        @if (_dashboard.Carga.Pedidos.All(o => o.OrderStatus == OrderStatus.Delivered) || _dashboard.Carga.Pedidos.Any(o => o.OrderStatus == OrderStatus.Rescheduled))
         {
             <div class="blockDoit" @onclick="() => SolicitarConclusionAsync(_dashboard.Carga.Id)">
                 <button class="btn btn-success btn-sm">🚗 Cerrar Carga</button>
@@ -356,8 +355,6 @@ else
             ? $"{parts[0][0]}{parts[1][0]}"
             : name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
     }
-    private static readonly string[] _avatarColors = ["#1a56db","#0e9f6e","#7c3aed","#e3a008","#0694a2","#e02424","#d97706"];
-    private static string AvatarColor(string name) => _avatarColors[Math.Abs(name.GetHashCode()) % _avatarColors.Length];
     public void Dispose()
     {
         _NotificationService.OnNewCarga -= HandleNewCarga;

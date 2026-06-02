@@ -83,8 +83,6 @@ else
 @code {
     private List<CompanyDTO> _empresas = [];
     private bool _cargando = true;
-    private bool _mostrarForm;
-    private bool _guardando;
     private string? _error;
     private string? _formError;
 
@@ -99,8 +97,6 @@ else
         // _empresas = await EmpresaService.ObtenerTodasAsync();
         _cargando = false;
     }
-
-    private void CerrarFormulario() => _mostrarForm = false;
 
     private async Task ToggleActiva(CompanyDTO e)
     {

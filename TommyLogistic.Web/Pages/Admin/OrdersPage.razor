@@ -125,7 +125,6 @@ else
 
 
 @code {
-    private int _nuevos;
     private bool _loading = true;
     private HashSet<int> _newsIds = [];
     private string _busqueda = string.Empty;
@@ -170,7 +169,6 @@ else
 
     private async Task Refrescar()
     {
-        _nuevos = 0;
         _newsIds.Clear();
         await LoadAsync();
     }
