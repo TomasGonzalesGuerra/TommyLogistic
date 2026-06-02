@@ -1,4 +1,16 @@
-﻿.driver-greeting {
+﻿.section-title {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: var(--space-4);
+    margin: 1rem 0;
+}
+
+    .section-title .blockDoit button {
+        color: white;
+    }
+
+.driver-greeting {
     display: flex;
     align-items: center;
     gap: var(--space-4);

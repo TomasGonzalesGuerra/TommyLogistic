@@ -160,7 +160,7 @@ public class DriversController(LogisticDataContext dataContext, IHubContext<Noti
         if (carga.Status != CargaStatus.Activa) return BadRequest("La carga NO está Activa");
 
         // Verificar que todos los pedidos están en estado final
-        var pendientes = carga.Orders!.Where(o => o.OrderStatus != OrderStatus.Delivered && o.OrderStatus != OrderStatus.OnStorage).ToList();
+        var pendientes = carga.Orders!.Where(o => o.OrderStatus != OrderStatus.Delivered && o.OrderStatus != OrderStatus.Returning).ToList();
         if (pendientes.Count != 0) return BadRequest($"Aún Tienes {pendientes.Count} Pedido(s) sin Finalizar");
 
         carga.Status = CargaStatus.PendienteConclusion;
