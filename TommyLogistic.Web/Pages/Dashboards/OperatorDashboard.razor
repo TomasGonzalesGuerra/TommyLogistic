@@ -234,7 +234,7 @@ else
 
     private async Task ConcluirCarga()
     {
-        CargaConcluirDTO DTO = new() { Nota = "Carga concluida Automáticamente." };
+        CargaConcluirDTO DTO = new() { Nota = $"Carga Concluida por {await _SesionService.GetNameAsync().Split('@')[0]}." };
         await _OperatorService.ConcludeCargaAsync(_cargaSelected, DTO);
         _guardandoCarga = false;
     }

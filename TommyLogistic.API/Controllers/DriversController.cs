@@ -45,20 +45,67 @@ public class DriversController(LogisticDataContext dataContext, IHubContext<Noti
     }
 
     // GET: api/Drivers/Dashboard
+    //[HttpGet("Dashboard")]
+    //public async Task<ActionResult> GetDashboard()
+    //{
+    //    string userID = CurrentUserId;
+    //    var hoy = DateTime.UtcNow.Date;
+
+    //    Driver? driver = await _dataContext.Drivers
+    //        .Include(d => d.User)
+    //        .Include(d => d.Cargas!).ThenInclude(c => c.Orders!).ThenInclude(o => o.Company).ThenInclude(co => co!.User)
+    //        .FirstOrDefaultAsync(d => d.UserID == userID);
+
+    //    if (driver is null) return NotFound();
+
+    //    var pedidosHoy = driver.Cargas?.SelectMany(c => c.Orders!.Where(o => o.RegistrationDate.Date == hoy).ToList()) ?? [];
+
+    //    return Ok(new DriverDashboardDTO
+    //    {
+    //        FullName = driver.User.FullName,
+    //        Placa = driver.Placa,
+    //        Photo = driver.User.Photo,
+    //        Available = driver.Available,
+    //        Asignados = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.Assigned),
+    //        Retirados = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.PickedUp),
+    //        EnCamino = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.OnTheWay),
+    //        Entregados = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.Delivered),
+    //        Fallidos = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.Failed),
+    //        EnRetorno = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.Returning),
+    //        Carga = new CargaDetailDTO
+    //        {
+    //            Id = driver.Cargas?.FirstOrDefault(c => c.Orders!.Any(o => o.RegistrationDate.Date == hoy))?.Id ?? 0,
+    //            Pedidos = [.. pedidosHoy.OrderBy(o => o.OrderStatus).Select(o => MapToDriverOrderDTO(o))],
+    //        }
+    //    });
+    //}
     [HttpGet("Dashboard")]
     public async Task<ActionResult> GetDashboard()
     {
         string userID = CurrentUserId;
-        var hoy = DateTime.UtcNow.Date;
 
         Driver? driver = await _dataContext.Drivers
             .Include(d => d.User)
+            .Include(d => d.Cargas!).ThenInclude(c => c.ConcluidaPor)
+            .Include(d => d.Cargas!).ThenInclude(c => c.FacturadaPor)
             .Include(d => d.Cargas!).ThenInclude(c => c.Orders!).ThenInclude(o => o.Company).ThenInclude(co => co!.User)
             .FirstOrDefaultAsync(d => d.UserID == userID);
 
         if (driver is null) return NotFound();
 
-        var pedidosHoy = driver.Cargas?.SelectMany(c => c.Orders!.Where(o => o.RegistrationDate.Date == hoy).ToList()) ?? [];
+        var todasLasCargas = driver.Cargas?.ToList() ?? [];
+
+        // Carga activa = Activa o PendienteConclusion (el driver aún la ve)
+        var cargaActiva = todasLasCargas.FirstOrDefault(c => c.Status is CargaStatus.Activa or CargaStatus.PendienteConclusion);
+
+        // Historial = todo lo demás, más reciente primero
+        var cargasAnteriores = todasLasCargas
+            .Where(c => c.Status is not (CargaStatus.Activa or CargaStatus.PendienteConclusion))
+            .OrderByDescending(c => c.FechaCreacion)
+            .ToList();
+
+        // Stats del día (solo de la carga activa)
+        var pedidosActivos = cargaActiva?.Orders?.ToList() ?? [];
 
         return Ok(new DriverDashboardDTO
         {
@@ -66,19 +113,41 @@ public class DriversController(LogisticDataContext dataContext, IHubContext<Noti
             Placa = driver.Placa,
             Photo = driver.User.Photo,
             Available = driver.Available,
-            Asignados = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.Assigned),
-            Retirados = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.PickedUp),
-            EnCamino = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.OnTheWay),
-            Entregados = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.Delivered),
-            Fallidos = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.Failed),
-            EnRetorno = pedidosHoy.Count(o => o.OrderStatus == OrderStatus.Returning),
-            Carga = new CargaDetailDTO
-            {
-                Id = driver.Cargas?.FirstOrDefault(c => c.Orders!.Any(o => o.RegistrationDate.Date == hoy))?.Id ?? 0,
-                Pedidos = [.. pedidosHoy.OrderBy(o => o.OrderStatus).Select(o => MapToDriverOrderDTO(o))]
-            }
+            Asignados = pedidosActivos.Count(o => o.OrderStatus == OrderStatus.Assigned),
+            Retirados = pedidosActivos.Count(o => o.OrderStatus == OrderStatus.PickedUp),
+            EnCamino = pedidosActivos.Count(o => o.OrderStatus == OrderStatus.OnTheWay),
+            Entregados = pedidosActivos.Count(o => o.OrderStatus == OrderStatus.Delivered),
+            Fallidos = pedidosActivos.Count(o => o.OrderStatus == OrderStatus.Failed),
+            EnRetorno = pedidosActivos.Count(o => o.OrderStatus == OrderStatus.Returning),
+            CargaActiva = cargaActiva is null ? null : MapToCargaDetail(cargaActiva),
+            CargasAnteriores = [.. cargasAnteriores.Select(MapToCargaDetail)]
         });
     }
+
+    // ── Helpers de mapeo ─────────────────────────────────────────────────────
+    private CargaDetailDTO MapToCargaDetail(Carga c) => new()
+    {
+        Id = c.Id,
+        Status = c.Status,
+        FechaCreacion = c.FechaCreacion,
+        FechaConcluida = c.FechaConcluida,
+        FechaFacturada = c.FechaFacturada,
+        NotaConclusion = c.NotaConclusion,
+        NotaFacturacion = c.NotaFacturacion,
+        ConcluidaPorName = c.ConcluidaPor?.FullName,
+        FacturadaPorName = c.FacturadaPor?.FullName,
+        DriverID = c.DriverID,
+        DriverName = c.Driver?.User?.FullName ?? string.Empty,
+        DriverPlaca = c.Driver?.Placa ?? string.Empty,
+        DriverPhoto = c.Driver?.User?.Photo,
+        SupervisorName = c.Supervisor?.FullName ?? string.Empty,
+        TotalPedidos = c.Orders?.Count ?? 0,
+        Entregados = c.Orders?.Count(o => o.OrderStatus == OrderStatus.Delivered) ?? 0,
+        EnOnStorage = c.Orders?.Count(o => o.OrderStatus == OrderStatus.OnStorage) ?? 0,
+        Pendientes = c.Orders?.Count(o => o.OrderStatus is not OrderStatus.Delivered and not OrderStatus.OnStorage) ?? 0,
+        Distrito = c.Orders?.FirstOrDefault()?.RecipientDistrict ?? string.Empty,
+        Pedidos = [.. (c.Orders ?? []).OrderBy(o => o.OrderStatus).Select(MapToDriverOrderDTO)]
+    };
 
     // GET: api/Drivers/MyOrders
     [HttpGet("MyOrders")]
@@ -167,6 +236,9 @@ public class DriversController(LogisticDataContext dataContext, IHubContext<Noti
         await _dataContext.SaveChangesAsync();
 
         // Notificar a todos los Operators
+        await _hubContext.Clients.Group("Admins").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Drivers").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Supervisors").SendAsync("DashboardUpdate");
         await _hubContext.Clients.Group("Operators").SendAsync("SolicituddeConclusion", $"El driver {carga.Driver!.User.FullName} Solicita Concluir la Carga #{carga.Id}");
         return Ok();
     }

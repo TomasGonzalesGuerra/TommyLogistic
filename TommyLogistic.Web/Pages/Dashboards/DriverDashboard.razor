@@ -40,106 +40,112 @@ else
 
     <!-- Stats del día -->
     <div class="driver-stats-grid">
-        <div class="stat-card">
-            <div class="stat-icon" style="background:var(--color-info-light)">📋</div>
-            <div class="stat-info">
-                <div class="stat-value" style="color:var(--estado-asignado)">@_dashboard.Asignados</div>
-                <div class="stat-label">Asignados</div>
+        <div class="driver-stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:var(--color-info-light)">📋</div>
+                <div class="stat-info">
+                    <div class="stat-value" style="color:var(--estado-asignado)">@_dashboard.Asignados</div>
+                    <div class="stat-label">Asignados</div>
+                </div>
             </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon" style="background:#f3e8ff">📦</div>
-            <div class="stat-info">
-                <div class="stat-value" style="color:var(--estado-retirado)">@_dashboard.Retirados</div>
-                <div class="stat-label">Retirados</div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:#f3e8ff">📦</div>
+                <div class="stat-info">
+                    <div class="stat-value" style="color:var(--estado-retirado)">@_dashboard.Retirados</div>
+                    <div class="stat-label">Retirados</div>
+                </div>
             </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon" style="background:var(--color-primary-light)">🚗</div>
-            <div class="stat-info">
-                <div class="stat-value" style="color:var(--estado-encamino)">@_dashboard.EnCamino</div>
-                <div class="stat-label">En camino</div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:var(--color-primary-light)">🚗</div>
+                <div class="stat-info">
+                    <div class="stat-value" style="color:var(--estado-encamino)">@_dashboard.EnCamino</div>
+                    <div class="stat-label">En camino</div>
+                </div>
             </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon" style="background:var(--color-success-light)">✅</div>
-            <div class="stat-info">
-                <div class="stat-value" style="color:var(--estado-entregado)">@_dashboard.Entregados</div>
-                <div class="stat-label">Entregados</div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:var(--color-success-light)">✅</div>
+                <div class="stat-info">
+                    <div class="stat-value" style="color:var(--estado-entregado)">@_dashboard.Entregados</div>
+                    <div class="stat-label">Entregados</div>
+                </div>
             </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon" style="background:var(--color-warning-light)">🚪</div>
-            <div class="stat-info">
-                <div class="stat-value" style="color:var(--estado-ausente)">@_dashboard.Fallidos</div>
-                <div class="stat-label">Fallidos</div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:var(--color-warning-light)">🚪</div>
+                <div class="stat-info">
+                    <div class="stat-value" style="color:var(--estado-ausente)">@_dashboard.Fallidos</div>
+                    <div class="stat-label">Fallidos</div>
+                </div>
             </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon" style="background:#fff7ed">↩️</div>
-            <div class="stat-info">
-                <div class="stat-value" style="color:var(--estado-retorno)">@_dashboard.EnRetorno</div>
-                <div class="stat-label">En retorno</div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:#fff7ed">↩️</div>
+                <div class="stat-info">
+                    <div class="stat-value" style="color:var(--estado-retorno)">@_dashboard.EnRetorno</div>
+                    <div class="stat-label">En retorno</div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Pedidos de hoy -->
-    <div class="section-title">
-        <h4>@($"<<-- Mis pedidos de Hoy -->>") <p>@_dashboard.Carga.Status</p></h4>
-        @if (_dashboard.Carga.Pedidos.Any(o => o.OrderStatus == OrderStatus.Assigned))
-        {
-            <div class="blockDoit" @onclick="() => DoitAll(OrderStatus.PickedUp)">
-                <button class="btn btn-primary btn-outline">📦 Retirar Todos</button>
-            </div>
-        }
-        @if (_dashboard.Carga.Pedidos.Any(o => o.OrderStatus == OrderStatus.PickedUp))
-        {
-            <div class="blockDoit" @onclick="() => DoitAll(OrderStatus.OnTheWay)">
-                <button class="btn btn-primary btn-outline">🏍️ Salir a Repartir</button>
-            </div>
-        }
-        @if (_dashboard.Carga.Pedidos.All(o => o.OrderStatus == OrderStatus.Delivered) || _dashboard.Carga.Pedidos.Any(o => o.OrderStatus == OrderStatus.Returning))
-        {
-            <div class="blockDoit" @onclick="() => SolicitarConclusionAsync(_dashboard.Carga.Id)">
-                <button class="btn btn-success btn-outline">📱 Cerrar Carga</button>
-            </div>
-        }
-    </div>
-
-    @if (!_dashboard.Carga.Pedidos.Any())
+    <!-- ══ CARGA ACTIVA ══ -->
+    @if (_dashboard.CargaActiva is null)
     {
         <div class="empty-state">
             <span class="empty-icon">🎉</span>
-            <p class="text-bold">Sin pedidos por ahora</p>
-            <p class="text-muted">Aquí aparecerán los que te asignen</p>
+            <p class="text-bold">Sin carga activa por ahora</p>
+            <p class="text-muted">Aquí aparecerán los pedidos que te asignen</p>
         </div>
     }
-    else if (_dashboard.Carga.Status == CargaStatus.Activa)
+    else if (_dashboard.CargaActiva.Status == CargaStatus.PendienteConclusion)
     {
+        <div class="empty-state">
+            <span class="empty-icon">⏳</span>
+            <p class="text-bold">Carga pendiente de conclusión</p>
+            <p class="text-muted">El supervisor debe cerrar esta carga</p>
+        </div>
+    }
+    else
+    {
+        <div class="section-title">
+            <h4>Mi Carga de Hoy <span class="badge">@_dashboard.CargaActiva.Status</span></h4>
+            @if (_dashboard.CargaActiva.Pedidos.Any(o => o.OrderStatus == OrderStatus.Assigned))
+            {
+                <div class="blockDoit" @onclick="() => DoitAll(OrderStatus.PickedUp)">
+                    <button class="btn btn-primary btn-outline">📦 Retirar Todos</button>
+                </div>
+            }
+            @if (_dashboard.CargaActiva.Pedidos.Any(o => o.OrderStatus == OrderStatus.PickedUp))
+            {
+                <div class="blockDoit" @onclick="() => DoitAll(OrderStatus.OnTheWay)">
+                    <button class="btn btn-primary btn-outline">🏍️ Salir a Repartir</button>
+                </div>
+            }
+            @if (_dashboard.CargaActiva.Pedidos.All(o => o.OrderStatus == OrderStatus.Delivered)
+              || _dashboard.CargaActiva.Pedidos.Any(o => o.OrderStatus == OrderStatus.Returning))
+            {
+                <div class="blockDoit" @onclick="() => SolicitarConclusionAsync(_dashboard.CargaActiva.Id)">
+                    <button class="btn btn-success btn-outline">📱 Cerrar Carga</button>
+                </div>
+            }
+        </div>
+
         <div class="driver-orders-list">
-            @foreach (var pedido in _dashboard.Carga.Pedidos)
+            @foreach (var pedido in _dashboard.CargaActiva.Pedidos)
             {
                 <div class="driver-order-card @(_nuevosIds.Contains(pedido.Id) ? "driver-order-card--nuevo" : "")">
                     <div class="driver-order-top">
                         <span class="codigo-seguimiento">@pedido.TrackingCode</span>
                         <BadgeEstado Estado="@pedido.OrderStatus" />
                     </div>
-
                     <div class="driver-order-nombre">@pedido.RecipientName</div>
-
                     <div class="driver-order-meta">
                         <span>📍 @pedido.RecipientAddress, @pedido.RecipientDistrict</span>
                         <span>📞 @pedido.RecipientPhone</span>
                         <span>📦 @pedido.PackageDescription (@pedido.Quantity u.)</span>
                     </div>
-
                     @if (pedido.DeliveryAttempts > 0)
                     {
                         <p class="pedido-card-intentos">⚠️ @pedido.DeliveryAttempts intento(s) fallido(s)</p>
                     }
-
-                    <!-- Acciones según estado -->
                     <div class="driver-order-actions">
                         @foreach (var accion in GetAcciones(pedido.OrderStatus))
                         {
@@ -151,31 +157,82 @@ else
                     </div>
                 </div>
             }
-        </div>        
-    }
-    else if (_dashboard.Carga.Status == CargaStatus.PendienteConclusion)
-    {
-        <div class="empty-state">
-            <span class="empty-icon">😕</span>
-            <p class="text-bold">Tienes Cargas por Concluir</p>
         </div>
+    }
+
+    <!-- ══ HISTORIAL DE CARGAS ══ -->
+    @if (_dashboard.CargasAnteriores.Any())
+    {
+        <div class="section-title mt-6">
+            <h4>📁 Historial de Cargas</h4>
+        </div>
+
+        @foreach (var carga in _dashboard.CargasAnteriores)
+        {
+            <details class="carga-historial-item">
+                <summary class="carga-historial-header">
+                    <span class="font-medium">Carga #@carga.Id</span>
+                    <span class="badge">@carga.Status</span>
+                    <span class="text-muted text-sm">
+                        @carga.FechaCreacion.ToString("dd/MM/yyyy")
+                        · @carga.TotalPedidos pedido(s)
+                        · ✅ @carga.Entregados entregado(s)
+                    </span>
+                </summary>
+
+                <div class="driver-orders-list mt-2">
+                    @foreach (var pedido in carga.Pedidos)
+                    {
+                        <div class="driver-order-card">
+                            <div class="driver-order-top">
+                                <span class="codigo-seguimiento">@pedido.TrackingCode</span>
+                                <BadgeEstado Estado="@pedido.OrderStatus" />
+                            </div>
+                            <div class="driver-order-nombre">@pedido.RecipientName</div>
+                            <div class="driver-order-meta">
+                                <span>📍 @pedido.RecipientAddress, @pedido.RecipientDistrict</span>
+                                <span>📞 @pedido.RecipientPhone</span>
+                                <span>📦 @pedido.PackageDescription (@pedido.Quantity u.)</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @if (carga.NotaConclusion is not null)
+                {
+                    <p class="text-muted text-sm mt-2">📝 @carga.NotaConclusion</p>
+                }
+            </details>
+        }
     }
 }
 
 <!-- Modal de confirmación de acción -->
 <GenericModal Title="@_modalTitulo"
+              Icon="@_modalIcono"
+              Variant="@_modalVariant"
               IsVisible="_mostrarModal"
+              CloseOnBackdrop="!_guardando"
               OnCancel="CerrarModal">
     <BodyContent>
         <div class="adm-modal__body">
             <p class="text-sm mb-4">@_modalDescripcion</p>
+
             @if (_requiereNota)
             {
                 <div class="form-group">
                     <label class="form-label required">Motivo / Nota</label>
-                    <textarea @bind="_nota" class="form-control" rows="3" placeholder="Describe el motivo..."></textarea>
+                    <textarea @bind="_nota"
+                              @bind:event="oninput"
+                              class="form-control"
+                              rows="3"
+                              placeholder="Describe el motivo..."
+                              disabled="@_guardando">
+                    </textarea>
+                    <span class="text-muted text-xs">@(_nota.Length) caracteres</span>
                 </div>
             }
+
             @if (_error is not null)
             {
                 <div class="alert alert-danger mt-2">
@@ -183,13 +240,20 @@ else
                 </div>
             }
         </div>
+
         <div class="adm-modal__footer">
-            <button class="btn btn-ghost btn-sm" @onclick="CerrarModal">Cancelar</button>
-            <button class="btn @_modalBtnClass btn-sm" disabled="@(_guardando || (_requiereNota && string.IsNullOrWhiteSpace(_nota)))"
+            <button class="btn btn-ghost btn-sm"
+                    @onclick="CerrarModal"
+                    disabled="@_guardando">
+                Cancelar
+            </button>
+            <button class="btn @_modalBtnClass btn-sm"
+                    disabled="@(_guardando || (_requiereNota && string.IsNullOrWhiteSpace(_nota)))"
                     @onclick="ConfirmarAccionAsync">
                 @if (_guardando)
                 {
                     <span class="spinner spinner-sm"></span>
+                    <span>Procesando...</span>
                 }
                 else
                 {
@@ -214,6 +278,8 @@ else
     private string _modalDescripcion = string.Empty;
     private string _modalBtnLabel = string.Empty;
     private string _modalBtnClass = "btn-primary";
+    private string _modalIcono = string.Empty;
+    private string _modalVariant = "primary";
     private DriverOrderDTO? _pedidoActivo;
     private OrderStatus _estadoActivo;
 
@@ -246,7 +312,7 @@ else
             Note = string.IsNullOrWhiteSpace(_nota) ? null : _nota
         };
 
-        var ok = await _DriverService.UpdateAllAsync(_dashboard!.Carga.Pedidos, dto);
+        var ok = await _DriverService.UpdateAllAsync(_dashboard!.CargaActiva!.Pedidos, dto);
 
         if (ok)
         {
@@ -282,21 +348,21 @@ else
 
     private void AbrirAccion(DriverOrderDTO pedido, OrderStatus nuevoEstado)
     {
-        _pedidoActivo  = pedido;
-        _estadoActivo  = nuevoEstado;
-        _nota          = string.Empty;
-        _error         = string.Empty;
-        _requiereNota  = nuevoEstado is OrderStatus.Failed or OrderStatus.RecipientAbsent;
+        _pedidoActivo = pedido;
+        _estadoActivo = nuevoEstado;
+        _nota = string.Empty;
+        _error = string.Empty;
+        _requiereNota = nuevoEstado is OrderStatus.Failed or OrderStatus.RecipientAbsent;
 
-        (_modalTitulo, _modalDescripcion, _modalBtnLabel, _modalBtnClass) = nuevoEstado switch
+        (_modalTitulo, _modalDescripcion, _modalBtnLabel, _modalBtnClass, _modalIcono, _modalVariant) = nuevoEstado switch
         {
-            OrderStatus.PickedUp        => ("Confirmar retiro",       $"¿Confirmás que retiraste el pedido de {pedido.RecipientName}?",         "Confirmar retiro",    "btn-primary"),
-            OrderStatus.OnTheWay        => ("Salir a entregar",        $"¿Confirmás que salís a entregar a {pedido.RecipientName}?",             "Confirmar salida",    "btn-primary"),
-            OrderStatus.Delivered       => ("Marcar como entregado",   $"¿Confirmás la entrega exitosa a {pedido.RecipientName}?",               "Confirmar entrega",   "btn-success"),
-            OrderStatus.RecipientAbsent => ("Destinatario ausente",    $"Indica el motivo por el que no pudiste entregar a {pedido.RecipientName}.", "Confirmar",        "btn-warning"),
-            OrderStatus.Failed          => ("Entrega fallida",         $"Indica el motivo del fallo para el pedido de {pedido.RecipientName}.",   "Confirmar fallo",    "btn-danger"),
-            OrderStatus.Returning       => ("Retornar a base",         $"¿Confirmás que estás retornando el pedido de {pedido.RecipientName}?",  "Confirmar retorno",   "btn-ghost"),
-            _                           => ("Confirmar acción",        "¿Confirmás esta acción?",                                                "Confirmar",           "btn-primary")
+            OrderStatus.PickedUp => ("Confirmar retiro", $"¿Confirmás que retiraste el pedido de {pedido.RecipientName}?", "Confirmar retiro", "btn-primary", "📦", "primary"),
+            OrderStatus.OnTheWay => ("Salir a entregar", $"¿Confirmás que salís a entregar a {pedido.RecipientName}?", "Confirmar salida", "btn-primary", "🚗", "primary"),
+            OrderStatus.Delivered => ("Marcar como entregado", $"¿Confirmás la entrega exitosa a {pedido.RecipientName}?", "Confirmar entrega", "btn-success", "✅", "success"),
+            OrderStatus.RecipientAbsent => ("Destinatario ausente", $"Indicá el motivo por el que no pudiste entregar a {pedido.RecipientName}.", "Confirmar", "btn-warning", "🚪", "warning"),
+            OrderStatus.Failed => ("Entrega fallida", $"Indicá el motivo del fallo para el pedido de {pedido.RecipientName}.", "Confirmar fallo", "btn-danger", "❌", "danger"),
+            OrderStatus.Returning => ("Retornar a base", $"¿Confirmás que estás retornando el pedido de {pedido.RecipientName}?", "Confirmar retorno", "btn-ghost", "↩️", "primary"),
+            _ => ("Confirmar acción", "¿Confirmás esta acción?", "Confirmar", "btn-primary", "❓", "primary")
         };
 
         _mostrarModal = true;
