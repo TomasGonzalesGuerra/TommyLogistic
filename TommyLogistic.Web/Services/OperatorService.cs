@@ -11,15 +11,16 @@ public class OperatorService(IRepository repository, SweetAlertService sweetAler
     private readonly IRepository _repository = repository;
     private readonly SweetAlertService _sweetAlertService = sweetAlertService;
 
-    public async Task<List<CargaSummaryDTO>> GetAllCargasAsync()
+
+    public async Task<List<CargaSummaryDTO>> GetDashboardAsync()
     {
         try
         {
-            var responseHttp = await _repository.GetAsync<List<CargaSummaryDTO>>($"api/Operators/GetAllCargas");
+            var responseHttp = await _repository.GetAsync<List<CargaSummaryDTO>>("api/Operators/GetDashboard");
 
             if (responseHttp.Error)
             {
-                await _sweetAlertService.FireAsync("Error", "No se pudieron cargar las Cargas", SweetAlertIcon.Error);
+                await _sweetAlertService.FireAsync("Error", "No se pudieron cargar las cargas", SweetAlertIcon.Error);
                 return [];
             }
 
@@ -30,7 +31,6 @@ public class OperatorService(IRepository repository, SweetAlertService sweetAler
             await _sweetAlertService.FireAsync("Error", ex.Message, SweetAlertIcon.Error);
             return [];
         }
-
     }
 
     public async Task<List<DriverOrderDTO>> GetOrdersByCargaAsync(int cargaID)
@@ -42,28 +42,6 @@ public class OperatorService(IRepository repository, SweetAlertService sweetAler
             if (responseHttp.Error)
             {
                 await _sweetAlertService.FireAsync("Error", "No se pudieron cargar las Ordenes", SweetAlertIcon.Error);
-                return [];
-            }
-
-            return responseHttp.Response!;
-        }
-        catch (Exception ex)
-        {
-            await _sweetAlertService.FireAsync("Error", ex.Message, SweetAlertIcon.Error);
-            return [];
-        }
-
-    }
-
-    public async Task<List<CargaSummaryDTO>> GetPendentingCargasAsync()
-    {
-        try
-        {
-            var responseHttp = await _repository.GetAsync<List<CargaSummaryDTO>>($"api/Operators/GetPendentingCargas");
-
-            if (responseHttp.Error)
-            {
-                await _sweetAlertService.FireAsync("Error", "No se pudieron cargar las Cargas Pendientes", SweetAlertIcon.Error);
                 return [];
             }
 

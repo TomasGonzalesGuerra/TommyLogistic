@@ -57,13 +57,16 @@ public class OperatorsController(LogisticDataContext dataContext, IHubContext<No
         return Ok(orders);
     }
 
-    // GET: api/Operators/GetAllCargas
-    [HttpGet("GetAllCargas")]
-    public async Task<ActionResult<IEnumerable<CargaSummaryDTO>>> GetAllCargasAsync()
+    // GET: api/Operators/GetDashboard
+    [HttpGet("GetDashboard")]
+    public async Task<ActionResult<IEnumerable<CargaSummaryDTO>>> GetDashboardAsync()
     {
+        var statusActivos = new[] { CargaStatus.Activa, CargaStatus.PendienteConclusion };
+
         List<CargaSummaryDTO> query = await _dataContext.Cargas
-            .Where(c => c.Status == CargaStatus.Activa)
-            .OrderByDescending(c => c.FechaCreacion)
+            .Where(c => statusActivos.Contains(c.Status))
+            .OrderBy(c => c.Status == CargaStatus.PendienteConclusion ? 0 : 1) // Pendientes primero
+            .ThenByDescending(c => c.FechaCreacion)
             .Select(c => new CargaSummaryDTO
             {
                 Id = c.Id,
@@ -82,39 +85,6 @@ public class OperatorsController(LogisticDataContext dataContext, IHubContext<No
                 Pendientes = c.Orders.Count(o => o.OrderStatus == OrderStatus.Assigned),
                 Distrito = c.Orders.Select(o => o.RecipientDistrict).FirstOrDefault()!,
             }).ToListAsync();
-
-        if (query == null || query.Count == 0) return Ok(new List<CargaSummaryDTO>());
-
-        return Ok(query);
-    }
-
-    // GET: api/Operators/GetPendentingCargas
-    [HttpGet("GetPendentingCargas")]
-    public async Task<ActionResult<IEnumerable<CargaSummaryDTO>>> GetPendentingCargasAsync()
-    {
-        List<CargaSummaryDTO> query = await _dataContext.Cargas
-            .Where(c => c.Status == CargaStatus.PendienteConclusion)
-            .OrderByDescending(c => c.FechaCreacion)
-            .Select(c => new CargaSummaryDTO
-            {
-                Id = c.Id,
-                Status = c.Status,
-                FechaCreacion = c.FechaCreacion,
-                FechaConcluida = c.FechaConcluida,
-                FechaFacturada = c.FechaFacturada,
-                DriverID = c.DriverID,
-                DriverName = c.Driver!.User.FullName,
-                DriverPlaca = c.Driver.Placa,
-                DriverPhoto = c.Driver.User.Photo,
-                SupervisorName = c.Supervisor!.FullName,
-                TotalPedidos = c.Orders!.Count,
-                Entregados = c.Orders.Count(o => o.OrderStatus == OrderStatus.Delivered),
-                EnOnStorage = c.Orders.Count(o => o.OrderStatus == OrderStatus.OnStorage),
-                Pendientes = c.Orders.Count(o => o.OrderStatus == OrderStatus.Assigned),
-                Distrito = c.Orders.Select(o => o.RecipientDistrict).FirstOrDefault()!,
-            }).ToListAsync();
-
-        if (query == null || query.Count == 0) return Ok(new List<CargaSummaryDTO>());
 
         return Ok(query);
     }

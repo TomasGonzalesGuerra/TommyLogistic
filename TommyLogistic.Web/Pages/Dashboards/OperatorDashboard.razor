@@ -8,10 +8,10 @@
 
 <div class="list-header">
     <h1 class="page-title">Panel de Operaciones</h1>
-    @if (_cargas.Count > 0)
+    @if (_pendientes > 0)
     {
         <span class="badge badge-ausente">
-            ⏳ @($"{_cargas.Count} Carga(s) Pendiente(s) de Conclusión")
+            ⏳ @_pendientes Carga(s) Pendiente(s) de Conclusión
         </span>
     }
 </div>
@@ -24,7 +24,7 @@ else if (!_cargas.Any())
 {
     <div class="empty-state">
         <span class="empty-icon">😴</span>
-        <p class="text-bold">Sin Cargas</p>
+        <p class="text-bold">Sin Cargas activas</p>
     </div>
 }
 else
@@ -32,135 +32,63 @@ else
     <div class="repartidores-grid">
         @foreach (var item in _cargas)
         {
-            <div class="rep-card @($"carga--{item.Status.ToString()}")">
+            <div class="rep-card @($"carga--{item.Status}")">
+                <!-- Header -->
                 <div class="rep-card-header">
                     <div class="rep-avatar"
-                         style="@(string.IsNullOrEmpty(item.DriverPhoto) ? $"background:{item.DriverName}" : $"background-image:url('{item.DriverPhoto}')")">
+                         style="@(string.IsNullOrEmpty(item.DriverPhoto)
+                             ? $"background:var(--color-primary)"
+                             : $"background-image:url('{item.DriverPhoto}')")">
                         @(string.IsNullOrEmpty(item.DriverPhoto) ? Initials(item.DriverName) : "")
                     </div>
-
                     <div class="rep-info">
                         <span class="rep-nombre">@item.DriverName</span>
-                        <span class="text-xs text-muted">PLACA: @item.DriverPlaca</span>
+                        <span class="text-xs text-muted">🚗 @item.DriverPlaca</span>
                     </div>
-
                     <BadgeCarga Status="@item.Status" />
                 </div>
 
+                <!-- Stats -->
                 <div class="rep-stats">
                     <div class="rep-stat-mini">
-                        <span class="rep-stat-value" style="color: var(--color-primary)">
-                            📍 @item.Distrito
-                        </span>
+                        <span class="rep-stat-value">📍 @item.Distrito</span>
                         <span class="rep-stat-label">Distrito</span>
                     </div>
-
                     <div class="rep-stat-mini">
-                        <span class="rep-stat-value" style="color: var(--color-primary)">
-                            ✅ @item.TotalPedidos
-                        </span>
-                        <span class="rep-stat-label">Pedidos</span>
+                        <span class="rep-stat-value" style="color:var(--color-primary)">@item.TotalPedidos</span>
+                        <span class="rep-stat-label">Total</span>
                     </div>
-
                     <div class="rep-stat-mini">
-                        <span class="rep-stat-value" style="color: var(--color-success)">
-                            ✅ @item.Entregados
-                        </span>
+                        <span class="rep-stat-value" style="color:var(--color-success)">@item.Entregados</span>
                         <span class="rep-stat-label">Entregados</span>
                     </div>
-
                     <div class="rep-stat-mini">
-                        <span class="rep-stat-value" style="color: var(--color-primary)">
-                            🏭 @item.Pendientes
-                        </span>
+                        <span class="rep-stat-value" style="color:var(--color-warning)">@item.Pendientes</span>
                         <span class="rep-stat-label">Pendientes</span>
                     </div>
                 </div>
 
+                <!-- Acciones — dinámicas según status -->
                 <div class="rep-acciones">
-                    <button @onclick="() => ShowInsideCarga(item.Id)" class="btn btn-success btn-sm w-full mt-4">
-                        ✅ Ver Carga
+                    <button @onclick="() => ShowInsideCarga(item.Id)"
+                            class="btn btn-outline btn-primary btn-sm">
+                        📋 Ver Carga
                     </button>
+
+                    @if (item.Status == CargaStatus.PendienteConclusion)
+                    {
+                        <button @onclick="() => ShowConcluirCarga(item.Id)"
+                                class="btn btn-danger btn-sm">
+                            ✅ Concluir
+                        </button>
+                    }
                 </div>
             </div>
         }
     </div>
 }
 
-@if (_loadingPendenting)
-{
-    <div class="loading-overlay"><div class="spinner"></div></div>
-}
-else if (!_cargasPendenting.Any())
-{
-    <div class="empty-state">
-        <span class="empty-icon">😴</span>
-        <p class="text-bold">Sin Cargas Pendientes</p>
-    </div>
-}
-else
-{
-    <div class="repartidores-grid">
-        @foreach (var item in _cargasPendenting)
-        {
-            <div class="rep-card @($"carga--{item.Status.ToString()}")">
-                <div class="rep-card-header">
-                    <div class="rep-avatar"
-                         style="@(string.IsNullOrEmpty(item.DriverPhoto) ? $"background:{item.DriverName}" : $"background-image:url('{item.DriverPhoto}')")">
-                        @(string.IsNullOrEmpty(item.DriverPhoto) ? Initials(item.DriverName) : "")
-                    </div>
-
-                    <div class="rep-info">
-                        <span class="rep-nombre">@item.DriverName</span>
-                        <span class="text-xs text-muted">PLACA: @item.DriverPlaca</span>
-                    </div>
-
-                    <BadgeCarga Status="@item.Status" />
-                </div>
-
-                <div class="rep-stats">
-                    <div class="rep-stat-mini">
-                        <span class="rep-stat-value" style="color: var(--color-primary)">
-                            📍 @item.Distrito
-                        </span>
-                        <span class="rep-stat-label">Distrito</span>
-                    </div>
-
-                    <div class="rep-stat-mini">
-                        <span class="rep-stat-value" style="color: var(--color-primary)">
-                            ✅ @item.TotalPedidos
-                        </span>
-                        <span class="rep-stat-label">Pedidos</span>
-                    </div>
-
-                    <div class="rep-stat-mini">
-                        <span class="rep-stat-value" style="color: var(--color-success)">
-                            ✅ @item.Entregados
-                        </span>
-                        <span class="rep-stat-label">Entregados</span>
-                    </div>
-
-                    <div class="rep-stat-mini">
-                        <span class="rep-stat-value" style="color: var(--color-primary)">
-                            🏭 @item.Pendientes
-                        </span>
-                        <span class="rep-stat-label">Pendientes</span>
-                    </div>
-                </div>
-
-                <div class="rep-acciones">
-                    <button @onclick="() => ShowInsideCarga(item.Id)" class="btn btn-outline btn-success btn-sm">
-                        ✅ Ver Carga
-                    </button>
-
-                    <button @onclick="() => ShowConcluirCarga(item.Id)" class="btn btn-outline btn-danger btn-sm">
-                        @(item.Status == CargaStatus.PendienteConclusion ? "Concluir Carga" : "Pedidos Pendientes")
-                    </button>
-                </div>
-            </div>
-        }
-    </div>
-}
+<!-- Modales sin cambios -->
 
 <GenericModal Title="Contenido de la Carga"
               IsVisible="_showInsideCarga"
@@ -187,12 +115,11 @@ else
 
 @code {
     private List<CargaSummaryDTO> _cargas = [];
-    private List<CargaSummaryDTO> _cargasPendenting = [];
+    private int _pendientes => _cargas.Count(c => c.Status == CargaStatus.PendienteConclusion);
     private bool _loading;
-    private bool _loadingPendenting;
     private bool _guardandoCarga;
     private bool _showInsideCarga;
-    private int _cargaSelected = 0;
+    private int _cargaSelected;
 
     protected override async Task OnInitializedAsync()
     {
@@ -205,13 +132,17 @@ else
     private async Task LoadAsync()
     {
         _loading = true;
-        _loadingPendenting = true;
 
-        _cargas = await _OperatorService.GetAllCargasAsync();
-        _cargasPendenting = await _OperatorService.GetPendentingCargasAsync();
+        _cargas = await _OperatorService.GetDashboardAsync();
+        // Ordenar: PendienteConclusion primero, luego Activa, resto al final
+        _cargas = [.. _cargas.OrderBy(c => c.Status switch
+        {
+            CargaStatus.PendienteConclusion => 0,
+            CargaStatus.Activa              => 1,
+            _                               => 2
+        })];
 
         _loading = false;
-        _loadingPendenting = false;
     }
 
     private void ShowInsideCarga(int cargaID)
@@ -234,7 +165,8 @@ else
 
     private async Task ConcluirCarga()
     {
-        CargaConcluirDTO DTO = new() { Nota = $"Carga Concluida por {await _SesionService.GetNameAsync().Split('@')[0]}." };
+        string yop = await _SesionService.GetNameAsync() ?? "Yop";
+        CargaConcluirDTO DTO = new() { Nota = $"Carga Concluida por {yop.Split('@')[0]}." };
         await _OperatorService.ConcludeCargaAsync(_cargaSelected, DTO);
         _guardandoCarga = false;
     }
