@@ -64,9 +64,7 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
 
     public async Task<List<DriverOrderDTO>> GetMyOrdersAsync(string? status = null)
     {
-        var url = string.IsNullOrEmpty(status)
-            ? "api/Drivers/MyOrders"
-            : $"api/Drivers/MyOrders?status={status}";
+        var url = string.IsNullOrEmpty(status) ? "api/Drivers/MyOrders" : $"api/Drivers/MyOrders?status={status}";
         var r = await _repository.GetAsync<List<DriverOrderDTO>>(url);
         return r.Error ? [] : r.Response!;
     }
@@ -138,18 +136,11 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
     {
         try
         {
-            var qs = new List<string>
-            {
-                $"page={page}",
-                $"pageSize={pageSize}",
-            };
+            var qs = new List<string> {$"page={page}", $"pageSize={pageSize}",};
 
-            if (status.HasValue)
-                qs.Add($"status={status.Value}");
-            if (desde.HasValue)
-                qs.Add($"desde={desde.Value:yyyy-MM-dd}");
-            if (hasta.HasValue)
-                qs.Add($"hasta={hasta.Value:yyyy-MM-dd}");
+            if (status.HasValue) qs.Add($"status={status.Value}");
+            if (desde.HasValue) qs.Add($"desde={desde.Value:yyyy-MM-dd}");
+            if (hasta.HasValue) qs.Add($"hasta={hasta.Value:yyyy-MM-dd}");
 
             var url = $"api/Drivers/MisCargas?{string.Join("&", qs)}";
             var response = await _repository.GetAsync<MyCargasResponseDTO                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   >(url);
@@ -213,11 +204,11 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
 
     // ── Agregar en DriverService.cs ───────────────────────────────────────────
 
-    public async Task<DriverDTO?> GetMiPerfilAsync()
+    public async Task<MiPerfilDTO?> GetMiPerfilAsync()
     {
         try
         {
-            var response = await _repository.GetAsync<DriverDTO>("api/Drivers/Profile");
+            var response = await _repository.GetAsync<MiPerfilDTO>("api/Drivers/Miperfil");
 
             if (response.Error)
             {
@@ -238,8 +229,7 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
     {
         try
         {
-            var response = await _repository.PutAsync<UpdateFotoDTO, UpdateFotoResponseDTO>(
-                "api/Drivers/Profile/Foto", dto);
+            var response = await _repository.PutAsync<UpdateFotoDTO, UpdateFotoResponseDTO>("api/Drivers/Miperfil/Foto", dto);
 
             if (response.Error)
             {
