@@ -102,20 +102,15 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
         return !r.Error;
     }
 
-    public async Task<MyDeliveriesResponseDTO?> GetMyDeliveriesAsync(
-        int page = 1,
-        int pageSize = 10,
-        OrderStatus? status = null,
-        DateTime? desde = null,
-        DateTime? hasta = null)
+    public async Task<MyDeliveriesResponseDTO?> GetMyDeliveriesAsync(int page = 1, int pageSize = 10, OrderStatus? status = null, DateTime? desde = null, DateTime? hasta = null)
     {
         try
         {
             var qs = new List<string>
-        {
-            $"page={page}",
-            $"pageSize={pageSize}",
-        };
+            {
+                $"page={page}",
+                $"pageSize={pageSize}",
+            };
 
             if (status.HasValue) qs.Add($"status={status.Value}");
             if (desde.HasValue) qs.Add($"desde={desde.Value:yyyy-MM-dd}");
@@ -174,4 +169,45 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
         }
     }
 
+    public async Task<ScanResultDTO?> ScanOrderAsync(string trackingCode)
+    {
+        try
+        {
+            var response = await _repository.GetAsync<ScanResultDTO>($"api/Drivers/Scan/{Uri.EscapeDataString(trackingCode)}");
+
+            if (response.Error)
+            {
+                // 404 = no encontrado, no mostramos SweetAlert genérico
+                return null;
+            }
+
+            return response.Response;
+        }
+        catch (Exception ex)
+        {
+            await _sweetAlertService.FireAsync("Error", ex.Message, SweetAlertIcon.Error);
+            return null;
+        }
+    }
+
+    public async Task<bool> ConfirmScanAsync(int orderId, ScanConfirmDTO dto)
+    {
+        try
+        {
+            var response = await _repository.PostAsync($"api/Drivers/Scan/Confirm/{orderId}", dto);
+
+            if (response.Error)
+            {
+                await _sweetAlertService.FireAsync("Error", "No se pudo confirmar la acción", SweetAlertIcon.Error);
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            await _sweetAlertService.FireAsync("Error", ex.Message, SweetAlertIcon.Error);
+            return false;
+        }
+    }
 }

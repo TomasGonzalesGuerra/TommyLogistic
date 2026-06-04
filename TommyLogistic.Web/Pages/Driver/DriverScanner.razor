@@ -1,0 +1,362 @@
+﻿@page "/DriverScanner"
+@layout MainLayout
+@inject IJSRuntime _JS
+@inject DriverService _DriverService
+@using BlazorBarcodeScanner.ZXing.JS
+@attribute [Authorize(Roles = nameof(UserEnum.Driver))]
+
+<PageTitle>Escanear — Tommy Logistic</PageTitle>
+
+<div class="list-header">
+    <h1 class="page-title">Escanear Pedido</h1>
+</div>
+
+<!-- ══ PASO 1: ESCÁNER ══ -->
+@if (_step == ScanStep.Scanning)
+{
+    <div class="scan-container">
+        <div class="scan-instructions">
+            <span class="scan-icon">📷</span>
+            <p>Apunta la cámara al código de barras del pedido</p>
+        </div>
+
+        <div class="scan-viewport">
+            <BarcodeReader OnBarcodeReceived="OnBarcodeDetected"  />
+            <div class="scan-overlay">
+                <div class="scan-frame"></div>
+            </div>
+        </div>
+
+        <!-- Fallback manual -->
+        <div class="scan-manual">
+            <p class="text-muted text-sm">¿No funciona la cámara?</p>
+            <div class="scan-manual-input">
+                <input class="form-control"
+                       placeholder="Ingresa el código manualmente"
+                       @bind="_manualCode"
+                       @bind:event="oninput"
+                       @onkeydown="OnManualKeyDown" />
+                <button class="btn btn-primary btn-sm"
+                        disabled="@(string.IsNullOrWhiteSpace(_manualCode))"
+                        @onclick="BuscarManual">
+                    Buscar
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ══ PASO 2: RESULTADO DEL SCAN ══ -->
+else if (_step == ScanStep.Result)
+{
+    @if (_scanning)
+    {
+        <div class="loading-overlay">
+            <div class="spinner"></div>
+            <span>Buscando pedido...</span>
+        </div>
+    }
+    else if (_pedido is null)
+    {
+        <div class="scan-not-found">
+            <span class="empty-icon">❌</span>
+            <p class="text-bold">Pedido no encontrado</p>
+            <p class="text-muted text-sm">Código: <strong>@_lastCode</strong></p>
+            <p class="text-muted text-sm">No está asignado a ti o no existe.</p>
+            <button class="btn btn-primary mt-4" @onclick="Reiniciar">
+                🔄 Escanear de nuevo
+            </button>
+        </div>
+    }
+    else
+    {
+        <!-- Card del pedido encontrado -->
+        <div class="scan-result-card">
+            <div class="scan-result-header">
+                <span class="scan-result-check">✅</span>
+                <div>
+                    <p class="text-bold">Pedido encontrado</p>
+                    <span class="codigo-seguimiento">@_pedido.TrackingCode</span>
+                </div>
+                <BadgeEstado Estado="@_pedido.OrderStatus" />
+            </div>
+
+            <div class="driver-order-meta mt-3">
+                <span>👤 @_pedido.RecipientName</span>
+                <span>📍 @_pedido.RecipientAddress, @_pedido.RecipientDistrict</span>
+                <span>📞 @_pedido.RecipientPhone</span>
+                <span>📦 @_pedido.PackageDescription (@_pedido.Quantity u.)</span>
+                <span>🏢 @_pedido.CompanyName</span>
+                @if (_pedido.DeliveryAttempts > 0)
+                {
+                    <span class="text-warning">⚠️ @_pedido.DeliveryAttempts intento(s) previo(s)</span>
+                }
+            </div>
+
+            <!-- Acciones disponibles según estado -->
+            <div class="scan-actions mt-4">
+                @if (_pedido.OrderStatus == OrderStatus.OnTheWay
+                  || _pedido.OrderStatus == OrderStatus.PickedUp)
+                {
+                    <button class="btn btn-success scan-action-btn"
+                            @onclick="() => IrAFoto(OrderStatus.Delivered)">
+                        ✅ Entregado — Tomar foto
+                    </button>
+                    <button class="btn btn-warning scan-action-btn"
+                            @onclick="() => IrAFoto(OrderStatus.RecipientAbsent)">
+                        🚪 Ausente — Tomar foto
+                    </button>
+                    <button class="btn btn-danger scan-action-btn"
+                            @onclick="() => IrAFoto(OrderStatus.Failed)">
+                        ❌ Fallido — Tomar foto
+                    </button>
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <p class="text-muted text-sm">
+                            Este pedido está en estado <strong>@_pedido.OrderStatus</strong>
+                            y no requiere acción desde aquí.
+                        </p>
+                    </div>
+                }
+            </div>
+
+            <button class="btn btn-ghost btn-sm mt-3 w-full" @onclick="Reiniciar">
+                ← Escanear otro pedido
+            </button>
+        </div>
+    }
+}
+
+<!-- ══ PASO 3: CAPTURA DE FOTO ══ -->
+else if (_step == ScanStep.Photo)
+{
+    <div class="scan-photo-container">
+        <div class="scan-photo-header">
+            <span>
+                @(_accionPendiente == OrderStatus.Delivered
+                    ? "📸 Foto de entrega exitosa"
+                    : "📸 Foto de evidencia — cliente ausente")
+            </span>
+            <BadgeEstado Estado="@_accionPendiente" />
+        </div>
+
+        <p class="text-muted text-sm mb-4">
+            @(_accionPendiente == OrderStatus.Delivered
+                ? "Toma una foto del cliente con el paquete como prueba de entrega."
+                : "Toma una foto del punto de entrega como prueba de que estuviste ahí.")
+        </p>
+
+        <!-- Preview / captura -->
+        @if (_photoBase64 is null)
+        {
+            <div class="photo-capture-area">
+                <video id="photo-video" autoplay playsinline class="photo-video"></video>
+                <button class="btn btn-primary photo-capture-btn" @onclick="CapturarFoto">
+                    📷 Capturar
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="photo-preview-area">
+                <img src="data:image/jpeg;base64,@_photoBase64"
+                     class="photo-preview" alt="Evidencia" />
+                <div class="photo-preview-actions">
+                    <button class="btn btn-ghost btn-sm" @onclick="RetomarFoto">
+                        🔄 Retomar
+                    </button>
+                    <button class="btn btn-success btn-sm" @onclick="ConfirmarConFoto"
+                            disabled="@_guardando">
+                        @if (_guardando)
+                        {
+                            <span class="spinner spinner-sm"></span>
+                            <span>Guardando...</span>
+                        }
+                        else
+                        {
+                            <span>✅ Confirmar y enviar</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        }
+
+        @if (_accionPendiente != OrderStatus.Delivered)
+        {
+            <div class="form-group mt-3">
+                <label class="form-label">Nota (opcional)</label>
+                <textarea @bind="_nota" class="form-control" rows="2"
+                          placeholder="Ej: Toqué timbre 3 veces, nadie respondió...">
+                </textarea>
+            </div>
+        }
+
+        @if (_error is not null)
+        {
+            <div class="alert alert-danger mt-3">⚠️ @_error</div>
+        }
+
+        <button class="btn btn-ghost btn-sm mt-3 w-full"
+                @onclick="VolverAResultado"
+                disabled="@_guardando">
+            ← Volver
+        </button>
+    </div>
+}
+
+<!-- ══ PASO 4: ÉXITO ══ -->
+else if (_step == ScanStep.Done)
+{
+    <div class="scan-done">
+        <span class="scan-done-icon">
+            @(_accionPendiente == OrderStatus.Delivered ? "🎉" : "📋")
+        </span>
+        <p class="text-bold text-lg">
+            @(_accionPendiente == OrderStatus.Delivered
+                ? "¡Entrega confirmada!"
+                : "Evidencia registrada")
+        </p>
+        <p class="text-muted text-sm">
+            Pedido @_pedido?.TrackingCode actualizado correctamente.
+        </p>
+        <button class="btn btn-primary mt-5" @onclick="Reiniciar">
+            📷 Escanear otro pedido
+        </button>
+    </div>
+}
+
+@code {
+    // ── Estado de la máquina ──────────────────────────────────────────────
+    private enum ScanStep { Scanning, Result, Photo, Done }
+    private ScanStep _step = ScanStep.Scanning;
+
+    // ── Escáner ───────────────────────────────────────────────────────────
+    private string _lastCode = string.Empty;
+    private string _manualCode = string.Empty;
+    private bool _scanning;
+    private bool _yaEscaneado;
+
+    // ── Pedido encontrado ─────────────────────────────────────────────────
+    private ScanResultDTO? _pedido;
+
+    // ── Foto y acción ─────────────────────────────────────────────────────
+    private OrderStatus _accionPendiente;
+    private string? _photoBase64;
+    private string _nota = string.Empty;
+    private string? _error;
+    private bool _guardando;
+
+    // ── Callbacks del escáner ─────────────────────────────────────────────
+    private async Task OnBarcodeDetected(BarcodeReceivedEventArgs args)
+    {
+        if (_yaEscaneado) return; // evita disparar múltiples veces el mismo code
+        _yaEscaneado = true;
+        Console.WriteLine($"Código detectado: {args.BarcodeText}");
+        await BuscarPedido(args.BarcodeText);
+        StateHasChanged();
+    }
+
+    private async Task BuscarManual()
+    {
+        if (string.IsNullOrWhiteSpace(_manualCode)) return;
+        await BuscarPedido(_manualCode.Trim());
+    }
+
+    private async Task OnManualKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await BuscarManual();
+    }
+
+    private async Task BuscarPedido(string code)
+    {
+        _lastCode = code;
+        _scanning = true;
+        _step     = ScanStep.Result;
+        StateHasChanged();
+
+        _pedido  = await _DriverService.ScanOrderAsync(code);
+        _scanning = false;
+        StateHasChanged();
+    }
+
+    // ── Navegación entre pasos ────────────────────────────────────────────
+    private async Task IrAFoto(OrderStatus accion)
+    {
+        _accionPendiente = accion;
+        _photoBase64     = null;
+        _nota            = string.Empty;
+        _error           = null;
+        _step            = ScanStep.Photo;
+        StateHasChanged();
+
+        // Iniciar cámara para foto
+        await Task.Delay(100); // dar tiempo al DOM
+        await _JS.InvokeVoidAsync("escanear.startCamera", "photo-video");
+    }
+
+    private void VolverAResultado()
+    {
+        _step = ScanStep.Result;
+        _ = _JS.InvokeVoidAsync("escanear.stopCamera");
+    }
+
+    private async Task CapturarFoto()
+    {
+        _photoBase64 = await _JS.InvokeAsync<string>("escanear.capturePhoto", "photo-video");
+        await _JS.InvokeVoidAsync("escanear.stopCamera");
+    }
+
+    private async Task RetomarFoto()
+    {
+        _photoBase64 = null;
+        await Task.Delay(100);
+        await _JS.InvokeVoidAsync("escanear.startCamera", "photo-video");
+    }
+
+    private async Task ConfirmarConFoto()
+    {
+        if (_pedido is null || _photoBase64 is null) return;
+        _guardando = true;
+        _error     = null;
+
+        var dto = new ScanConfirmDTO
+        {
+            NewStatus     = _accionPendiente,
+            Note          = string.IsNullOrWhiteSpace(_nota) ? null : _nota,
+            PhotoBase64   = _photoBase64,
+            PhotoMimeType = "image/jpeg",
+        };
+
+        var ok = await _DriverService.ConfirmScanAsync(_pedido.Id, dto);
+
+        if (ok)
+        {
+            _step = ScanStep.Done;
+        }
+        else
+        {
+            _error = "No se pudo confirmar. Intenta de nuevo.";
+        }
+
+        _guardando = false;
+    }
+
+    private void Reiniciar()
+    {
+        _step        = ScanStep.Scanning;
+        _pedido      = null;
+        _lastCode    = string.Empty;
+        _manualCode  = string.Empty;
+        _yaEscaneado = false;
+        _photoBase64 = null;
+        _nota        = string.Empty;
+        _error       = null;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _JS.InvokeVoidAsync("escanear.stopCamera");
+    }
+}

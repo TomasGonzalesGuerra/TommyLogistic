@@ -1,0 +1,277 @@
+﻿/* ── Contenedor principal del escáner ── */
+.scan-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-5);
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.scan-instructions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.scan-icon {
+    font-size: 2.5rem;
+}
+
+/* ── Viewport del escáner ── */
+.scan-viewport {
+    position: relative;
+    width: 100%;
+    max-width: 340px;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    border: 2px solid var(--color-border);
+    background: #000;
+    aspect-ratio: 1 / 1;
+}
+
+    .scan-viewport video,
+    .scan-viewport canvas {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover;
+        display: block;
+    }
+
+/* Marco de escaneo animado */
+.scan-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.scan-frame {
+    width: 65%;
+    height: 40%;
+    border: 2px solid var(--color-primary);
+    border-radius: var(--radius-md);
+    position: relative;
+    animation: scanPulse 2s ease-in-out infinite;
+}
+
+    .scan-frame::before {
+        content: '';
+        position: absolute;
+        top: -1px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--color-primary);
+        animation: scanLine 2s linear infinite;
+        box-shadow: 0 0 8px var(--color-primary);
+    }
+
+@keyframes scanLine {
+    0% {
+        top: 0;
+        opacity: 1;
+    }
+
+    100% {
+        top: calc(100% - 2px);
+        opacity: 0.4;
+    }
+}
+
+@keyframes scanPulse {
+    0%, 100% {
+        border-color: var(--color-primary);
+    }
+
+    50% {
+        border-color: var(--color-success);
+    }
+}
+
+/* ── Fallback manual ── */
+.scan-manual {
+    width: 100%;
+    max-width: 340px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    text-align: center;
+}
+
+.scan-manual-input {
+    display: flex;
+    gap: var(--space-2);
+    width: 100%;
+}
+
+    .scan-manual-input .form-control {
+        flex: 1;
+    }
+
+/* ── Resultado no encontrado ── */
+.scan-not-found {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    text-align: center;
+    padding: var(--space-6);
+}
+
+/* ── Card del pedido encontrado ── */
+.scan-result-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-top: 3px solid var(--color-success);
+    border-radius: var(--radius-xl);
+    padding: var(--space-5);
+    max-width: 540px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.scan-result-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-2);
+}
+
+.scan-result-check {
+    font-size: 1.75rem;
+    flex-shrink: 0;
+}
+
+/* ── Botones de acción del resultado ── */
+.scan-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.scan-action-btn {
+    width: 100%;
+    padding: var(--space-3);
+    font-size: var(--font-size-base);
+    font-weight: 600;
+}
+
+/* ── Captura de foto ── */
+.scan-photo-container {
+    max-width: 480px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.scan-photo-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-weight: 700;
+    font-size: var(--font-size-base);
+    margin-bottom: var(--space-3);
+}
+
+.photo-capture-area {
+    position: relative;
+    width: 100%;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    border: 2px solid var(--color-border);
+    background: #000;
+    aspect-ratio: 4 / 3;
+}
+
+.photo-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.photo-capture-btn {
+    position: absolute;
+    bottom: var(--space-4);
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: var(--font-size-base);
+    padding: var(--space-3) var(--space-6);
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-lg);
+    z-index: 2;
+}
+
+/* ── Preview de la foto capturada ── */
+.photo-preview-area {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.photo-preview {
+    width: 100%;
+    border-radius: var(--radius-xl);
+    border: 2px solid var(--color-success);
+    object-fit: cover;
+    max-height: 320px;
+}
+
+.photo-preview-actions {
+    display: flex;
+    gap: var(--space-2);
+}
+
+    .photo-preview-actions .btn {
+        flex: 1;
+    }
+
+/* ── Pantalla de éxito ── */
+.scan-done {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    text-align: center;
+    padding: var(--space-8) var(--space-4);
+}
+
+.scan-done-icon {
+    font-size: 4rem;
+    animation: bounceIn 0.5s ease;
+}
+
+@keyframes bounceIn {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+
+    70% {
+        transform: scale(1.15);
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+    .scan-viewport {
+        max-width: 100%;
+    }
+
+    .scan-result-card {
+        border-radius: var(--radius-lg);
+        padding: var(--space-4);
+    }
+}

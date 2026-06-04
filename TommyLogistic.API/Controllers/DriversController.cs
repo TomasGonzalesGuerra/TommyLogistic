@@ -108,7 +108,7 @@ public class DriversController(LogisticDataContext dataContext, IHubContext<Noti
         return Ok(orders);
     }
 
-    // PUT: api/Drivers/UpdateOrderStatus/{OrderID}
+    // PUT: api/Drivers/UpdateOrderStatus/{OrderID:int}
     [HttpPut("UpdateOrderStatus/{OrderID:int}")]
     public async Task<ActionResult> UpdateOrderStatus(int OrderID, [FromBody] DriverUpdateStatusDTO model)
     {
@@ -340,6 +340,96 @@ public class DriversController(LogisticDataContext dataContext, IHubContext<Noti
             PageSize = pageSize,
         });
     }
+
+    // GET: api/Drivers/Scan/{trackingCode}
+    [HttpGet("Scan/{trackingCode}")]
+    public async Task<ActionResult<ScanResultDTO>> ScanOrderAsync(string trackingCode)
+    {
+        string userID = CurrentUserId;
+
+        var order = await _dataContext.Orders
+            .Include(o => o.Company).ThenInclude(c => c!.User)
+            .FirstOrDefaultAsync(o =>
+                o.TrackingCode == trackingCode &&
+                o.DriverID == userID);
+
+        if (order is null) return NotFound("Pedido no encontrado o no asignado a ti.");
+
+        return Ok(new ScanResultDTO
+        {
+            Id = order.Id,
+            TrackingCode = order.TrackingCode,
+            OrderStatus = order.OrderStatus,
+            RecipientName = order.RecipientName,
+            RecipientPhone = order.RecipientPhone,
+            RecipientAddress = order.RecipientAddress,
+            RecipientDistrict = order.RecipientDistrict,
+            PackageDescription = order.PackageDescription,
+            Quantity = order.Quantity,
+            DeliveryAttempts = order.DeliveryAttempts,
+            CompanyName = order.Company?.User?.FullName ?? "—",
+            CargaId = order.CargaID,
+        });
+    }
+
+    // POST: api/Drivers/Scan/Confirm/{OrderID:int}
+    [HttpPost("Scan/Confirm/{OrderID:int}")]
+    public async Task<ActionResult> ConfirmScan(int OrderID, [FromBody] ScanConfirmDTO DTO)
+    {
+        string userID = CurrentUserId;
+
+        var order = await _dataContext.Orders.Include(o => o.Events).FirstOrDefaultAsync(o => o.Id == OrderID && o.DriverID == userID);
+
+        if (order is null)
+            return NotFound("Pedido no encontrado.");
+
+        // Validar transición permitida
+        var permitidos = new[]
+        {
+            OrderStatus.Delivered,
+            OrderStatus.RecipientAbsent,
+            OrderStatus.Failed,
+        };
+
+        if (!permitidos.Contains(DTO.NewStatus))
+            return BadRequest("Estado no permitido desde este flujo.");
+
+        // Actualizar pedido
+        order.OrderStatus = DTO.NewStatus;
+
+        if (DTO.NewStatus == OrderStatus.Delivered) order.DeliveryDate = DateTime.UtcNow;
+        else order.DeliveryAttempts++;
+
+        // Registrar evento con foto en nota o campo dedicado
+        // (si en el futuro quieres guardar la foto en disco, aquí la procesarías)
+        var evento = new OrderEvent
+        {
+            OrderID = order.Id,
+            UserID = userID,
+            NewStatus = DTO.NewStatus,
+            Timestamp = DateTime.UtcNow,
+            Note = DTO.Note,
+            // Guardamos referencia a que hay foto — el base64 queda en cliente
+            // Si decides persistir, aquí harías el upload y guardarías la URL
+        };
+
+        _dataContext.OrderEvents.Add(evento);
+        await _dataContext.SaveChangesAsync();
+
+        // Notificar dashboard
+        await _hubContext.Clients.Group("Admins").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Drivers").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Operators").SendAsync("DashboardUpdate");
+        await _hubContext.Clients.Group("Supervisors").SendAsync("DashboardUpdate");
+        return Ok();
+    }
+
+
+
+
+
+
+
 
 
     // ── Helpers de mapeo ─────────────────────────────────────────────────────
