@@ -9,6 +9,7 @@ using TommyLogistic.API.Hubs;
 using TommyLogistic.API.Services;
 using TommyLogistic.Shared.DTOs.Cargas;
 using TommyLogistic.Shared.DTOs.Drivers;
+using TommyLogistic.Shared.DTOs.Operators;
 using TommyLogistic.Shared.Entities;
 using TommyLogistic.Shared.Enums;
 
@@ -146,4 +147,123 @@ public class OperatorsController(LogisticDataContext dataContext, IHubContext<No
         return Ok();
     }
 
+    // GET: api/Operators/DriversEnRuta
+    [HttpGet("DriversEnRuta")]
+    public async Task<ActionResult<List<DriverEnRutaDTO>>> GetDriversEnRuta()
+    {
+        var statusActivos = new[] { CargaStatus.Activa, CargaStatus.PendienteConclusion };
+
+        var cargas = await _dataContext.Cargas
+            .Where(c => statusActivos.Contains(c.Status))
+            .Include(c => c.Driver!).ThenInclude(d => d.User)
+            .Include(c => c.Supervisor)
+            .Include(c => c.Orders!)
+                .ThenInclude(o => o.Events!).ThenInclude(e => e.User)
+            .OrderBy(c => c.Status == CargaStatus.PendienteConclusion ? 0 : 1)
+            .ThenByDescending(c => c.FechaCreacion)
+            .ToListAsync();
+
+        var result = cargas.Select(c =>
+        {
+            var orders = c.Orders?.ToList() ?? [];
+
+            // Últimos 5 eventos de toda la carga, ordenados por más reciente
+            var ultimosEventos = orders
+                .SelectMany(o => (o.Events ?? []).Select(e => new UltimoEventoDTO
+                {
+                    Timestamp = e.Timestamp,
+                    NewStatus = e.NewStatus,
+                    TrackingCode = o.TrackingCode,
+                    RecipientName = o.RecipientName,
+                    Note = e.Note,
+                }))
+                .OrderByDescending(e => e.Timestamp)
+                .Take(5)
+                .ToList();
+
+            return new DriverEnRutaDTO
+            {
+                DriverID = c.DriverID,
+                DriverName = c.Driver!.User.FullName,
+                DriverPlaca = c.Driver.Placa,
+                DriverPhoto = c.Driver.User.Photo,
+                CargaId = c.Id,
+                CargaStatus = c.Status,
+                FechaCreacion = c.FechaCreacion,
+                SupervisorName = c.Supervisor?.FullName ?? "—",
+
+                TotalPedidos = orders.Count,
+                Entregados = orders.Count(o => o.OrderStatus == OrderStatus.Delivered),
+                EnCamino = orders.Count(o => o.OrderStatus == OrderStatus.OnTheWay),
+                Pendientes = orders.Count(o => o.OrderStatus is
+                                   OrderStatus.Assigned or OrderStatus.PickedUp),
+                Fallidos = orders.Count(o => o.OrderStatus == OrderStatus.Failed),
+                Ausentes = orders.Count(o => o.OrderStatus == OrderStatus.RecipientAbsent),
+                EnRetorno = orders.Count(o => o.OrderStatus == OrderStatus.Returning),
+
+                UltimosEventos = ultimosEventos,
+            };
+        }).ToList();
+
+        return Ok(result);
+    }
+
+    // GET: api/Operators/DriversEnRuta/{driverID}/Carga
+    [HttpGet("DriversEnRuta/{driverID}/Carga")]
+    public async Task<ActionResult<DriverCargaDetalleDTO>> GetCargaByDriver(string driverID)
+    {
+        var statusActivos = new[] { CargaStatus.Activa, CargaStatus.PendienteConclusion };
+
+        var carga = await _dataContext.Cargas
+            .Where(c => c.DriverID == driverID && statusActivos.Contains(c.Status))
+            .Include(c => c.Driver!).ThenInclude(d => d.User)
+            .Include(c => c.Supervisor)
+            .Include(c => c.Orders!)
+                .ThenInclude(o => o.Company).ThenInclude(co => co.User)
+            .Include(c => c.Orders!)
+                .ThenInclude(o => o.Events!).ThenInclude(e => e.User)
+            .FirstOrDefaultAsync();
+
+        if (carga is null) return NotFound("Este driver no tiene carga activa.");
+
+        return Ok(new DriverCargaDetalleDTO
+        {
+            DriverName = carga.Driver!.User.FullName,
+            DriverPlaca = carga.Driver.Placa,
+            DriverPhoto = carga.Driver.User.Photo,
+            CargaId = carga.Id,
+            CargaStatus = carga.Status,
+            FechaCreacion = carga.FechaCreacion,
+            SupervisorName = carga.Supervisor?.FullName ?? "—",
+            NotaConclusion = carga.NotaConclusion,
+
+            Pedidos = [.. (carga.Orders ?? [])
+                .OrderBy(o => o.OrderStatus)
+                .Select(o => new PedidoEnRutaDTO
+                {
+                    Id = o.Id,
+                    TrackingCode = o.TrackingCode,
+                    OrderStatus = o.OrderStatus,
+                    RecipientName = o.RecipientName,
+                    RecipientPhone = o.RecipientPhone,
+                    RecipientAddress = o.RecipientAddress,
+                    RecipientDistrict = o.RecipientDistrict,
+                    PackageDescription = o.PackageDescription,
+                    Quantity = o.Quantity,
+                    DeliveryAttempts = o.DeliveryAttempts,
+                    DeliveryDate = o.DeliveryDate,
+                    CompanyName = o.Company?.User?.FullName ?? "—",
+                    Events = [.. (o.Events ?? [])
+                        .OrderByDescending(e => e.Timestamp)
+                        .Select(e => new MiCargaEventoDTO
+                        {
+                            Timestamp = e.Timestamp,
+                            NewStatus = e.NewStatus,
+                            Note = e.Note,
+                            BaglokLocation = e.BaglokLocation,
+                            UserName = e.User?.FullName ?? "—",
+                        })]
+                })]
+        });
+    }
 }

@@ -1,0 +1,201 @@
+﻿/* ── Grid de cards ── */
+.ruta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+    gap: var(--space-4);
+}
+
+/* ── Card del driver en ruta ── */
+.ruta-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+    .ruta-card:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+
+    /* Borde superior por status — reutiliza las clases del OperatorDashboard */
+    .ruta-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        transition: background var(--transition-fast);
+    }
+
+    .ruta-card.carga--Activa::before {
+        background: var(--color-success);
+    }
+
+    .ruta-card.carga--PendienteConclusion::before {
+        background: var(--color-warning);
+    }
+
+/* ── Stats ── */
+.ruta-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    background: var(--color-surface-2);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--color-border);
+}
+
+.ruta-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+    min-width: 3rem;
+    flex: 1;
+}
+
+.ruta-stat-value {
+    font-size: var(--font-size-lg);
+    font-weight: 800;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+}
+
+.ruta-stat-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+/* ── Barra de progreso ── */
+.ruta-progress {
+    height: 6px;
+    background: var(--color-surface-2);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+}
+
+.ruta-progress-fill {
+    height: 100%;
+    background: var(--color-success);
+    border-radius: var(--radius-full);
+    transition: width 0.6s ease;
+}
+
+.ruta-progress-label {
+    margin-top: calc(var(--space-1) * -1);
+}
+
+/* ── Timeline de últimos eventos ── */
+.ruta-timeline {
+    border-top: 1px dashed var(--color-border);
+    padding-top: var(--space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.ruta-timeline-title {
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-1);
+}
+
+.ruta-evento {
+    display: flex;
+    gap: var(--space-2);
+    position: relative;
+}
+
+    .ruta-evento:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        left: 0.28rem;
+        top: 1.2rem;
+        bottom: 0;
+        width: 1px;
+        background: var(--color-border);
+    }
+
+.ruta-evento-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--color-primary);
+    flex-shrink: 0;
+    margin-top: 0.3rem;
+    border: 2px solid var(--color-surface);
+    box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.ruta-evento-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.ruta-evento-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.ruta-evento-info {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    margin: 0;
+    font-weight: 500;
+}
+
+.ruta-evento-nota {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    margin: 0;
+    font-style: italic;
+}
+
+/* ── Footer de la card ── */
+.ruta-card-footer {
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-2);
+    text-align: center;
+    transition: color var(--transition-fast);
+}
+
+.ruta-card:hover .ruta-card-footer {
+    color: var(--color-primary);
+}
+
+/* ── Modal body ── */
+.detalle-modal-body {
+    padding: var(--space-4);
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+    .ruta-grid {
+        grid-template-columns: 1fr;
+    }
+}

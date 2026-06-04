@@ -2,6 +2,7 @@
 using CurrieTechnologies.Razor.SweetAlert2;
 using TommyLogistic.Shared.DTOs.Cargas;
 using TommyLogistic.Shared.DTOs.Drivers;
+using TommyLogistic.Shared.DTOs.Operators;
 using TommyLogistic.Web.Repositories;
 
 namespace TommyLogistic.Web.Services;
@@ -75,4 +76,45 @@ public class OperatorService(IRepository repository, SweetAlertService sweetAler
         }
     }
 
+    public async Task<List<DriverEnRutaDTO>> GetDriversEnRutaAsync()
+    {
+        try
+        {
+            var response = await _repository.GetAsync<List<DriverEnRutaDTO>>("api/Operators/DriversEnRuta");
+
+            if (response.Error)
+            {
+                await _sweetAlertService.FireAsync("Error", "No se pudieron cargar los drivers", SweetAlertIcon.Error);
+                return [];
+            }
+
+            return response.Response!;
+        }
+        catch (Exception ex)
+        {
+            await _sweetAlertService.FireAsync("Error", ex.Message, SweetAlertIcon.Error);
+            return [];
+        }
+    }
+
+    public async Task<DriverCargaDetalleDTO?> GetCargaByDriverAsync(string driverID)
+    {
+        try
+        {
+            var response = await _repository.GetAsync<DriverCargaDetalleDTO>($"api/Operators/DriversEnRuta/{driverID}/Carga");
+
+            if (response.Error)
+            {
+                await _sweetAlertService.FireAsync("Error", "No se pudo cargar el detalle", SweetAlertIcon.Error);
+                return null;
+            }
+
+            return response.Response;
+        }
+        catch (Exception ex)
+        {
+            await _sweetAlertService.FireAsync("Error", ex.Message, SweetAlertIcon.Error);
+            return null;
+        }
+    }
 }

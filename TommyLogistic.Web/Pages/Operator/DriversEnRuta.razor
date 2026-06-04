@@ -1,0 +1,341 @@
+﻿@page "/DriversEnRuta"
+@layout MainLayout
+@implements IDisposable
+@inject OperatorService _OperatorService
+@attribute [Authorize(Roles = nameof(UserEnum.Operator))]
+
+<PageTitle>Drivers en Ruta — Tommy Logistic</PageTitle>
+
+<div class="list-header">
+    <h1 class="page-title">Drivers en Ruta</h1>
+    @if (_drivers.Any())
+    {
+        <span class="badge badge-info">@_drivers.Count driver(s) activo(s)</span>
+    }
+</div>
+
+@if (_loading)
+{
+    <div class="loading-overlay">
+        <div class="spinner"></div>
+        <span>Cargando drivers...</span>
+    </div>
+}
+else if (!_drivers.Any())
+{
+    <div class="empty-state">
+        <span class="empty-icon">😴</span>
+        <p class="text-bold">Sin drivers en ruta</p>
+        <p class="text-muted">Aquí aparecerán los drivers con cargas activas</p>
+    </div>
+}
+else
+{
+    <div class="ruta-grid">
+        @foreach (var driver in _drivers)
+        {
+            <div class="ruta-card @($"carga--{driver.CargaStatus}")"
+                 @onclick="() => AbrirDetalle(driver.DriverID)">
+
+                <!-- Header -->
+                <div class="rep-card-header">
+                    <div class="rep-avatar"
+                         style="@(string.IsNullOrEmpty(driver.DriverPhoto)
+                                                      ? "background:var(--color-primary)"
+                                                      : $"background-image:url('{driver.DriverPhoto}')")">
+                        @(string.IsNullOrEmpty(driver.DriverPhoto) ? Initials(driver.DriverName) : "")
+                    </div>
+                    <div class="rep-info">
+                        <span class="rep-nombre">@driver.DriverName</span>
+                        <span class="text-xs text-muted">🚗 @driver.DriverPlaca</span>
+                        <span class="text-xs text-muted">
+                            Carga #@driver.CargaId
+                            · @driver.FechaCreacion.ToString("dd/MM HH:mm")
+                        </span>
+                    </div>
+                    <BadgeCarga Status="@driver.CargaStatus" />
+                </div>
+
+                <!-- Stats -->
+                <div class="ruta-stats">
+                    <div class="ruta-stat">
+                        <span class="ruta-stat-value">@driver.TotalPedidos</span>
+                        <span class="ruta-stat-label">Total</span>
+                    </div>
+                    <div class="ruta-stat">
+                        <span class="ruta-stat-value" style="color:var(--color-success)">
+                            @driver.Entregados
+                        </span>
+                        <span class="ruta-stat-label">Entregados</span>
+                    </div>
+                    <div class="ruta-stat">
+                        <span class="ruta-stat-value" style="color:var(--color-primary)">
+                            @driver.EnCamino
+                        </span>
+                        <span class="ruta-stat-label">En camino</span>
+                    </div>
+                    <div class="ruta-stat">
+                        <span class="ruta-stat-value" style="color:var(--color-text-muted)">
+                            @driver.Pendientes
+                        </span>
+                        <span class="ruta-stat-label">Pendientes</span>
+                    </div>
+                    @if (driver.Fallidos > 0)
+                    {
+                        <div class="ruta-stat">
+                            <span class="ruta-stat-value" style="color:var(--color-danger)">
+                                @driver.Fallidos
+                            </span>
+                            <span class="ruta-stat-label">Fallidos</span>
+                        </div>
+                    }
+                    @if (driver.Ausentes > 0)
+                    {
+                        <div class="ruta-stat">
+                            <span class="ruta-stat-value" style="color:var(--color-warning)">
+                                @driver.Ausentes
+                            </span>
+                            <span class="ruta-stat-label">Ausentes</span>
+                        </div>
+                    }
+                    @if (driver.EnRetorno > 0)
+                    {
+                        <div class="ruta-stat">
+                            <span class="ruta-stat-value" style="color:var(--color-info)">
+                                @driver.EnRetorno
+                            </span>
+                            <span class="ruta-stat-label">Retorno</span>
+                        </div>
+                    }
+                </div>
+
+                <!-- Barra de progreso -->
+                @if (driver.TotalPedidos > 0)
+                {
+                    var pct = (int)((double)driver.Entregados / driver.TotalPedidos * 100);
+                    <div class="ruta-progress">
+                        <div class="ruta-progress-fill" style="width:@(pct)%"></div>
+                    </div>
+                    <p class="text-xs text-muted ruta-progress-label">
+                        @driver.Entregados / @driver.TotalPedidos entregados (@(pct)%)
+                    </p>
+                }
+
+                <!-- Últimos eventos -->
+                @if (driver.UltimosEventos.Any())
+                {
+                    <div class="ruta-timeline">
+                        <p class="ruta-timeline-title">🕐 Últimos eventos</p>
+                        @foreach (var ev in driver.UltimosEventos)
+                        {
+                            <div class="ruta-evento">
+                                <div class="ruta-evento-dot"></div>
+                                <div class="ruta-evento-content">
+                                    <div class="ruta-evento-header">
+                                        <BadgeEstado Estado="@ev.NewStatus" />
+                                        <span class="text-xs text-muted">
+                                            @ev.Timestamp.ToString("HH:mm")
+                                        </span>
+                                    </div>
+                                    <p class="ruta-evento-info">
+                                        @ev.TrackingCode · @ev.RecipientName
+                                    </p>
+                                    @if (ev.Note is not null)
+                                    {
+                                        <p class="ruta-evento-nota">📝 @ev.Note</p>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+
+                <!-- Indicador de click -->
+                <div class="ruta-card-footer">
+                    <span class="text-xs text-muted">👁 Ver carga completa</span>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<!-- Modal detalle de carga -->
+<GenericModal Title="@($"Carga #{_detalleDriverID} — {_detalle?.DriverName}")"
+              IsVisible="_mostrarDetalle"
+              OnCancel="CerrarDetalle">
+    <BodyContent>
+        @if (_loadingDetalle)
+        {
+            <div class="loading-overlay" style="position:relative;min-height:12rem">
+                <div class="spinner"></div>
+            </div>
+        }
+        else if (_detalle is null)
+        {
+            <div class="empty-state">
+                <p class="text-muted">No se pudo cargar el detalle.</p>
+            </div>
+        }
+        else
+        {
+            <div class="detalle-modal-body">
+                <!-- Info de la carga -->
+                <div class="carga-info-grid mb-4">
+                    <div class="carga-info-item">
+                        <span class="carga-info-label">Estado</span>
+                        <BadgeCarga Status="@_detalle.CargaStatus" />
+                    </div>
+                    <div class="carga-info-item">
+                        <span class="carga-info-label">Creada</span>
+                        <span>@_detalle.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</span>
+                    </div>
+                    <div class="carga-info-item">
+                        <span class="carga-info-label">Supervisor</span>
+                        <span>@_detalle.SupervisorName</span>
+                    </div>
+                    <div class="carga-info-item">
+                        <span class="carga-info-label">Placa</span>
+                        <span>@_detalle.DriverPlaca</span>
+                    </div>
+                    @if (_detalle.NotaConclusion is not null)
+                    {
+                        <div class="carga-info-item carga-info-item--full">
+                            <span class="carga-info-label">Nota conclusión</span>
+                            <span>@_detalle.NotaConclusion</span>
+                        </div>
+                    }
+                </div>
+
+                <!-- Pedidos -->
+                <h5 class="carga-section-title">
+                    📦 Pedidos (@_detalle.Pedidos.Count)
+                </h5>
+
+                <div class="driver-orders-list">
+                    @foreach (var pedido in _detalle.Pedidos)
+                    {
+                        <div class="driver-order-card entrega-card">
+                            <div class="driver-order-top">
+                                <span class="codigo-seguimiento">@pedido.TrackingCode</span>
+                                <BadgeEstado Estado="@pedido.OrderStatus" />
+                            </div>
+                            <div class="driver-order-nombre">@pedido.RecipientName</div>
+                            <div class="driver-order-meta">
+                                <span>📍 @pedido.RecipientAddress, @pedido.RecipientDistrict</span>
+                                <span>📞 @pedido.RecipientPhone</span>
+                                <span>📦 @pedido.PackageDescription (@pedido.Quantity u.)</span>
+                                <span>🏢 @pedido.CompanyName</span>
+                                @if (pedido.DeliveryDate.HasValue)
+                                {
+                                    <span>✅ @pedido.DeliveryDate.Value.ToString("dd/MM HH:mm")</span>
+                                }
+                            </div>
+
+                            @if (pedido.DeliveryAttempts > 0)
+                            {
+                                <p class="pedido-card-intentos">
+                                    ⚠️ @pedido.DeliveryAttempts intento(s) fallido(s)
+                                </p>
+                            }
+
+                            <!-- Timeline del pedido -->
+                            @if (pedido.Events.Any())
+                            {
+                                <div class="pedido-timeline">
+                                    <p class="pedido-timeline-title">🕐 Historial</p>
+                                    @foreach (var ev in pedido.Events)
+                                    {
+                                        <div class="timeline-event">
+                                            <div class="timeline-dot"></div>
+                                            <div class="timeline-content">
+                                                <div class="timeline-header">
+                                                    <BadgeEstado Estado="@ev.NewStatus" />
+                                                    <span class="text-muted text-xs">
+                                                        @ev.Timestamp.ToString("dd/MM HH:mm")
+                                                        · @ev.UserName
+                                                    </span>
+                                                </div>
+                                                @if (ev.Note is not null)
+                                                {
+                                                    <p class="timeline-nota">📝 @ev.Note</p>
+                                                }
+                                                @if (ev.BaglokLocation is not null)
+                                                {
+                                                    <p class="timeline-nota">📍 @ev.BaglokLocation</p>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </BodyContent>
+</GenericModal>
+
+@code {
+    private List<DriverEnRutaDTO> _drivers = [];
+    private bool _loading;
+
+    // Detalle modal
+    private DriverCargaDetalleDTO? _detalle;
+    private string _detalleDriverID = string.Empty;
+    private bool _mostrarDetalle;
+    private bool _loadingDetalle;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+        _NotificationService.OnDashboardUpdate += OnDashboardUpdate;
+        _NotificationService.OnSolicituddeConclusion += OnSolicituddeConclusion;
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _drivers = await _OperatorService.GetDriversEnRutaAsync();
+        _loading = false;
+    }
+
+    private async Task AbrirDetalle(string driverID)
+    {
+        _detalleDriverID = driverID;
+        _mostrarDetalle = true;
+        _loadingDetalle = true;
+        _detalle = null;
+        StateHasChanged();
+
+        _detalle = await _OperatorService.GetCargaByDriverAsync(driverID);
+        _loadingDetalle = false;
+    }
+
+    private void CerrarDetalle()
+    {
+        _mostrarDetalle = false;
+        _detalle = null;
+        _detalleDriverID = string.Empty;
+    }
+
+    private void OnDashboardUpdate() =>
+        InvokeAsync(async () => { await LoadAsync(); StateHasChanged(); });
+
+    private void OnSolicituddeConclusion(string _) =>
+        InvokeAsync(async () => { await LoadAsync(); StateHasChanged(); });
+
+    private static string Initials(string name)
+    {
+        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{parts[0][0]}{parts[1][0]}"
+            : name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
+    }
+
+    public void Dispose()
+    {
+        _NotificationService.OnDashboardUpdate -= OnDashboardUpdate;
+        _NotificationService.OnSolicituddeConclusion -= OnSolicituddeConclusion;
+    }
+}
