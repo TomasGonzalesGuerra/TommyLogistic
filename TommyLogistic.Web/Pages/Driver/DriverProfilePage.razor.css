@@ -1,51 +1,239 @@
-﻿.profile-grid {
+﻿/* ── Layout general ── */
+.perfil-layout {
     display: grid;
-    grid-template-columns: 260px 1fr;
-    gap: var(--space-5);
+    grid-template-columns: 18rem 1fr;
+    gap: var(--space-6);
     align-items: start;
 }
 
-.profile-avatar-card {
+/* ── Columna izquierda ── */
+.perfil-aside {
     display: flex;
     flex-direction: column;
     align-items: center;
-    text-align: center;
-    gap: var(--space-2);
+    gap: var(--space-4);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6) var(--space-5);
+    position: sticky;
+    top: var(--space-4);
 }
 
-.profile-avatar {
-    width: 6rem;
-    height: 6rem;
+/* ── Avatar ── */
+.perfil-avatar-wrapper {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.perfil-avatar {
+    width: 7rem;
+    height: 7rem;
     border-radius: 50%;
+    background: var(--color-primary);
     background-size: cover;
     background-position: center;
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: var(--font-size-2xl);
-    font-weight: 700;
-    margin-bottom: var(--space-2);
-    box-shadow: 0 0 0 4px var(--color-primary-light), var(--shadow-md);
+    font-size: 2rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    border: 3px solid var(--color-border);
+    box-shadow: var(--shadow-md);
 }
 
-.profile-name {
-    font-size: var(--font-size-lg);
-    font-weight: 700;
-    color: var(--color-text);
-    letter-spacing: -0.01em;
-}
-
-.profile-foto-preview {
-    width: 5rem;
-    height: 5rem;
+.perfil-avatar-edit {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 2rem;
+    height: 2rem;
     border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--color-border);
+    background: var(--color-primary);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    cursor: pointer;
+    border: 2px solid var(--color-surface);
+    box-shadow: var(--shadow-sm);
+    transition: background var(--transition-fast);
 }
 
-@media (max-width: 768px) {
-    .profile-grid {
+    .perfil-avatar-edit:hover {
+        background: var(--color-primary-dark, var(--color-primary));
+        filter: brightness(1.15);
+    }
+
+.perfil-nombre {
+    font-size: var(--font-size-lg);
+    font-weight: 800;
+    text-align: center;
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+
+/* ── Badge disponible ── */
+.perfil-disponible {
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+}
+
+.perfil-disponible--on {
+    background: var(--color-success-light);
+    color: var(--color-success);
+}
+
+.perfil-disponible--off {
+    background: var(--color-surface-2);
+    color: var(--color-text-muted);
+}
+
+/* ── Acciones de foto ── */
+.perfil-foto-actions {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* ── Stats ── */
+.perfil-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+    width: 100%;
+    margin-top: var(--space-2);
+}
+
+.perfil-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.125rem;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3) var(--space-2);
+    text-align: center;
+}
+
+.perfil-stat-value {
+    font-size: var(--font-size-xl);
+    font-weight: 800;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    color: var(--color-text);
+}
+
+.perfil-stat-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* ── Columna derecha ── */
+.perfil-data {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+}
+
+.perfil-section-title {
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-4);
+}
+
+/* ── Info grid ── */
+.perfil-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+    gap: var(--space-4);
+}
+
+.perfil-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-surface-2);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+}
+
+.perfil-info-item--full {
+    grid-column: 1 / -1;
+}
+
+.perfil-info-label {
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+}
+
+.perfil-info-value {
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    color: var(--color-text);
+    word-break: break-word;
+}
+
+.perfil-placa {
+    font-family: monospace;
+    font-size: var(--font-size-lg);
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: var(--color-primary);
+}
+
+/* ── Barra de efectividad ── */
+.perfil-progress-bar {
+    height: 0.625rem;
+    background: var(--color-surface-2);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+}
+
+.perfil-progress-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width 0.8s ease;
+}
+
+/* ── Responsive ── */
+@media (max-width: 860px) {
+    .perfil-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .perfil-aside {
+        position: static;
+    }
+}
+
+@media (max-width: 480px) {
+    .perfil-stats {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .perfil-info-grid {
         grid-template-columns: 1fr;
     }
 }

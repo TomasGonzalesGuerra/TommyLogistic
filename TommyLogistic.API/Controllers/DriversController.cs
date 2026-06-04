@@ -1,6 +1,7 @@
 ﻿using Humanizer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -27,21 +28,63 @@ public class DriversController(LogisticDataContext dataContext, IHubContext<Noti
 
     // GET: api/Drivers/Profile
     [HttpGet("Profile")]
-    public async Task<ActionResult> GetProfile()
+    public async Task<ActionResult<DriverDTO>> GetMiPerfil()
     {
-        Driver? driver = await _dataContext.Drivers.Include(d => d.User).FirstOrDefaultAsync(d => d.UserID == CurrentUserId);
+        string userID = CurrentUserId;
+
+        var driver = await _dataContext.Drivers
+            .Include(d => d.User)
+            .Include(d => d.Cargas!)
+                .ThenInclude(c => c.Orders)
+            .FirstOrDefaultAsync(d => d.UserID == userID);
+
         if (driver is null) return NotFound();
 
-        return Ok(new DriverProfileDTO
+        var todasLasCargas = driver.Cargas?.ToList() ?? [];
+        var todosPedidos = todasLasCargas.SelectMany(c => c.Orders ?? []).ToList();
+
+        return Ok(new DriverDTO
         {
             FullName = driver.User.FullName,
             Email = driver.User.Email!,
-            Phone = driver.User.PhoneNumber!,
             Document = driver.User.Document,
             Address = driver.User.Address,
             Photo = driver.User.Photo,
+            PhoneNumber = driver.User.PhoneNumber ?? "—",
             Placa = driver.Placa,
+            Available = driver.Available,
+            TotalCargas = todasLasCargas.Count,
+            CargasConcluidas = todasLasCargas.Count(c => c.Status is CargaStatus.Concluida or CargaStatus.Facturada),
+            TotalPedidos = todosPedidos.Count,
+            TotalEntregados = todosPedidos.Count(o => o.OrderStatus == OrderStatus.Delivered),
+            TotalFallidos = todosPedidos.Count(o => o.OrderStatus == OrderStatus.Failed),
         });
+    }
+
+    [HttpPut("MiPerfil/Foto")]
+    public async Task<ActionResult> UpdateFoto([FromBody] UpdateFotoDTO dto)
+    {
+        string userID = CurrentUserId;
+
+        var user = await _userManager.FindByIdAsync(userID);
+        if (user is null) return NotFound();
+
+        // Convierte base64 a URL o ruta según tu estrategia de almacenamiento.
+        // Opción A — guardar como archivo en wwwroot:
+        var fileName = $"{userID}_{DateTime.UtcNow.Ticks}.jpg";
+        var folder = Path.Combine(_env.WebRootPath, "photos", "drivers");
+        Directory.CreateDirectory(folder);
+        var filePath = Path.Combine(folder, fileName);
+        var bytes = Convert.FromBase64String(dto.PhotoBase64);
+        await System.IO.File.WriteAllBytesAsync(filePath, bytes);
+        user.Photo = $"/photos/drivers/{fileName}";
+
+        // Opción B — si usas un servicio de storage (S3, Azure Blob, etc.)
+        // user.Photo = await _storageService.UploadAsync(dto.PhotoBase64, dto.MimeType);
+
+        await _userManager.UpdateAsync(user);
+
+        return Ok(new { photo = user.Photo });
     }
 
     // GET: api/Drivers/Dashboard

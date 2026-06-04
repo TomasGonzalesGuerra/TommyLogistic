@@ -1,150 +1,262 @@
-﻿@page "/Driver/Profile"
+﻿@page "/DriverProfile"
 @layout MainLayout
 @inject DriverService _DriverService
+@inject IJSRuntime _JS
 @attribute [Authorize(Roles = nameof(UserEnum.Driver))]
 
-<PageTitle>Mi perfil — Tommy Logistic</PageTitle>
+<PageTitle>Mi Perfil — Tommy Logistic</PageTitle>
 
 <div class="list-header">
-    <h1 class="page-title">Mi perfil</h1>
+    <h1 class="page-title">Mi Perfil</h1>
 </div>
 
 @if (_loading)
 {
     <div class="loading-overlay">
         <div class="spinner"></div>
+        <span>Cargando perfil...</span>
     </div>
 }
-else if (_profile is not null)
+else if (_perfil is null)
 {
-    <div class="profile-grid">
-
-        <!-- Avatar -->
-        <div class="card profile-avatar-card">
-            <div class="profile-avatar"
-                 style="@(string.IsNullOrEmpty(_profile.Photo)
-                                                     ? $"background:{AvatarColor(_profile.FullName)}"
-                                                     : $"background-image:url('{_profile.Photo}')")">
-                @(string.IsNullOrEmpty(_profile.Photo) ? Initials(_profile.FullName) : "")
-            </div>
-            <p class="profile-name">@_profile.FullName</p>
-            <p class="text-muted text-sm">@_profile.Email</p>
-            <span class="badge badge-asignado mt-4">🚗 @_profile.Placa</span>
-        </div>
-
-        <!-- Formulario -->
-        <div class="card">
-            <div class="card-header">
-                <span class="card-title">Editar información</span>
-            </div>
-
-            @if (_exito)
-            {
-                <div class="alert alert-success mb-4">
-                    <span>✅</span><span>Perfil actualizado correctamente</span>
-                </div>
-            }
-            @if (_error is not null)
-            {
-                <div class="alert alert-danger mb-4">
-                    <span>⚠️</span><span>@_error</span>
-                </div>
-            }
-
-            <div class="form-group">
-                <label class="form-label required">Placa del vehículo</label>
-                <input @bind="_form.Placa" class="form-control" placeholder="Ej: ABC-123" />
-            </div>
-            <div class="form-group">
-                <label class="form-label">Teléfono</label>
-                <input @bind="_form.Phone" class="form-control" placeholder="Ej: 999 888 777" />
-            </div>
-            <div class="form-group">
-                <label class="form-label">Dirección</label>
-                <input @bind="_form.Address" class="form-control" placeholder="Tu dirección" />
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Foto de perfil</label>
-                <InputFile OnChange="OnFotoSeleccionada"
-                           accept="image/*"
-                           class="form-control" />
-                @if (!string.IsNullOrEmpty(_fotoPreview))
-                {
-                    <img src="@_fotoPreview"
-                         class="profile-foto-preview mt-2"
-                         alt="Preview" />
-                }
-            </div>
-
-            <button class="btn btn-primary w-full"
-                    disabled="@_guardando"
-                    @onclick="GuardarAsync">
-                @if (_guardando)
-                {
-                    <span class="spinner spinner-sm"></span>
-                    <span>Guardando...</span>
-                }
-                else
-                {
-                    <span>Guardar cambios</span>
-                }
-            </button>
-        </div>
-
+    <div class="empty-state">
+        <span class="empty-icon">😕</span>
+        <p class="text-bold">No se pudo cargar el perfil</p>
     </div>
 }
+else
+{
+    <div class="perfil-layout">
 
+        <!-- ── Columna izquierda: avatar + stats ── -->
+        <div class="perfil-aside">
+
+            <!-- Avatar -->
+            <div class="perfil-avatar-wrapper">
+                <div class="perfil-avatar"
+                     style="@(string.IsNullOrEmpty(_perfil.Photo)
+                         ? ""
+                         : $"background-image:url('{_fotoPreview ?? _perfil.Photo}')")">
+                    @(string.IsNullOrEmpty(_fotoPreview ?? _perfil.Photo)
+                        ? Initials(_perfil.FullName)
+                        : "")
+                </div>
+
+                <!-- Botón cambiar foto -->
+                <label class="perfil-avatar-edit" title="Cambiar foto">
+                    📷
+                    <InputFile OnChange="OnFotoSeleccionada"
+                               accept="image/*"
+                               style="display:none" />
+                </label>
+            </div>
+
+            <h2 class="perfil-nombre">@_perfil.FullName</h2>
+            <p class="text-muted text-sm">🚗 @_perfil.Placa</p>
+
+            <span class="perfil-disponible @(_perfil.Available ? "perfil-disponible--on" : "perfil-disponible--off")">
+                @(_perfil.Available ? "● Disponible" : "● No disponible")
+            </span>
+
+            <!-- Preview y confirmar foto -->
+            @if (_fotoBase64 is not null)
+            {
+                <div class="perfil-foto-actions">
+                    @if (_subiendoFoto)
+                    {
+                        <span class="spinner spinner-sm"></span>
+                        <span class="text-sm">Subiendo...</span>
+                    }
+                    else
+                    {
+                        <button class="btn btn-ghost btn-sm" @onclick="CancelarFoto">
+                            ✕ Cancelar
+                        </button>
+                        <button class="btn btn-primary btn-sm" @onclick="GuardarFoto">
+                            ✅ Guardar foto
+                        </button>
+                    }
+                </div>
+            }
+
+            @if (_fotoError is not null)
+            {
+                <div class="alert alert-danger mt-2 text-sm">⚠️ @_fotoError</div>
+            }
+
+            <!-- Stats -->
+            <div class="perfil-stats">
+                <div class="perfil-stat">
+                    <span class="perfil-stat-value">@_perfil.TotalCargas</span>
+                    <span class="perfil-stat-label">Cargas totales</span>
+                </div>
+                <div class="perfil-stat">
+                    <span class="perfil-stat-value" style="color:var(--color-success)">
+                        @_perfil.CargasConcluidas
+                    </span>
+                    <span class="perfil-stat-label">Concluidas</span>
+                </div>
+                <div class="perfil-stat">
+                    <span class="perfil-stat-value">@_perfil.TotalPedidos</span>
+                    <span class="perfil-stat-label">Pedidos totales</span>
+                </div>
+                <div class="perfil-stat">
+                    <span class="perfil-stat-value" style="color:var(--color-success)">
+                        @_perfil.TotalEntregados
+                    </span>
+                    <span class="perfil-stat-label">Entregados</span>
+                </div>
+                <div class="perfil-stat">
+                    <span class="perfil-stat-value" style="color:var(--color-danger)">
+                        @_perfil.TotalFallidos
+                    </span>
+                    <span class="perfil-stat-label">Fallidos</span>
+                </div>
+                <div class="perfil-stat">
+                    <span class="perfil-stat-value" style="color:var(--color-primary)">
+                        @(_perfil.TotalPedidos > 0
+                            ? $"{(int)((double)_perfil.TotalEntregados / _perfil.TotalPedidos * 100)}%"
+                            : "—")
+                    </span>
+                    <span class="perfil-stat-label">Efectividad</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Columna derecha: datos personales ── -->
+        <div class="perfil-data">
+            <h4 class="perfil-section-title">👤 Datos personales</h4>
+
+            <div class="perfil-info-grid">
+                <div class="perfil-info-item">
+                    <span class="perfil-info-label">Nombre completo</span>
+                    <span class="perfil-info-value">@_perfil.FullName</span>
+                </div>
+                <div class="perfil-info-item">
+                    <span class="perfil-info-label">Correo electrónico</span>
+                    <span class="perfil-info-value">@_perfil.Email</span>
+                </div>
+                <div class="perfil-info-item">
+                    <span class="perfil-info-label">Documento</span>
+                    <span class="perfil-info-value">@_perfil.Document</span>
+                </div>
+                <div class="perfil-info-item">
+                    <span class="perfil-info-label">Teléfono</span>
+                    <span class="perfil-info-value">@_perfil.PhoneNumber</span>
+                </div>
+                <div class="perfil-info-item perfil-info-item--full">
+                    <span class="perfil-info-label">Dirección</span>
+                    <span class="perfil-info-value">@_perfil.Address</span>
+                </div>
+            </div>
+
+            <h4 class="perfil-section-title mt-5">🚗 Datos del vehículo</h4>
+
+            <div class="perfil-info-grid">
+                <div class="perfil-info-item">
+                    <span class="perfil-info-label">Placa</span>
+                    <span class="perfil-info-value perfil-placa">@_perfil.Placa</span>
+                </div>
+                <div class="perfil-info-item">
+                    <span class="perfil-info-label">Disponibilidad</span>
+                    <span class="perfil-info-value">
+                        <span class="perfil-disponible @(_perfil.Available ? "perfil-disponible--on" : "perfil-disponible--off")">
+                            @(_perfil.Available ? "● Disponible" : "● No disponible")
+                        </span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Barra de efectividad -->
+            @if (_perfil.TotalPedidos > 0)
+            {
+                var efectividad = (int)((double)_perfil.TotalEntregados / _perfil.TotalPedidos * 100);
+                <h4 class="perfil-section-title mt-5">📊 Efectividad de entregas</h4>
+                <div class="perfil-progress-bar">
+                    <div class="perfil-progress-fill"
+                         style="width:@(efectividad)%; background: @(efectividad >= 80
+                             ? "var(--color-success)"
+                             : efectividad >= 50
+                                 ? "var(--color-warning)"
+                                 : "var(--color-danger)")">
+                    </div>
+                </div>
+                <p class="text-muted text-sm mt-1">
+                    @_perfil.TotalEntregados de @_perfil.TotalPedidos pedidos entregados (@(efectividad)%)
+                </p>
+            }
+        </div>
+    </div>
+}
 
 @code {
-    private DriverProfileDTO? _profile;
-    private DriverProfileUpdateDTO _form = new();
+    private MiPerfilDTO? _perfil;
     private bool _loading = true;
-    private bool _guardando;
-    private bool _exito;
-    private string? _error;
+    private string? _fotoBase64;
     private string? _fotoPreview;
+    private bool _subiendoFoto;
+    private string? _fotoError;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
     {
-        _profile = await _DriverService.GetProfileAsync();
-        if (_profile is not null)
-        {
-            _form.Placa = _profile.Placa;
-            _form.Phone = _profile.Phone;
-            _form.Address = _profile.Address;
-        }
+        _loading = true;
+        _perfil  = await _DriverService.GetMiPerfilAsync();
         _loading = false;
     }
 
     private async Task OnFotoSeleccionada(InputFileChangeEventArgs e)
     {
+        _fotoError = null;
         var file = e.File;
+
+        // Validar tamaño máx 5MB
+        if (file.Size > 5 * 1024 * 1024)
+        {
+            _fotoError = "La foto no debe superar 5MB.";
+            return;
+        }
+
+        // Leer como base64
         using var ms = new MemoryStream();
-        await file.OpenReadStream(maxAllowedSize: 2 * 1024 * 1024).CopyToAsync(ms);
-        var bytes = ms.ToArray();
-        _form.PhotoBase64 = Convert.ToBase64String(bytes);
-        _fotoPreview = $"data:{file.ContentType};base64,{_form.PhotoBase64}";
+        await file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024).CopyToAsync(ms);
+        var bytes    = ms.ToArray();
+        _fotoBase64  = Convert.ToBase64String(bytes);
+        _fotoPreview = $"data:{file.ContentType};base64,{_fotoBase64}";
     }
 
-    private async Task GuardarAsync()
+    private async Task GuardarFoto()
     {
-        _guardando = true;
-        _exito = false;
-        _error = null;
+        if (_fotoBase64 is null) return;
+        _subiendoFoto = true;
+        _fotoError    = null;
 
-        var ok = await _DriverService.UpdateProfileAsync(_form);
-        if (ok)
+        var nuevaUrl = await _DriverService.UpdateFotoAsync(new UpdateFotoDTO
         {
-            _exito = true;
-            _profile = await _DriverService.GetProfileAsync();
+            PhotoBase64 = _fotoBase64,
+            MimeType    = "image/jpeg",
+        });
+
+        if (nuevaUrl is not null && _perfil is not null)
+        {
+            _perfil.Photo = nuevaUrl;
+            _fotoPreview  = null;
+            _fotoBase64   = null;
         }
         else
         {
-            _error = "No se pudo guardar. Intenta de nuevo.";
+            _fotoError = "No se pudo guardar la foto. Intenta de nuevo.";
         }
 
-        _guardando = false;
+        _subiendoFoto = false;
+    }
+
+    private void CancelarFoto()
+    {
+        _fotoBase64  = null;
+        _fotoPreview = null;
+        _fotoError   = null;
     }
 
     private static string Initials(string name)
@@ -154,10 +266,4 @@ else if (_profile is not null)
             ? $"{parts[0][0]}{parts[1][0]}"
             : name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
     }
-
-    private static readonly string[] _avatarColors =
-        ["#1a56db", "#0e9f6e", "#7c3aed", "#e3a008", "#0694a2", "#e02424", "#d97706"];
-
-    private static string AvatarColor(string name)
-        => _avatarColors[Math.Abs(name.GetHashCode()) % _avatarColors.Length];
 }

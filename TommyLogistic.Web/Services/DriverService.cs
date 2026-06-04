@@ -210,4 +210,54 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
             return false;
         }
     }
+
+    // ── Agregar en DriverService.cs ───────────────────────────────────────────
+
+    public async Task<DriverDTO?> GetMiPerfilAsync()
+    {
+        try
+        {
+            var response = await _repository.GetAsync<DriverDTO>("api/Drivers/Profile");
+
+            if (response.Error)
+            {
+                await _sweetAlertService.FireAsync("Error", "No se pudo cargar el perfil", SweetAlertIcon.Error);
+                return null;
+            }
+
+            return response.Response;
+        }
+        catch (Exception ex)
+        {
+            await _sweetAlertService.FireAsync("Error", ex.Message, SweetAlertIcon.Error);
+            return null;
+        }
+    }
+
+    public async Task<string?> UpdateFotoAsync(UpdateFotoDTO dto)
+    {
+        try
+        {
+            var response = await _repository.PutAsync<UpdateFotoDTO, UpdateFotoResponseDTO>(
+                "api/Drivers/Profile/Foto", dto);
+
+            if (response.Error)
+            {
+                await _sweetAlertService.FireAsync("Error", "No se pudo actualizar la foto", SweetAlertIcon.Error);
+                return null;
+            }
+
+            return response.Response?.Photo;
+        }
+        catch (Exception ex)
+        {
+            await _sweetAlertService.FireAsync("Error", ex.Message, SweetAlertIcon.Error);
+            return null;
+        }
+    }
+
+    // Record auxiliar para deserializar la respuesta del endpoint de foto
+    private record UpdateFotoResponseDTO(string Photo);
+
+
 }
