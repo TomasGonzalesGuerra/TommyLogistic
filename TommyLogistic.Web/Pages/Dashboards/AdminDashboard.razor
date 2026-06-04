@@ -223,8 +223,9 @@ else if (_dashboard is not null)
 
 <GenericModal Title="Detalle del pedido"
               IsVisible="_mostrarPreview"
-              OnCancel="CerrarPreview"
-              Size="lg">
+              @* Icon="@_modalIcono"
+              Variant="@_modalVariant" *@
+              OnCancel="CerrarPreview">
     <BodyContent>
         <OrderDetailsPreview OrderId="_pedidoSeleccionadoId" OnClose="CerrarPreview" />
     </BodyContent>

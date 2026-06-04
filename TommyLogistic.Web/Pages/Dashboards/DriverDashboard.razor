@@ -40,52 +40,50 @@ else
 
     <!-- Stats del día -->
     <div class="driver-stats-grid">
-        <div class="driver-stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon" style="background:var(--color-info-light)">📋</div>
-                <div class="stat-info">
-                    <div class="stat-value" style="color:var(--estado-asignado)">@_dashboard.Asignados</div>
-                    <div class="stat-label">Asignados</div>
-                </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:var(--color-info-light)">📋</div>
+            <div class="stat-info">
+                <div class="stat-value" style="color:var(--estado-asignado)">@_dashboard.Asignados</div>
+                <div class="stat-label">Asignados</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon" style="background:#f3e8ff">📦</div>
-                <div class="stat-info">
-                    <div class="stat-value" style="color:var(--estado-retirado)">@_dashboard.Retirados</div>
-                    <div class="stat-label">Retirados</div>
-                </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#f3e8ff">📦</div>
+            <div class="stat-info">
+                <div class="stat-value" style="color:var(--estado-retirado)">@_dashboard.Retirados</div>
+                <div class="stat-label">Retirados</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon" style="background:var(--color-primary-light)">🚗</div>
-                <div class="stat-info">
-                    <div class="stat-value" style="color:var(--estado-encamino)">@_dashboard.EnCamino</div>
-                    <div class="stat-label">En camino</div>
-                </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:var(--color-primary-light)">🚗</div>
+            <div class="stat-info">
+                <div class="stat-value" style="color:var(--estado-encamino)">@_dashboard.EnCamino</div>
+                <div class="stat-label">En camino</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon" style="background:var(--color-success-light)">✅</div>
-                <div class="stat-info">
-                    <div class="stat-value" style="color:var(--estado-entregado)">@_dashboard.Entregados</div>
-                    <div class="stat-label">Entregados</div>
-                </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:var(--color-success-light)">✅</div>
+            <div class="stat-info">
+                <div class="stat-value" style="color:var(--estado-entregado)">@_dashboard.Entregados</div>
+                <div class="stat-label">Entregados</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon" style="background:var(--color-warning-light)">🚪</div>
-                <div class="stat-info">
-                    <div class="stat-value" style="color:var(--estado-ausente)">@_dashboard.Fallidos</div>
-                    <div class="stat-label">Fallidos</div>
-                </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:var(--color-warning-light)">🚪</div>
+            <div class="stat-info">
+                <div class="stat-value" style="color:var(--estado-ausente)">@_dashboard.Fallidos</div>
+                <div class="stat-label">Fallidos</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon" style="background:#fff7ed">↩️</div>
-                <div class="stat-info">
-                    <div class="stat-value" style="color:var(--estado-retorno)">@_dashboard.EnRetorno</div>
-                    <div class="stat-label">En retorno</div>
-                </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#fff7ed">↩️</div>
+            <div class="stat-info">
+                <div class="stat-value" style="color:var(--estado-retorno)">@_dashboard.EnRetorno</div>
+                <div class="stat-label">En retorno</div>
             </div>
         </div>
     </div>
-
+    
     <!-- ══ CARGA ACTIVA ══ -->
     @if (_dashboard.CargaActiva is null)
     {
@@ -172,7 +170,7 @@ else
             <details class="carga-historial-item">
                 <summary class="carga-historial-header">
                     <span class="font-medium">Carga #@carga.Id</span>
-                    <span class="badge">@carga.Status</span>
+                    <BadgeCarga Status="@carga.Status" />
                     <span class="text-muted text-sm">
                         @carga.FechaCreacion.ToString("dd/MM/yyyy")
                         · @carga.TotalPedidos pedido(s)
@@ -200,7 +198,7 @@ else
 
                 @if (carga.NotaConclusion is not null)
                 {
-                    <p class="text-muted text-sm mt-2">📝 @carga.NotaConclusion</p>
+                    <p class="carga-historial-nota">📝 @carga.NotaConclusion</p>
                 }
             </details>
         }

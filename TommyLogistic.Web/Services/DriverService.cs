@@ -1,6 +1,7 @@
-﻿using TommyLogistic.Web.Repositories;
+﻿using CurrieTechnologies.Razor.SweetAlert2;
 using TommyLogistic.Shared.DTOs.Drivers;
-using CurrieTechnologies.Razor.SweetAlert2;
+using TommyLogistic.Shared.Enums;
+using TommyLogistic.Web.Repositories;
 
 namespace TommyLogistic.Web.Services;
 
@@ -100,4 +101,42 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
         var r = await _repository.PostAsync<object>( $"api/Drivers/SolicitarConclusion/{CargaID}", null!);
         return !r.Error;
     }
+
+    public async Task<MyDeliveriesResponseDTO?> GetMyDeliveriesAsync(
+        int page = 1,
+        int pageSize = 10,
+        OrderStatus? status = null,
+        DateTime? desde = null,
+        DateTime? hasta = null)
+    {
+        try
+        {
+            var qs = new List<string>
+        {
+            $"page={page}",
+            $"pageSize={pageSize}",
+        };
+
+            if (status.HasValue) qs.Add($"status={status.Value}");
+            if (desde.HasValue) qs.Add($"desde={desde.Value:yyyy-MM-dd}");
+            if (hasta.HasValue) qs.Add($"hasta={hasta.Value:yyyy-MM-dd}");
+
+            var url = $"api/Drivers/MyDeliveries?{string.Join("&", qs)}";
+            var response = await _repository.GetAsync<MyDeliveriesResponseDTO>(url);
+
+            if (response.Error)
+            {
+                await _sweetAlertService.FireAsync("Error", "No se pudieron cargar las entregas", SweetAlertIcon.Error);
+                return null;
+            }
+
+            return response.Response;
+        }
+        catch (Exception ex)
+        {
+            await _sweetAlertService.FireAsync("Error", ex.Message, SweetAlertIcon.Error);
+            return null;
+        }
+    }
+
 }

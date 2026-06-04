@@ -1,0 +1,195 @@
+﻿@page "/DeliveriesPage"
+@layout MainLayout
+@inject DriverService _DriverService
+@attribute [Authorize(Roles = nameof(UserEnum.Driver))]
+
+<PageTitle>Mis Entregas — Tommy Logistic</PageTitle>
+
+<!-- Encabezado -->
+<div class="list-header">
+    <h1 class="page-title">Mis Entregas</h1>
+    @if (_response is not null)
+    {
+        <span class="badge badge-info">@_response.TotalItems pedido(s)</span>
+    }
+</div>
+
+<!-- Filtros -->
+<div class="entregas-filtros">
+    <div class="filtro-group">
+        <label class="form-label">Estado</label>
+        <select class="form-control form-control-sm" @onchange="OnStatusChanged">
+            <option value="">Todos</option>
+            <option value="@OrderStatus.Delivered">✅ Entregados</option>
+            <option value="@OrderStatus.Failed">❌ Fallidos</option>
+            <option value="@OrderStatus.RecipientAbsent">🚪 Ausente</option>
+            <option value="@OrderStatus.Returning">↩️ En retorno</option>
+            <option value="@OrderStatus.OnStorage">🏭 En almacén</option>
+            <option value="@OrderStatus.OnTheWay">🚗 En camino</option>
+            <option value="@OrderStatus.PickedUp">📦 Retirado</option>
+        </select>
+    </div>
+
+    <div class="filtro-group">
+        <label class="form-label">Desde</label>
+        <input type="date" class="form-control form-control-sm"
+               @bind="_desde"
+               @bind:after="OnFiltroChanged" />
+    </div>
+
+    <div class="filtro-group">
+        <label class="form-label">Hasta</label>
+        <input type="date" class="form-control form-control-sm"
+               @bind="_hasta"
+               @bind:after="OnFiltroChanged" />
+    </div>
+
+    <button class="btn btn-ghost btn-sm" @onclick="LimpiarFiltros">
+        🧹 Limpiar
+    </button>
+</div>
+
+<!-- Contenido -->
+@if (_loading)
+{
+    <div class="loading-overlay">
+        <div class="spinner"></div>
+        <span>Cargando entregas...</span>
+    </div>
+}
+else if (_response is null || !_response.Items.Any())
+{
+    <div class="empty-state">
+        <span class="empty-icon">📭</span>
+        <p class="text-bold">Sin entregas para mostrar</p>
+        <p class="text-muted">Prueba cambiando los filtros</p>
+    </div>
+}
+else
+{
+    <!-- Lista de pedidos -->
+    <div class="driver-orders-list">
+        @foreach (var pedido in _response.Items)
+        {
+            <div class="driver-order-card entrega-card">
+                <div class="driver-order-top">
+                    <span class="codigo-seguimiento">@pedido.TrackingCode</span>
+                    <BadgeEstado Estado="@pedido.OrderStatus" />
+                </div>
+
+                <div class="driver-order-nombre">@pedido.RecipientName</div>
+
+                <div class="driver-order-meta">
+                    <span>📍 @pedido.RecipientAddress, @pedido.RecipientDistrict</span>
+                    <span>📞 @pedido.RecipientPhone</span>
+                    <span>📦 @pedido.PackageDescription (@pedido.Quantity u.)</span>
+                    <span>🏢 @pedido.CompanyName</span>
+                    <span>📅 @pedido.RegistrationDate.ToString("dd/MM/yyyy")</span>
+                    @if (pedido.DeliveryDate.HasValue)
+                    {
+                        <span>✅ Entregado: @pedido.DeliveryDate.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                    }
+                </div>
+
+                @if (pedido.DeliveryAttempts > 0)
+                {
+                    <p class="pedido-card-intentos">⚠️ @pedido.DeliveryAttempts intento(s) fallido(s)</p>
+                }
+
+                @if (pedido.CargaId.HasValue)
+                {
+                    <p class="text-muted text-xs mt-1">Carga #@pedido.CargaId</p>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Paginación -->
+    @if (_response.TotalPages > 1)
+    {
+        <div class="entregas-paginacion">
+            <button class="btn btn-ghost btn-sm"
+                    disabled="@(_page <= 1 || _loading)"
+                    @onclick="() => CambiarPagina(_page - 1)">
+                ← Anterior
+            </button>
+
+            @for (int i = 1; i <= _response.TotalPages; i++)
+            {
+                var pageNum = i;
+                <button class="btn btn-sm @(pageNum == _page ? "btn-primary" : "btn-ghost")"
+                        disabled="@_loading"
+                        @onclick="() => CambiarPagina(pageNum)">
+                    @pageNum
+                </button>
+            }
+
+            <button class="btn btn-ghost btn-sm"
+                    disabled="@(_page >= _response.TotalPages || _loading)"
+                    @onclick="() => CambiarPagina(_page + 1)">
+                Siguiente →
+            </button>
+        </div>
+    }
+
+    <p class="entregas-info-pagina text-muted text-xs">
+        Mostrando @((_page - 1) * _pageSize + 1)–@(Math.Min(_page * _pageSize, _response.TotalItems))
+        de @_response.TotalItems resultado(s)
+    </p>
+}
+
+
+
+@code {
+    private MyDeliveriesResponseDTO? _response;
+    private bool _loading;
+    private int _page = 1;
+    private int _pageSize = 10;
+    private OrderStatus? _statusFiltro;
+    private DateTime? _desde;
+    private DateTime? _hasta;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _response = await _DriverService.GetMyDeliveriesAsync(
+            page: _page,
+            pageSize: _pageSize,
+            status: _statusFiltro,
+            desde: _desde,
+            hasta: _hasta);
+        _loading = false;
+    }
+
+    private async Task CambiarPagina(int nuevaPagina)
+    {
+        _page = nuevaPagina;
+        await LoadAsync();
+    }
+
+    private async Task OnStatusChanged()
+    {
+        _page = 1;
+        _statusFiltro = string.IsNullOrEmpty(e.Value?.ToString())
+            ? null
+            : Enum.Parse<OrderStatus>(e.Value!.ToString()!);
+        await LoadAsync();
+    }
+
+    private async Task OnFiltroChanged()
+    {
+        _page = 1;
+        await LoadAsync();
+    }
+
+    private async Task LimpiarFiltros()
+    {
+        _page = 1;
+        _statusFiltro = null;
+        _desde = null;
+        _hasta = null;
+        await LoadAsync();
+    }
+}
