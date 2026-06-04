@@ -83,7 +83,10 @@
         <AuthorizeView Roles="@nameof(UserEnum.Driver)">
             <div class="nav-section-label">Mi ruta</div>
             <NavLink class="this" href="/DriverDashboard" Match="NavLinkMatch.All">
-                <span class="nav-icon">🗺️</span> Mi Carga
+                <span class="nav-icon">🗺️</span> Mi Carga Actual
+            </NavLink>
+            <NavLink class="this" href="/MyCargasPage">
+                <span class="nav-icon">✅</span> Todas mis Cargas
             </NavLink>
             <NavLink class="this" href="/DeliveriesPage">
                 <span class="nav-icon">✅</span> Mis Entregas

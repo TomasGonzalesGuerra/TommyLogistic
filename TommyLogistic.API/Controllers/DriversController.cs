@@ -186,18 +186,13 @@ public class DriversController(LogisticDataContext dataContext, IHubContext<Noti
 
     // GET: api/Drivers/MyOrders
     [HttpGet("MyDeliveries")]
-    public async Task<ActionResult<MyDeliveriesResponseDTO>> GetMyDeliveries(
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 10,
-        [FromQuery] OrderStatus? status = null,
-        [FromQuery] DateTime? desde = null,
-        [FromQuery] DateTime? hasta = null)
+    public async Task<ActionResult<MyDeliveriesResponseDTO>> GetMyDeliveriesAsync([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] OrderStatus? status = null, [FromQuery] DateTime? desde = null, [FromQuery] DateTime? hasta = null)
     {
         string userID = CurrentUserId;
 
         // Base query — todos los pedidos del driver que ya tuvieron actividad
         var query = _dataContext.Orders
-            .Include(o => o.Company).ThenInclude(c => c.User)
+            .Include(o => o.Company).ThenInclude(c => c!.User)
             .Where(o => o.DriverID == userID
                      && o.OrderStatus != OrderStatus.Registered  // excluir solo registrados sin asignar
                      && o.OrderStatus != OrderStatus.Assigned)   // excluir los activos sin movimiento
@@ -249,7 +244,102 @@ public class DriversController(LogisticDataContext dataContext, IHubContext<Noti
         });
     }
 
+    // GET: api/Drivers/MyCargas
+    [HttpGet("MyCargas")]
+    public async Task<ActionResult<MyCargasResponseDTO>> GetMyCargasAsync([FromQuery] int page = 1, [FromQuery] int pageSize = 8, [FromQuery] CargaStatus? status = null, [FromQuery] DateTime? desde = null, [FromQuery] DateTime? hasta = null)
+    {
+        string userID = CurrentUserId;
 
+        var query = _dataContext.Cargas
+            .Where(c => c.DriverID == userID)
+            .AsQueryable();
+
+        if (status.HasValue)
+            query = query.Where(c => c.Status == status.Value);
+
+        if (desde.HasValue)
+            query = query.Where(c => c.FechaCreacion.Date >= desde.Value.Date);
+
+        if (hasta.HasValue)
+            query = query.Where(c => c.FechaCreacion.Date <= hasta.Value.Date);
+
+        int totalItems = await query.CountAsync();
+
+        var cargas = await query
+            .OrderByDescending(c => c.FechaCreacion)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Include(c => c.Supervisor)
+            .Include(c => c.ConcluidaPor)
+            .Include(c => c.FacturadaPor)
+            .Include(c => c.Orders!)
+                .ThenInclude(o => o.Company).ThenInclude(co => co.User)
+            .Include(c => c.Orders!)
+                .ThenInclude(o => o.Events!).ThenInclude(e => e.User)
+            .ToListAsync();
+
+        var items = cargas.Select(c => new MyCargaDTO
+        {
+            Id = c.Id,
+            Status = c.Status,
+            FechaCreacion = c.FechaCreacion,
+            FechaConcluida = c.FechaConcluida,
+            FechaFacturada = c.FechaFacturada,
+            NotaConclusion = c.NotaConclusion,
+            NotaFacturacion = c.NotaFacturacion,
+            SupervisorName = c.Supervisor?.FullName ?? "—",
+            ConcluidaPorName = c.ConcluidaPor?.FullName,
+            FacturadaPorName = c.FacturadaPor?.FullName,
+
+            // Stats
+            TotalPedidos = c.Orders?.Count ?? 0,
+            Entregados = c.Orders?.Count(o => o.OrderStatus == OrderStatus.Delivered) ?? 0,
+            Fallidos = c.Orders?.Count(o => o.OrderStatus == OrderStatus.Failed) ?? 0,
+            Ausentes = c.Orders?.Count(o => o.OrderStatus == OrderStatus.RecipientAbsent) ?? 0,
+            EnRetorno = c.Orders?.Count(o => o.OrderStatus == OrderStatus.Returning) ?? 0,
+            EnAlmacen = c.Orders?.Count(o => o.OrderStatus == OrderStatus.OnStorage) ?? 0,
+
+            // Pedidos completos
+            Pedidos = (c.Orders ?? [])
+                .OrderBy(o => o.RegistrationDate)
+                .Select(o => new MyCargaOrderDTO
+                {
+                    Id = o.Id,
+                    TrackingCode = o.TrackingCode,
+                    OrderStatus = o.OrderStatus,
+                    DeliveryType = o.DeliveryType,
+                    RecipientName = o.RecipientName,
+                    RecipientPhone = o.RecipientPhone,
+                    RecipientAddress = o.RecipientAddress,
+                    RecipientDistrict = o.RecipientDistrict,
+                    PackageDescription = o.PackageDescription,
+                    Quantity = o.Quantity,
+                    RegistrationDate = o.RegistrationDate,
+                    DeliveryDate = o.DeliveryDate,
+                    RescheduledDate = o.RescheduledDate,
+                    DeliveryAttempts = o.DeliveryAttempts,
+                    CompanyName = o.Company?.User?.FullName ?? "—",
+                    Events = (o.Events ?? [])
+                        .OrderBy(e => e.Timestamp)
+                        .Select(e => new MyCargaEventDTO
+                        {
+                            Timestamp = e.Timestamp,
+                            NewStatus = e.NewStatus,
+                            Note = e.Note,
+                            BaglokLocation = e.BaglokLocation,
+                            UserName = e.User?.FullName ?? "—",
+                        }).ToList()
+                }).ToList()
+        }).ToList();
+
+        return Ok(new MyCargasResponseDTO
+        {
+            Items = items,
+            TotalItems = totalItems,
+            Page = page,
+            PageSize = pageSize,
+        });
+    }
 
 
     // ── Helpers de mapeo ─────────────────────────────────────────────────────

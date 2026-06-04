@@ -1,0 +1,269 @@
+﻿/* ── Lista de cargas ── */
+.miscargas-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
+}
+
+/* ── Card expandible ── */
+.carga-detail-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    transition: box-shadow var(--transition-fast);
+}
+
+    .carga-detail-card:hover {
+        box-shadow: var(--shadow-sm);
+    }
+
+    /* Borde superior por status */
+    .carga-detail-card.carga--Activa::before,
+    .carga-detail-card.carga--PendienteConclusion::before,
+    .carga-detail-card.carga--Concluida::before,
+    .carga-detail-card.carga--Facturada::before {
+        content: '';
+        display: block;
+        height: 3px;
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    }
+
+    .carga-detail-card.carga--Activa::before {
+        background: var(--color-success);
+    }
+
+    .carga-detail-card.carga--PendienteConclusion::before {
+        background: var(--color-warning);
+    }
+
+    .carga-detail-card.carga--Concluida::before {
+        background: var(--color-danger);
+    }
+
+    .carga-detail-card.carga--Facturada::before {
+        background: var(--color-info);
+    }
+
+/* ── Summary / Header ── */
+.carga-detail-summary {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-5);
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    flex-wrap: wrap;
+}
+
+    .carga-detail-summary::-webkit-details-marker {
+        display: none;
+    }
+
+.carga-detail-chevron {
+    font-size: 1rem;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+    width: 1rem;
+    text-align: center;
+    transition: transform 0.2s ease;
+}
+
+.carga-detail-header-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.carga-detail-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.carga-detail-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+}
+
+/* Mini stats en el header */
+.carga-detail-mini-stats {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.mini-stat {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    white-space: nowrap;
+}
+
+.mini-stat--success {
+    color: var(--color-success);
+}
+
+.mini-stat--danger {
+    color: var(--color-danger);
+}
+
+.mini-stat--warning {
+    color: var(--color-warning);
+}
+
+.mini-stat--info {
+    color: var(--color-info);
+}
+
+/* ── Cuerpo expandido ── */
+.carga-detail-body {
+    padding: var(--space-4) var(--space-5) var(--space-5);
+    border-top: 1px solid var(--color-border);
+    animation: fadeSlideIn 0.2s ease;
+}
+
+@keyframes fadeSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Info grid de la carga ── */
+.carga-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+    gap: var(--space-3);
+    margin-bottom: var(--space-5);
+    padding: var(--space-4);
+    background: var(--color-surface-2);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+}
+
+.carga-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.carga-info-item--full {
+    grid-column: 1 / -1;
+}
+
+.carga-info-label {
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+}
+
+/* ── Sección de pedidos ── */
+.carga-section-title {
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    margin-bottom: var(--space-3);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ── Timeline de eventos ── */
+.pedido-timeline {
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px dashed var(--color-border);
+}
+
+.pedido-timeline-title {
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-2);
+}
+
+.timeline-event {
+    display: flex;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+    position: relative;
+}
+
+    /* Línea vertical conectora */
+    .timeline-event:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        left: 0.3rem;
+        top: 1.4rem;
+        bottom: 0;
+        width: 1px;
+        background: var(--color-border);
+    }
+
+.timeline-dot {
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 50%;
+    background: var(--color-primary);
+    flex-shrink: 0;
+    margin-top: 0.35rem;
+    border: 2px solid var(--color-surface);
+    box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.timeline-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.timeline-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.timeline-nota {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+    .carga-detail-summary {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .carga-detail-mini-stats {
+        width: 100%;
+    }
+
+    .carga-info-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}

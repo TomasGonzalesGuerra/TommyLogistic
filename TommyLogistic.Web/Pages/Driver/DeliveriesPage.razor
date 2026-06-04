@@ -169,7 +169,7 @@ else
         await LoadAsync();
     }
 
-    private async Task OnStatusChanged()
+    private async Task OnStatusChanged(ChangeEventArgs e)
     {
         _page = 1;
         _statusFiltro = string.IsNullOrEmpty(e.Value?.ToString())

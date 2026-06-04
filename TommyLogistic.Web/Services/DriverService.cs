@@ -1,4 +1,5 @@
 ﻿using CurrieTechnologies.Razor.SweetAlert2;
+using TommyLogistic.Shared.DTOs.Cargas;
 using TommyLogistic.Shared.DTOs.Drivers;
 using TommyLogistic.Shared.Enums;
 using TommyLogistic.Web.Repositories;
@@ -54,7 +55,6 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
         }
 
     }
-
 
     public async Task<DriverDashboardDTO?> GetDashboardAsync()
     {
@@ -127,6 +127,41 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
             if (response.Error)
             {
                 await _sweetAlertService.FireAsync("Error", "No se pudieron cargar las entregas", SweetAlertIcon.Error);
+                return null;
+            }
+
+            return response.Response;
+        }
+        catch (Exception ex)
+        {
+            await _sweetAlertService.FireAsync("Error", ex.Message, SweetAlertIcon.Error);
+            return null;
+        }
+    }
+
+    public async Task<MyCargasResponseDTO?> GetMyCargasAsync(int page = 1, int pageSize = 8, CargaStatus? status = null, DateTime? desde = null, DateTime? hasta = null)
+    {
+        try
+        {
+            var qs = new List<string>
+            {
+                $"page={page}",
+                $"pageSize={pageSize}",
+            };
+
+            if (status.HasValue)
+                qs.Add($"status={status.Value}");
+            if (desde.HasValue)
+                qs.Add($"desde={desde.Value:yyyy-MM-dd}");
+            if (hasta.HasValue)
+                qs.Add($"hasta={hasta.Value:yyyy-MM-dd}");
+
+            var url = $"api/Drivers/MisCargas?{string.Join("&", qs)}";
+            var response = await _repository.GetAsync<MyCargasResponseDTO                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   >(url);
+
+            if (response.Error)
+            {
+                await _sweetAlertService.FireAsync("Error", "No se pudieron cargar las cargas", SweetAlertIcon.Error);
                 return null;
             }
 
