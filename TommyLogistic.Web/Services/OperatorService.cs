@@ -3,6 +3,7 @@ using CurrieTechnologies.Razor.SweetAlert2;
 using TommyLogistic.Shared.DTOs.Cargas;
 using TommyLogistic.Shared.DTOs.Drivers;
 using TommyLogistic.Shared.DTOs.Operators;
+using TommyLogistic.Shared.Enums;
 using TommyLogistic.Web.Repositories;
 
 namespace TommyLogistic.Web.Services;
@@ -117,4 +118,54 @@ public class OperatorService(IRepository repository, SweetAlertService sweetAler
             return null;
         }
     }
+    
+    public async Task<CargasHoyResponseDTO?> GetCargasHoyAsync(int page = 1, int pageSize = 10,CargaStatus? status = null, string? driverID = null)
+    {
+        try
+        {
+            var qs = new List<string>
+            {
+                $"page={page}",
+                $"pageSize={pageSize}",
+            };
+
+            if (status.HasValue)
+                qs.Add($"status={status.Value}");
+            if (!string.IsNullOrEmpty(driverID))
+                qs.Add($"driverID={Uri.EscapeDataString(driverID)}");
+
+            var url = $"api/Operators/CargasHoy?{string.Join("&", qs)}";
+            var response = await _repository.GetAsync<CargasHoyResponseDTO>(url);
+
+            if (response.Error)
+            {
+                await _sweetAlertService.FireAsync("Error", "No se pudieron cargar las cargas", SweetAlertIcon.Error);
+                return null;
+            }
+
+            return response.Response;
+        }
+        catch (Exception ex)
+        {
+            await _sweetAlertService.FireAsync("Error", ex.Message, SweetAlertIcon.Error);
+            return null;
+        }
+    }
+
+    public async Task<List<DriverSelectorDTO>> GetDriversConCargaHoyAsync()
+    {
+        try
+        {
+            var response = await _repository.GetAsync<List<DriverSelectorDTO>>("api/Operators/CargasHoy/Drivers");
+
+            if (response.Error) return [];
+            return response.Response!;
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+
 }

@@ -266,4 +266,130 @@ public class OperatorsController(LogisticDataContext dataContext, IHubContext<No
                 })]
         });
     }
+
+    // GET: api/Operators/CargasHoy
+    [HttpGet("CargasHoy")]
+    public async Task<ActionResult<CargasHoyResponseDTO>> GetCargasHoy([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] CargaStatus? status = null, [FromQuery] string? driverID = null)
+    {
+        var hoy = DateTime.UtcNow.Date;
+
+        var query = _dataContext.Cargas
+            .Where(c => c.FechaCreacion.Date == hoy)
+            .AsQueryable();
+
+        if (status.HasValue)
+            query = query.Where(c => c.Status == status.Value);
+
+        if (!string.IsNullOrEmpty(driverID))
+            query = query.Where(c => c.DriverID == driverID);
+
+        int totalItems = await query.CountAsync();
+
+        var cargas = await query
+            .OrderBy(c => c.Status)
+            .ThenByDescending(c => c.FechaCreacion)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Include(c => c.Driver!).ThenInclude(d => d.User)
+            .Include(c => c.Supervisor)
+            .Include(c => c.ConcluidaPor)
+            .Include(c => c.FacturadaPor)
+            .Include(c => c.Orders!)
+                .ThenInclude(o => o.Company).ThenInclude(co => co.User)
+            .Include(c => c.Orders!)
+                .ThenInclude(o => o.Events!).ThenInclude(e => e.User)
+            .ToListAsync();
+
+        var items = cargas.Select(c =>
+        {
+            var orders = c.Orders?.ToList() ?? [];
+            return new CargaHoyDTO
+            {
+                Id = c.Id,
+                Status = c.Status,
+                FechaCreacion = c.FechaCreacion,
+                FechaConcluida = c.FechaConcluida,
+                FechaFacturada = c.FechaFacturada,
+                NotaConclusion = c.NotaConclusion,
+                NotaFacturacion = c.NotaFacturacion,
+                DriverID = c.DriverID,
+                DriverName = c.Driver!.User.FullName,
+                DriverPlaca = c.Driver.Placa,
+                DriverPhoto = c.Driver.User.Photo,
+                SupervisorName = c.Supervisor?.FullName ?? "—",
+                ConcluidaPorName = c.ConcluidaPor?.FullName,
+                FacturadaPorName = c.FacturadaPor?.FullName,
+
+                TotalPedidos = orders.Count,
+                Entregados = orders.Count(o => o.OrderStatus == OrderStatus.Delivered),
+                EnCamino = orders.Count(o => o.OrderStatus == OrderStatus.OnTheWay),
+                Pendientes = orders.Count(o => o.OrderStatus is
+                                   OrderStatus.Assigned or OrderStatus.PickedUp),
+                Fallidos = orders.Count(o => o.OrderStatus == OrderStatus.Failed),
+                Ausentes = orders.Count(o => o.OrderStatus == OrderStatus.RecipientAbsent),
+                EnRetorno = orders.Count(o => o.OrderStatus == OrderStatus.Returning),
+                EnAlmacen = orders.Count(o => o.OrderStatus == OrderStatus.OnStorage),
+
+                Pedidos = orders
+                    .OrderBy(o => o.OrderStatus)
+                    .Select(o => new PedidoEnRutaDTO
+                    {
+                        Id = o.Id,
+                        TrackingCode = o.TrackingCode,
+                        OrderStatus = o.OrderStatus,
+                        RecipientName = o.RecipientName,
+                        RecipientPhone = o.RecipientPhone,
+                        RecipientAddress = o.RecipientAddress,
+                        RecipientDistrict = o.RecipientDistrict,
+                        PackageDescription = o.PackageDescription,
+                        Quantity = o.Quantity,
+                        DeliveryAttempts = o.DeliveryAttempts,
+                        DeliveryDate = o.DeliveryDate,
+                        CompanyName = o.Company?.User?.FullName ?? "—",
+                        Events = (o.Events ?? [])
+                            .OrderByDescending(e => e.Timestamp)
+                            .Select(e => new MiCargaEventoDTO
+                            {
+                                Timestamp = e.Timestamp,
+                                NewStatus = e.NewStatus,
+                                Note = e.Note,
+                                BaglokLocation = e.BaglokLocation,
+                                UserName = e.User?.FullName ?? "—",
+                            }).ToList()
+                    }).ToList()
+            };
+        }).ToList();
+
+        return Ok(new CargasHoyResponseDTO
+        {
+            Items = items,
+            TotalItems = totalItems,
+            Page = page,
+            PageSize = pageSize,
+        });
+    }
+
+    // GET: api/Operators/CargasHoy/Drivers
+    [HttpGet("CargasHoy/Drivers")]
+    public async Task<ActionResult<List<DriverSelectorDTO>>> GetDriversConCargaHoy()
+    {
+        var hoy = DateTime.UtcNow.Date;
+
+        var drivers = await _dataContext.Cargas
+            .Where(c => c.FechaCreacion.Date == hoy)
+            .Include(c => c.Driver!).ThenInclude(d => d.User)
+            .Select(c => new DriverSelectorDTO
+            {
+                DriverID = c.DriverID,
+                DriverName = c.Driver!.User.FullName,
+                DriverPlaca = c.Driver.Placa,
+            })
+            .Distinct()
+            .OrderBy(d => d.DriverName)
+            .ToListAsync();
+
+        return Ok(drivers);
+    }
+
+
 }

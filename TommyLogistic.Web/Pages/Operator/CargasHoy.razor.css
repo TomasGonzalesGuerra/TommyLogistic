@@ -1,0 +1,20 @@
+﻿/* Reutiliza casi todo de MisCargas.razor.css y DriversEnRuta.razor.css    */
+/* Solo necesitamos el avatar pequeño en el summary                         */
+
+.rep-avatar--sm {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: var(--color-primary);
+    background-size: cover;
+    background-position: center;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    flex-shrink: 0;
+    text-transform: uppercase;
+    border: 2px solid var(--color-border);
+}

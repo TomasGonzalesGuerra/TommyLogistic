@@ -1,0 +1,398 @@
+﻿@page "/CargasHoy"
+@layout MainLayout
+@implements IDisposable
+@inject OperatorService _OperatorService
+@attribute [Authorize(Roles = nameof(UserEnum.Operator))]
+
+<PageTitle>Cargas de Hoy — Tommy Logistic</PageTitle>
+
+<div class="list-header">
+    <h1 class="page-title">Cargas de Hoy</h1>
+    @if (_response is not null)
+    {
+        <span class="badge badge-info">@_response.TotalItems carga(s)</span>
+    }
+</div>
+
+<!-- Filtros -->
+<div class="entregas-filtros">
+    <!-- Filtro status -->
+    <div class="filtro-group">
+        <label class="form-label">Estado</label>
+        <select class="form-control form-control-sm" @onchange="OnStatusChanged">
+            <option value="">Todos</option>
+            <option value="@CargaStatus.Activa">🟢 Activa</option>
+            <option value="@CargaStatus.PendienteConclusion">⏳ Pendiente conclusión</option>
+            <option value="@CargaStatus.Concluida">✅ Concluida</option>
+            <option value="@CargaStatus.Facturada">🧾 Facturada</option>
+        </select>
+    </div>
+
+    <!-- Filtro driver -->
+    <div class="filtro-group">
+        <label class="form-label">Driver</label>
+        <select class="form-control form-control-sm" @onchange="OnDriverChanged">
+            <option value="">Todos</option>
+            @foreach (var d in _drivers)
+            {
+                <option value="@d.DriverID">@d.DriverName — @d.DriverPlaca</option>
+            }
+        </select>
+    </div>
+
+    <button class="btn btn-ghost btn-sm" @onclick="LimpiarFiltros">
+        🧹 Limpiar
+    </button>
+</div>
+
+<!-- Contenido -->
+@if (_loading)
+{
+    <div class="loading-overlay">
+        <div class="spinner"></div>
+        <span>Cargando cargas...</span>
+    </div>
+}
+else if (_response is null || !_response.Items.Any())
+{
+    <div class="empty-state">
+        <span class="empty-icon">📭</span>
+        <p class="text-bold">Sin cargas para hoy</p>
+        <p class="text-muted">Prueba cambiando los filtros</p>
+    </div>
+}
+else
+{
+    <div class="miscargas-list">
+        @foreach (var carga in _response.Items)
+        {
+            <details class="carga-detail-card @($"carga--{carga.Status}")"
+                     open="@(_expandedId == carga.Id)">
+
+                <!-- ── SUMMARY / HEADER ── -->
+                <summary class="carga-detail-summary"
+                         @onclick="() => ToggleExpand(carga.Id)"
+                         @onclick:preventDefault="true">
+
+                    <div class="carga-detail-chevron">
+                        @(_expandedId == carga.Id ? "▾" : "▸")
+                    </div>
+
+                    <!-- Avatar driver -->
+                    <div class="rep-avatar rep-avatar--sm"
+                         style="@(string.IsNullOrEmpty(carga.DriverPhoto)
+                                                      ? "background:var(--color-primary)"
+                                                      : $"background-image:url('{carga.DriverPhoto}')")">
+                        @(string.IsNullOrEmpty(carga.DriverPhoto) ? Initials(carga.DriverName) : "")
+                    </div>
+
+                    <div class="carga-detail-header-info">
+                        <div class="carga-detail-title">
+                            <span class="font-bold">Carga #@carga.Id</span>
+                            <BadgeCarga Status="@carga.Status" />
+                        </div>
+                        <div class="carga-detail-meta">
+                            <span>👤 @carga.DriverName</span>
+                            <span>🚗 @carga.DriverPlaca</span>
+                            <span>🕐 @carga.FechaCreacion.ToString("HH:mm")</span>
+                            <span>👔 @carga.SupervisorName</span>
+                            @if (carga.FechaConcluida.HasValue)
+                            {
+                                <span>✅ @carga.FechaConcluida.Value.ToString("HH:mm")</span>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Mini stats -->
+                    <div class="carga-detail-mini-stats">
+                        <span class="mini-stat" title="Total">📦 @carga.TotalPedidos</span>
+                        <span class="mini-stat mini-stat--success" title="Entregados">✅ @carga.Entregados</span>
+                        @if (carga.EnCamino > 0)
+                        {
+                            <span class="mini-stat mini-stat--info" title="En camino">🚗 @carga.EnCamino</span>
+                        }
+                        @if (carga.Pendientes > 0)
+                        {
+                            <span class="mini-stat" title="Pendientes">📋 @carga.Pendientes</span>
+                        }
+                        @if (carga.Fallidos > 0)
+                        {
+                            <span class="mini-stat mini-stat--danger" title="Fallidos">❌ @carga.Fallidos</span>
+                        }
+                        @if (carga.Ausentes > 0)
+                        {
+                            <span class="mini-stat mini-stat--warning" title="Ausentes">🚪 @carga.Ausentes</span>
+                        }
+                        @if (carga.EnRetorno > 0)
+                        {
+                            <span class="mini-stat mini-stat--info" title="En retorno">↩️ @carga.EnRetorno</span>
+                        }
+                    </div>
+                </summary>
+
+                <!-- ── CUERPO EXPANDIDO ── -->
+                <div class="carga-detail-body">
+
+                    <!-- Info de la carga -->
+                    <div class="carga-info-grid">
+                        <div class="carga-info-item">
+                            <span class="carga-info-label">Estado</span>
+                            <BadgeCarga Status="@carga.Status" />
+                        </div>
+                        <div class="carga-info-item">
+                            <span class="carga-info-label">Creada</span>
+                            <span>@carga.FechaCreacion.ToString("HH:mm")</span>
+                        </div>
+                        <div class="carga-info-item">
+                            <span class="carga-info-label">Driver</span>
+                            <span>@carga.DriverName</span>
+                        </div>
+                        <div class="carga-info-item">
+                            <span class="carga-info-label">Placa</span>
+                            <span>@carga.DriverPlaca</span>
+                        </div>
+                        <div class="carga-info-item">
+                            <span class="carga-info-label">Supervisor</span>
+                            <span>@carga.SupervisorName</span>
+                        </div>
+                        @if (carga.FechaConcluida.HasValue)
+                        {
+                            <div class="carga-info-item">
+                                <span class="carga-info-label">Concluida</span>
+                                <span>@carga.FechaConcluida.Value.ToString("HH:mm")</span>
+                            </div>
+                        }
+                        @if (carga.ConcluidaPorName is not null)
+                        {
+                            <div class="carga-info-item">
+                                <span class="carga-info-label">Concluida por</span>
+                                <span>@carga.ConcluidaPorName</span>
+                            </div>
+                        }
+                        @if (carga.FechaFacturada.HasValue)
+                        {
+                            <div class="carga-info-item">
+                                <span class="carga-info-label">Facturada</span>
+                                <span>@carga.FechaFacturada.Value.ToString("HH:mm")</span>
+                            </div>
+                        }
+                        @if (carga.FacturadaPorName is not null)
+                        {
+                            <div class="carga-info-item">
+                                <span class="carga-info-label">Facturada por</span>
+                                <span>@carga.FacturadaPorName</span>
+                            </div>
+                        }
+                        @if (carga.NotaConclusion is not null)
+                        {
+                            <div class="carga-info-item carga-info-item--full">
+                                <span class="carga-info-label">Nota conclusión</span>
+                                <span>@carga.NotaConclusion</span>
+                            </div>
+                        }
+                        @if (carga.NotaFacturacion is not null)
+                        {
+                            <div class="carga-info-item carga-info-item--full">
+                                <span class="carga-info-label">Nota facturación</span>
+                                <span>@carga.NotaFacturacion</span>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Barra de progreso -->
+                    @if (carga.TotalPedidos > 0)
+                    {
+                        var pct = (int)((double)carga.Entregados / carga.TotalPedidos * 100);
+                        <div class="ruta-progress mb-1">
+                            <div class="ruta-progress-fill" style="width:@(pct)%"></div>
+                        </div>
+                        <p class="text-xs text-muted mb-4">
+                            @carga.Entregados / @carga.TotalPedidos entregados (@(pct)%)
+                        </p>
+                    }
+
+                    <!-- Pedidos -->
+                    <h5 class="carga-section-title">📦 Pedidos (@carga.Pedidos.Count)</h5>
+
+                    <div class="driver-orders-list">
+                        @foreach (var pedido in carga.Pedidos)
+                        {
+                            <div class="driver-order-card entrega-card">
+                                <div class="driver-order-top">
+                                    <span class="codigo-seguimiento">@pedido.TrackingCode</span>
+                                    <BadgeEstado Estado="@pedido.OrderStatus" />
+                                </div>
+                                <div class="driver-order-nombre">@pedido.RecipientName</div>
+                                <div class="driver-order-meta">
+                                    <span>📍 @pedido.RecipientAddress, @pedido.RecipientDistrict</span>
+                                    <span>📞 @pedido.RecipientPhone</span>
+                                    <span>📦 @pedido.PackageDescription (@pedido.Quantity u.)</span>
+                                    <span>🏢 @pedido.CompanyName</span>
+                                    @if (pedido.DeliveryDate.HasValue)
+                                    {
+                                        <span>✅ @pedido.DeliveryDate.Value.ToString("HH:mm")</span>
+                                    }
+                                </div>
+                                @if (pedido.DeliveryAttempts > 0)
+                                {
+                                    <p class="pedido-card-intentos">
+                                        ⚠️ @pedido.DeliveryAttempts intento(s) fallido(s)
+                                    </p>
+                                }
+
+                                @if (pedido.Events.Any())
+                                {
+                                    <div class="pedido-timeline">
+                                        <p class="pedido-timeline-title">🕐 Historial</p>
+                                        @foreach (var ev in pedido.Events)
+                                        {
+                                            <div class="timeline-event">
+                                                <div class="timeline-dot"></div>
+                                                <div class="timeline-content">
+                                                    <div class="timeline-header">
+                                                        <BadgeEstado Estado="@ev.NewStatus" />
+                                                        <span class="text-muted text-xs">
+                                                            @ev.Timestamp.ToString("HH:mm")
+                                                            · @ev.UserName
+                                                        </span>
+                                                    </div>
+                                                    @if (ev.Note is not null)
+                                                    {
+                                                        <p class="timeline-nota">📝 @ev.Note</p>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </details>
+        }
+    </div>
+
+    <!-- Paginación -->
+    @if (_response.TotalPages > 1)
+    {
+        <div class="entregas-paginacion">
+            <button class="btn btn-ghost btn-sm"
+                    disabled="@(_page <= 1 || _loading)"
+                    @onclick="() => CambiarPagina(_page - 1)">
+                ← Anterior
+            </button>
+            @for (int i = 1; i <= _response.TotalPages; i++)
+            {
+                var p = i;
+                <button class="btn btn-sm @(p == _page ? "btn-primary" : "btn-ghost")"
+                        disabled="@_loading"
+                        @onclick="() => CambiarPagina(p)">
+                    @p
+                </button>
+            }
+            <button class="btn btn-ghost btn-sm"
+                    disabled="@(_page >= _response.TotalPages || _loading)"
+                    @onclick="() => CambiarPagina(_page + 1)">
+                Siguiente →
+            </button>
+        </div>
+    }
+
+    <p class="entregas-info-pagina text-muted text-xs">
+        Mostrando @((_page - 1) * _pageSize + 1)–@(Math.Min(_page * _pageSize, _response.TotalItems))
+        de @_response.TotalItems carga(s)
+    </p>
+}
+
+@code {
+    private CargasHoyResponseDTO? _response;
+    private List<DriverSelectorDTO> _drivers = [];
+    private bool _loading;
+    private int _page = 1;
+    private int _pageSize = 10;
+    private CargaStatus? _statusFiltro;
+    private string? _driverFiltro;
+    private int? _expandedId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Cargar drivers y cargas en paralelo
+        await Task.WhenAll(LoadDriversAsync(), LoadAsync());
+        _NotificationService.OnDashboardUpdate += OnDashboardUpdate;
+        _NotificationService.OnSolicituddeConclusion += OnSolicituddeConclusion;
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _response = await _OperatorService.GetCargasHoyAsync(
+            page: _page,
+            pageSize: _pageSize,
+            status: _statusFiltro,
+            driverID: _driverFiltro);
+        _loading = false;
+    }
+
+    private async Task LoadDriversAsync()
+        => _drivers = await _OperatorService.GetDriversConCargaHoyAsync();
+
+    private void ToggleExpand(int id)
+        => _expandedId = _expandedId == id ? null : id;
+
+    private async Task CambiarPagina(int nueva)
+    {
+        _page = nueva;
+        _expandedId = null;
+        await LoadAsync();
+    }
+
+    private async Task OnStatusChanged(ChangeEventArgs e)
+    {
+        _page = 1;
+        _expandedId = null;
+        _statusFiltro = string.IsNullOrEmpty(e.Value?.ToString())
+            ? null
+            : Enum.Parse<CargaStatus>(e.Value!.ToString()!);
+        await LoadAsync();
+    }
+
+    private async Task OnDriverChanged(ChangeEventArgs e)
+    {
+        _page = 1;
+        _expandedId = null;
+        _driverFiltro = string.IsNullOrEmpty(e.Value?.ToString())
+            ? null
+            : e.Value!.ToString();
+        await LoadAsync();
+    }
+
+    private async Task LimpiarFiltros()
+    {
+        _page = 1;
+        _expandedId = null;
+        _statusFiltro = null;
+        _driverFiltro = null;
+        await LoadAsync();
+    }
+
+    private void OnDashboardUpdate() =>
+        InvokeAsync(async () => { await LoadAsync(); StateHasChanged(); });
+
+    private void OnSolicituddeConclusion(string _) =>
+        InvokeAsync(async () => { await LoadAsync(); StateHasChanged(); });
+
+    private static string Initials(string name)
+    {
+        var parts = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{parts[0][0]}{parts[1][0]}"
+            : name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
+    }
+
+    public void Dispose()
+    {
+        _NotificationService.OnDashboardUpdate -= OnDashboardUpdate;
+        _NotificationService.OnSolicituddeConclusion -= OnSolicituddeConclusion;
+    }
+}
