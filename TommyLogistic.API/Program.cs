@@ -15,7 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Services
 builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
-builder.Services.AddDbContext<LogisticDataContext>(dc => dc.UseSqlServer(builder.Configuration["ConnectionStrings:DefaultConnection"]));
+builder.Services.AddDbContext<LogisticDataContext>(dc => dc.UseSqlServer(builder.Configuration["ConnectionStrings:MonsterDBConnection"]));
 builder.Services.AddTransient<SeedDb>();
 
 builder.Services.AddIdentity<User, IdentityRole>(x =>
