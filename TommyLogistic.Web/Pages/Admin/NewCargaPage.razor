@@ -1,20 +1,9 @@
-﻿@page "/CargaNueva"
+﻿@page "/NewCarga"
 @layout MainLayout
 @inject IRepository _Repository
 @attribute [Authorize(Roles = $"{nameof(UserEnum.Admin)}, {nameof(UserEnum.Supervisor)}")]
 
 <PageTitle>Nueva carga — Tommy Logistic</PageTitle>
-
-<!-- Breadcrumb -->
-<div class="detail-breadcrumb">
-    <button class="btn btn-ghost btn-sm" @onclick='GoToBackRole'>
-        ← Dashboard
-    </button>
-    <span class="text-muted">/</span>
-    <span class="text-muted">Nueva carga</span>
-</div>
-
-<h1 class="page-title">Nueva carga</h1>
 
 <!-- Stepper -->
 <div class="stepper">

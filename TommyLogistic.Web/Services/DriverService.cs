@@ -11,51 +11,6 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
     private readonly IRepository _repository = repository;
     private readonly SweetAlertService _sweetAlertService = sweetAlertService;
 
-    public async Task<List<DriverDTO>> GetAllDriversAsync()
-    {
-        try
-        {
-            var responseHttp = await _repository.GetAsync<List<DriverDTO>>("api/Admins/GetAllDrivers");
-
-            if (responseHttp.Error)
-            {
-                await _sweetAlertService.FireAsync("Error", "No se pudieron cargar los repartidores", SweetAlertIcon.Error);
-                return [];
-            }
-
-            return responseHttp.Response!;
-        }
-        catch (Exception ex)
-        {
-            await _sweetAlertService.FireAsync("Error", ex.Message, SweetAlertIcon.Error);
-            return [];
-        }
-
-    }
-
-    public async Task<bool> CreateDriverAsync(DriverCreatedDTO createdDTO)
-    {
-        try
-        {
-            var responseHttp = await _repository.PostAsync("api/Admins/CreateDriver", createdDTO);
-
-            if (responseHttp.Error)
-            {
-                var message = await responseHttp.GetErrorMessageAsync();
-                await _sweetAlertService.FireAsync("Error", "No se pudieron crear el repartidor", SweetAlertIcon.Error);
-                return false;
-            }
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            await _sweetAlertService.FireAsync("Error", ex.Message, SweetAlertIcon.Error);
-            return false;
-        }
-
-    }
-
     public async Task<DriverDashboardDTO?> GetDashboardAsync()
     {
         var r = await _repository.GetAsync<DriverDashboardDTO>("api/Drivers/Dashboard");
@@ -120,33 +75,6 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
             if (response.Error)
             {
                 await _sweetAlertService.FireAsync("Error", "No se pudieron cargar las entregas", SweetAlertIcon.Error);
-                return null;
-            }
-
-            return response.Response;
-        }
-        catch (Exception ex)
-        {
-            await _sweetAlertService.FireAsync("Error", ex.Message, SweetAlertIcon.Error);
-            return null;
-        }
-    }
-
-    public async Task<MyCargasResponseDTO?> GetMyCargasAsync(int page = 1, int pageSize = 8, DateTime? desde = null, DateTime? hasta = null)
-    {
-        try
-        {
-            var qs = new List<string> {$"page={page}", $"pageSize={pageSize}",};
-
-            if (desde.HasValue) qs.Add($"desde={desde.Value:yyyy-MM-dd}");
-            if (hasta.HasValue) qs.Add($"hasta={hasta.Value:yyyy-MM-dd}");
-
-            var url = $"api/Drivers/MyCargas?{string.Join("&", qs)}";
-            var response = await _repository.GetAsync<MyCargasResponseDTO>(url);
-
-            if (response.Error)
-            {
-                await _sweetAlertService.FireAsync("Error", "No se pudieron cargar las cargas", SweetAlertIcon.Error);
                 return null;
             }
 

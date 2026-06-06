@@ -13,6 +13,10 @@ public class MyCargaDTO
     public string? NotaConclusion { get; set; }
     public string? NotaFacturacion { get; set; }
 
+    // ── Driver ─────────────────────────────────────────────
+    public string DriverPlaca { get; set; } = null!;
+    public string DriverName { get; set; } = null!;
+    public string? DriverPhoto { get; set; }
     // ── Personas ─────────────────────────────────────────────
     public string SupervisorName { get; set; } = null!;
     public string? ConcluidaPorName { get; set; }

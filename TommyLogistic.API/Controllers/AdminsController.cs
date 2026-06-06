@@ -193,33 +193,90 @@ public class AdminsController(LogisticDataContext dadaContext, IUserHelper userH
     // Cargas ==========================================================================
     // GET: api/Admins/GetAllCargas
     [HttpGet("GetAllCargas")]
-    public async Task<ActionResult<IEnumerable<CargaSummaryDTO>>> GetAllCargasAsync()
+    public async Task<ActionResult<MyCargasResponseDTO>> GetAllCargasAsync(DateTime? desde = null, DateTime? hasta = null)
     {
-        List<CargaSummaryDTO> query = await _dataContext.Cargas
-            .Where(c => c.Status == CargaStatus.Activa)
+        int page = 1, pageSize = 8;
+        var query = _dataContext.Cargas.AsQueryable();
+
+        if (desde.HasValue && hasta.HasValue)
+        {
+            var desdeDate = desde.Value.Date;
+            var hastaDate = hasta.Value.Date.AddDays(1);
+            query = query.Where(c => c.FechaCreacion >= desdeDate);
+            query = query.Where(c => c.FechaCreacion < hastaDate);
+        }
+
+        int totalItems = await query.CountAsync();
+
+        var cargas = await query
             .OrderByDescending(c => c.FechaCreacion)
-            .Select(c => new CargaSummaryDTO
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(c => new MyCargaDTO
             {
+                // Cargas ==============
                 Id = c.Id,
                 Status = c.Status,
                 FechaCreacion = c.FechaCreacion,
                 FechaConcluida = c.FechaConcluida,
                 FechaFacturada = c.FechaFacturada,
-                DriverID = c.DriverID,
-                DriverName = c.Driver!.User.FullName,
-                DriverPlaca = c.Driver.Placa,
-                DriverPhoto = c.Driver.User.Photo,
-                SupervisorName = c.Supervisor!.FullName,
+                NotaConclusion = c.NotaConclusion,
+                NotaFacturacion = c.NotaFacturacion,
+                SupervisorName = c.Supervisor != null ? c.Supervisor.FullName : "—.-",
+                ConcluidaPorName = c.ConcluidaPor != null ? c.ConcluidaPor.FullName : "—.-",
+                FacturadaPorName = c.FacturadaPor != null ? c.FacturadaPor.FullName : "—.-",
+                // Driver ==============
+                DriverPlaca = c.Driver != null ? c.Driver.Placa : "—.-",
+                DriverPhoto = c.Driver != null ? c.Driver.User.Photo : "—.-",
+                DriverName = c.Driver != null ? c.Driver.User.FullName : "—.-",
+                // Stats ===============
                 TotalPedidos = c.Orders!.Count,
                 Entregados = c.Orders.Count(o => o.OrderStatus == OrderStatus.Delivered),
-                EnOnStorage = c.Orders.Count(o => o.OrderStatus == OrderStatus.OnStorage),
-                Pendientes = c.Orders.Count(o => o.OrderStatus == OrderStatus.Assigned),
-                Distrito = c.Orders.Select(o => o.RecipientDistrict).FirstOrDefault()!,
+                Fallidos = c.Orders.Count(o => o.OrderStatus == OrderStatus.Failed),
+                Ausentes = c.Orders.Count(o => o.OrderStatus == OrderStatus.RecipientAbsent),
+                EnRetorno = c.Orders.Count(o => o.OrderStatus == OrderStatus.Returning),
+                EnAlmacen = c.Orders.Count(o => o.OrderStatus == OrderStatus.OnStorage),
+                // Pedidos =============
+                Pedidos = c.Orders
+                    .OrderBy(o => o.RegistrationDate)
+                    .Select(o => new MyCargaOrderDTO
+                    {
+                        Id = o.Id,
+                        TrackingCode = o.TrackingCode,
+                        OrderStatus = o.OrderStatus,
+                        DeliveryType = o.DeliveryType,
+                        RecipientName = o.RecipientName,
+                        RecipientPhone = o.RecipientPhone,
+                        RecipientAddress = o.RecipientAddress,
+                        RecipientDistrict = o.RecipientDistrict,
+                        PackageDescription = o.PackageDescription,
+                        Quantity = o.Quantity,
+                        RegistrationDate = o.RegistrationDate,
+                        DeliveryDate = o.DeliveryDate,
+                        RescheduledDate = o.RescheduledDate,
+                        DeliveryAttempts = o.DeliveryAttempts,
+                        CompanyName = o.Company != null && o.Company.User != null ? o.Company.User.FullName : "—.-",
+                        // Eventos =============
+                        Events = o.Events!
+                            .OrderBy(e => e.Timestamp)
+                            .Select(e => new MyCargaEventDTO
+                            {
+                                Timestamp = e.Timestamp,
+                                NewStatus = e.NewStatus,
+                                Note = e.Note,
+                                BaglokLocation = e.BaglokLocation,
+                                UserName = e.User != null ? e.User.FullName : "—.-"
+                            }).ToList()
+                    }).ToList()
             }).ToListAsync();
 
-        if (query == null || query.Count == 0) return Ok(new List<CargaSummaryDTO>());
-
-        return Ok(query);
+        return Ok(new MyCargasResponseDTO
+        {
+            Items = cargas,
+            TotalItems = totalItems,
+            Page = page,
+            PageSize = pageSize,
+        });
     }
 
 

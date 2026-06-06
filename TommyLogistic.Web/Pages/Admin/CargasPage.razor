@@ -1,17 +1,22 @@
-﻿@page "/MyCargasPage"
+﻿@page "/Cargas"
 @layout MainLayout
-@inject DriverService _DriverService
-@attribute [Authorize(Roles = nameof(UserEnum.Driver))]
+@inject AdminService _AdminService
+@attribute [Authorize(Roles = $"{nameof(UserEnum.Admin)}, {nameof(UserEnum.Supervisor)}")]
 
-<PageTitle>Mis Cargas — Tommy Logistic</PageTitle>
+<PageTitle>Cargas — Tommy Logistic</PageTitle>
 
-<!-- ── BARRA DE BÚSQUEDA (siempre visible) ── -->
+<div class="saludo">
+    <h3>Todas las Cargas</h3>
+    <button class="btn btn-primary" @onclick="@(() => _NavigationManager.NavigateTo("/NewCarga"))">Nueva Carga</button>
+</div>
+
+<!-- ── BARRA DE BÚSQUEDA ── -->
 <div class="search-bar">
     <div class="search-bar-inner">
         <div class="filtro-group">
             <label class="form-label">Fecha</label>
             <input type="date"
-                   class="form-control form-control-sm search-date-input"
+                   class="form-control search-date-input"
                    @bind="_fechaTemp"
                    max="@DateTime.Today.ToString("yyyy-MM-dd")" />
         </div>
@@ -28,30 +33,11 @@
                 </button>
             }
         </div>
-
-        @if (_response is not null && _response.Items.Any())
-        {
-            <div class="results-header">
-                <div class="results-header-left">
-                    <span class="results-date">
-                        📅 @_fechaBusqueda!.Value.ToString("dddd dd \\d\\e MMMM yyyy", new System.Globalization.CultureInfo("es-PE"))
-                    </span>
-                </div>
-            </div>
-
-            <div class="results-butons-header">
-                @foreach (CargaStatus item in Enum.GetValues(typeof(CargaStatus)))
-                {
-                    <button class="btn btn-ghost" @onclick="LimpiarBusqueda">
-                        @item.ToString()
-                    </button>
-                }
-            </div>
-        }
     </div>
 </div>
 
-<!-- ── ESTADO IDLE ── -->
+
+
 @if (_fechaBusqueda is null)
 {
     <div class="idle-state">
@@ -77,6 +63,14 @@ else if (_response is null || !_response.Items.Any())
 }
 else
 {
+    <div class="results-header">
+        <div class="results-header-left">
+            <span class="results-date">
+                📅 @_fechaBusqueda!.Value.ToString("dddd dd \\d\\e MMMM yyyy", new System.Globalization.CultureInfo("es-PE"))
+            </span>
+        </div>
+    </div>
+
     <div class="miscargas-list">
         @foreach (var carga in _response.Items)
         {
@@ -147,6 +141,14 @@ else
                             <span class="carga-info-label">Supervisor</span>
                             <span>@carga.SupervisorName</span>
                         </div>
+                        <div class="carga-info-item">
+                            <span class="carga-info-label">Driver</span>
+                            <span>@carga.DriverName</span>
+                        </div>
+                        <div class="carga-info-item">
+                            <span class="carga-info-label">Placa</span>
+                            <span>@carga.DriverPlaca</span>
+                        </div>
                         @if (carga.FechaConcluida.HasValue)
                         {
                             <div class="carga-info-item">
@@ -161,6 +163,20 @@ else
                                 <span>@carga.ConcluidaPorName</span>
                             </div>
                         }
+                        @if (carga.NotaConclusion is not null)
+                        {
+                            <div class="carga-info-item carga-info-item--full">
+                                <span class="carga-info-label">Nota conclusión</span>
+                                <span>@carga.NotaConclusion</span>
+                            </div>
+                        }
+                        @if (carga.NotaFacturacion is not null)
+                        {
+                            <div class="carga-info-item carga-info-item--full">
+                                <span class="carga-info-label">Nota facturación</span>
+                                <span>@carga.NotaFacturacion</span>
+                            </div>
+                        }
                         @if (carga.FechaFacturada.HasValue)
                         {
                             <div class="carga-info-item">
@@ -173,13 +189,6 @@ else
                             <div class="carga-info-item">
                                 <span class="carga-info-label">Facturada por</span>
                                 <span>@carga.FacturadaPorName</span>
-                            </div>
-                        }
-                        @if (carga.NotaConclusion is not null)
-                        {
-                            <div class="carga-info-item carga-info-item--full">
-                                <span class="carga-info-label">Nota conclusión</span>
-                                <span>@carga.NotaConclusion</span>
                             </div>
                         }
                         @if (carga.NotaFacturacion is not null)
@@ -305,7 +314,7 @@ else
     private int _page = 1;
     private int _pageSize = 8;
     private DateTime? _fechaTemp;
-    private string _statusTemp = "";
+    private string _statusTemp = string.Empty;
     private DateTime? _fechaBusqueda;
     private CargaStatus? _statusFiltro;
     private int? _expandedId;
@@ -316,12 +325,9 @@ else
         if (_fechaBusqueda is null) return;
 
         _loading = true;
-        StateHasChanged();
 
-        _response = await _DriverService.GetMyCargasAsync(
-            _page, _pageSize,
-            desde: _fechaBusqueda.Value.Date,
-            hasta: _fechaBusqueda.Value.Date.AddDays(1).AddSeconds(-1));
+        StateHasChanged();
+        _response = await _AdminService.GetMyCargasAsync(_fechaBusqueda.Value.Date, _fechaBusqueda.Value.Date.AddDays(1).AddSeconds(-1));
 
         _loading = false;
     }

@@ -1,6 +1,6 @@
 ﻿@page "/Drivers"
 @layout MainLayout
-@inject DriverService _DriverService
+@inject AdminService _AdminService
 @attribute [Authorize(Roles = nameof(UserEnum.Admin))]
 
 <PageTitle>Repartidores — Tommy Logistic</PageTitle>
@@ -126,7 +126,7 @@ else
     private async Task LoadAsync()
     {
         _loading = true;
-        _allDriversDTO = await _DriverService.GetAllDriversAsync();
+        _allDriversDTO = await _AdminService.GetAllDriversAsync();
         _loading = false;
     }
 
@@ -135,7 +135,7 @@ else
     private async Task OnCreateAsync()
     {
         _loading = true;
-        var success = await _DriverService.CreateDriverAsync(_CreatedDTO);
+        var success = await _AdminService.CreateDriverAsync(_CreatedDTO);
         if (success)
         {
             _mostrarForm = false;
