@@ -132,18 +132,17 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
         }
     }
 
-    public async Task<MyCargasResponseDTO?> GetMyCargasAsync(int page = 1, int pageSize = 8, CargaStatus? status = null, DateTime? desde = null, DateTime? hasta = null)
+    public async Task<MyCargasResponseDTO?> GetMyCargasAsync(int page = 1, int pageSize = 8, DateTime? desde = null, DateTime? hasta = null)
     {
         try
         {
             var qs = new List<string> {$"page={page}", $"pageSize={pageSize}",};
 
-            if (status.HasValue) qs.Add($"status={status.Value}");
             if (desde.HasValue) qs.Add($"desde={desde.Value:yyyy-MM-dd}");
             if (hasta.HasValue) qs.Add($"hasta={hasta.Value:yyyy-MM-dd}");
 
-            var url = $"api/Drivers/MisCargas?{string.Join("&", qs)}";
-            var response = await _repository.GetAsync<MyCargasResponseDTO                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   >(url);
+            var url = $"api/Drivers/MyCargas?{string.Join("&", qs)}";
+            var response = await _repository.GetAsync<MyCargasResponseDTO>(url);
 
             if (response.Error)
             {
@@ -201,8 +200,6 @@ public class DriverService(IRepository repository, SweetAlertService sweetAlertS
             return false;
         }
     }
-
-    // ── Agregar en DriverService.cs ───────────────────────────────────────────
 
     public async Task<MiPerfilDTO?> GetMiPerfilAsync()
     {

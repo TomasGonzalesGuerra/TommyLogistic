@@ -41,7 +41,7 @@
         background: var(--color-success);
     }
 
-    .ruta-card.carga--PendienteConclusion::before {
+    .ruta-card.carga--Pendiente::before {
         background: var(--color-warning);
     }
 

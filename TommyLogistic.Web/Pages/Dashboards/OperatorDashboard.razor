@@ -75,7 +75,7 @@ else
                         📋 Ver Carga
                     </button>
 
-                    @if (item.Status == CargaStatus.PendienteConclusion)
+                    @if (item.Status == CargaStatus.Pendiente)
                     {
                         <button @onclick="() => ShowConcluirCarga(item.Id)"
                                 class="btn btn-danger btn-sm">
@@ -115,7 +115,7 @@ else
 
 @code {
     private List<CargaSummaryDTO> _cargas = [];
-    private int _pendientes => _cargas.Count(c => c.Status == CargaStatus.PendienteConclusion);
+    private int _pendientes => _cargas.Count(c => c.Status == CargaStatus.Pendiente);
     private bool _loading;
     private bool _guardandoCarga;
     private bool _showInsideCarga;
@@ -134,10 +134,10 @@ else
         _loading = true;
 
         _cargas = await _OperatorService.GetDashboardAsync();
-        // Ordenar: PendienteConclusion primero, luego Activa, resto al final
+        // Ordenar: Pendiente primero, luego Activa, resto al final
         _cargas = [.. _cargas.OrderBy(c => c.Status switch
         {
-            CargaStatus.PendienteConclusion => 0,
+            CargaStatus.Pendiente => 0,
             CargaStatus.Activa              => 1,
             _                               => 2
         })];

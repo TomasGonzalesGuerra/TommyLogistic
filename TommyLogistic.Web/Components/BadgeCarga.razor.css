@@ -15,7 +15,7 @@
     background: var(--color-info-light);
 }
 
-.badge-pendienteConclusion {
+.badge-Pendiente {
     color: var(--color-warning);
     background: var(--color-info-light);
 }

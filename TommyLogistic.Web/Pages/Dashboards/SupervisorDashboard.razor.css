@@ -52,7 +52,7 @@
         transform: translateY(-2px);
     }
 
-.carga-card--pendienteconclusion {
+.carga-card--Pendiente {
     border-color: var(--color-warning);
     background: var(--color-warning-light);
 }

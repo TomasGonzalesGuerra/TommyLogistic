@@ -122,12 +122,12 @@ public class DriversController(LogisticDataContext dataContext, IHubContext<Noti
 
         var todasLasCargas = driver.Cargas?.ToList() ?? [];
 
-        // Carga activa = Activa o PendienteConclusion (el driver aún la ve)
-        var cargaActiva = todasLasCargas.FirstOrDefault(c => c.Status is CargaStatus.Activa or CargaStatus.PendienteConclusion);
+        // Carga activa = Activa o Pendiente (el driver aún la ve)
+        var cargaActiva = todasLasCargas.FirstOrDefault(c => c.Status is CargaStatus.Activa or CargaStatus.Pendiente);
 
         // Historial = todo lo demás, más reciente primero
         var cargasAnteriores = todasLasCargas
-            .Where(c => c.Status is not (CargaStatus.Activa or CargaStatus.PendienteConclusion))
+            .Where(c => c.Status is not (CargaStatus.Activa or CargaStatus.Pendiente))
             .OrderByDescending(c => c.FechaCreacion)
             .ToList();
 
@@ -234,7 +234,7 @@ public class DriversController(LogisticDataContext dataContext, IHubContext<Noti
         var pendientes = carga.Orders!.Where(o => o.OrderStatus != OrderStatus.Delivered && o.OrderStatus != OrderStatus.Returning).ToList();
         if (pendientes.Count != 0) return BadRequest($"Aún Tienes {pendientes.Count} Pedido(s) sin Finalizar");
 
-        carga.Status = CargaStatus.PendienteConclusion;
+        carga.Status = CargaStatus.Pendiente;
         await _dataContext.SaveChangesAsync();
 
         // Notificar a todos los Operators
@@ -307,16 +307,10 @@ public class DriversController(LogisticDataContext dataContext, IHubContext<Noti
 
     // GET: api/Drivers/MyCargas
     [HttpGet("MyCargas")]
-    public async Task<ActionResult<MyCargasResponseDTO>> GetMyCargasAsync([FromQuery] int page = 1, [FromQuery] int pageSize = 8, [FromQuery] CargaStatus? status = null, [FromQuery] DateTime? desde = null, [FromQuery] DateTime? hasta = null)
+    public async Task<ActionResult<MyCargasResponseDTO>> GetMyCargasAsync([FromQuery] int page = 1, [FromQuery] int pageSize = 8, [FromQuery] DateTime? desde = null, [FromQuery] DateTime? hasta = null)
     {
         string userID = CurrentUserId;
-
-        var query = _dataContext.Cargas
-            .Where(c => c.DriverID == userID)
-            .AsQueryable();
-
-        if (status.HasValue)
-            query = query.Where(c => c.Status == status.Value);
+        var query = _dataContext.Cargas.Where(c => c.DriverID == userID).AsQueryable();
 
         if (desde.HasValue)
             query = query.Where(c => c.FechaCreacion.Date >= desde.Value.Date);
@@ -361,7 +355,7 @@ public class DriversController(LogisticDataContext dataContext, IHubContext<Noti
             EnAlmacen = c.Orders?.Count(o => o.OrderStatus == OrderStatus.OnStorage) ?? 0,
 
             // Pedidos completos
-            Pedidos = (c.Orders ?? [])
+            Pedidos = [.. (c.Orders ?? [])
                 .OrderBy(o => o.RegistrationDate)
                 .Select(o => new MyCargaOrderDTO
                 {
@@ -380,7 +374,7 @@ public class DriversController(LogisticDataContext dataContext, IHubContext<Noti
                     RescheduledDate = o.RescheduledDate,
                     DeliveryAttempts = o.DeliveryAttempts,
                     CompanyName = o.Company?.User?.FullName ?? "—",
-                    Events = (o.Events ?? [])
+                    Events = [.. (o.Events ?? [])
                         .OrderBy(e => e.Timestamp)
                         .Select(e => new MyCargaEventDTO
                         {
@@ -389,8 +383,8 @@ public class DriversController(LogisticDataContext dataContext, IHubContext<Noti
                             Note = e.Note,
                             BaglokLocation = e.BaglokLocation,
                             UserName = e.User?.FullName ?? "—",
-                        }).ToList()
-                }).ToList()
+                        })]
+                })]
         }).ToList();
 
         return Ok(new MyCargasResponseDTO

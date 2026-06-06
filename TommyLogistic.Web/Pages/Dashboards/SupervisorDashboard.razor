@@ -163,7 +163,7 @@ else
         [
             new("📋", "Todas",      null,                         _cargas?.Count ?? 0),
             new("🟢", "Activas",    CargaStatus.Activa,           _cargas?.Count(c => c.Status == CargaStatus.Activa) ?? 0),
-            new("⏳", "Pendientes", CargaStatus.PendienteConclusion, _cargas?.Count(c => c.Status == CargaStatus.PendienteConclusion) ?? 0),
+            new("⏳", "Pendientes", CargaStatus.Pendiente, _cargas?.Count(c => c.Status == CargaStatus.Pendiente) ?? 0),
             new("✅", "Concluidas", CargaStatus.Concluida,        _cargas?.Count(c => c.Status == CargaStatus.Concluida) ?? 0),
             new("💰", "Facturadas", CargaStatus.Facturada,        _cargas?.Count(c => c.Status == CargaStatus.Facturada) ?? 0),
         ];

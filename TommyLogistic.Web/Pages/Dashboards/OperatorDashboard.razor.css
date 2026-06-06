@@ -45,7 +45,7 @@
     .rep-card.carga--Activa::before {
         background: var(--color-success);
     }
-    .rep-card.carga--PendienteConclusion::before {
+    .rep-card.carga--Pendiente::before {
         background: var(--color-warning);
     }
     .rep-card.carga--Concluida::before {

@@ -62,11 +62,11 @@ public class OperatorsController(LogisticDataContext dataContext, IHubContext<No
     [HttpGet("GetDashboard")]
     public async Task<ActionResult<IEnumerable<CargaSummaryDTO>>> GetDashboardAsync()
     {
-        var statusActivos = new[] { CargaStatus.Activa, CargaStatus.PendienteConclusion };
+        var statusActivos = new[] { CargaStatus.Activa, CargaStatus.Pendiente };
 
         List<CargaSummaryDTO> query = await _dataContext.Cargas
             .Where(c => statusActivos.Contains(c.Status))
-            .OrderBy(c => c.Status == CargaStatus.PendienteConclusion ? 0 : 1) // Pendientes primero
+            .OrderBy(c => c.Status == CargaStatus.Pendiente ? 0 : 1) // Pendientes primero
             .ThenByDescending(c => c.FechaCreacion)
             .Select(c => new CargaSummaryDTO
             {
@@ -125,7 +125,7 @@ public class OperatorsController(LogisticDataContext dataContext, IHubContext<No
     {
         Carga? carga = await _dataContext.Cargas.Include(c => c.Orders).FirstOrDefaultAsync(c => c.Id == CargaID);
         if (carga is null) return NotFound();
-        if (carga.Status != CargaStatus.PendienteConclusion) return BadRequest("La carga no está pendiente de conclusión");
+        if (carga.Status != CargaStatus.Pendiente) return BadRequest("La carga no está pendiente de conclusión");
 
         carga.Status = CargaStatus.Concluida;
         carga.FechaConcluida = DateTime.UtcNow;
@@ -151,7 +151,7 @@ public class OperatorsController(LogisticDataContext dataContext, IHubContext<No
     [HttpGet("DriversEnRuta")]
     public async Task<ActionResult<List<DriverEnRutaDTO>>> GetDriversEnRuta()
     {
-        var statusActivos = new[] { CargaStatus.Activa, CargaStatus.PendienteConclusion };
+        var statusActivos = new[] { CargaStatus.Activa, CargaStatus.Pendiente };
 
         var cargas = await _dataContext.Cargas
             .Where(c => statusActivos.Contains(c.Status))
@@ -159,7 +159,7 @@ public class OperatorsController(LogisticDataContext dataContext, IHubContext<No
             .Include(c => c.Supervisor)
             .Include(c => c.Orders!)
                 .ThenInclude(o => o.Events!).ThenInclude(e => e.User)
-            .OrderBy(c => c.Status == CargaStatus.PendienteConclusion ? 0 : 1)
+            .OrderBy(c => c.Status == CargaStatus.Pendiente ? 0 : 1)
             .ThenByDescending(c => c.FechaCreacion)
             .ToListAsync();
 
@@ -212,7 +212,7 @@ public class OperatorsController(LogisticDataContext dataContext, IHubContext<No
     [HttpGet("DriversEnRuta/{driverID}/Carga")]
     public async Task<ActionResult<DriverCargaDetalleDTO>> GetCargaByDriver(string driverID)
     {
-        var statusActivos = new[] { CargaStatus.Activa, CargaStatus.PendienteConclusion };
+        var statusActivos = new[] { CargaStatus.Activa, CargaStatus.Pendiente };
 
         var carga = await _dataContext.Cargas
             .Where(c => c.DriverID == driverID && statusActivos.Contains(c.Status))

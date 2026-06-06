@@ -1,4 +1,123 @@
-﻿/* ── Lista de cargas ── */
+﻿/* ══════════════════════════════════════════
+   SEARCH BAR
+══════════════════════════════════════════ */
+.search-bar {
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-4) var(--space-5);
+    margin-bottom: var(--space-5);
+}
+
+.search-bar-inner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+    .search-bar-inner .filtro-group {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-1);
+    }
+
+        .search-bar-inner .filtro-group:first-child input {
+            min-width: 160px;
+        }
+
+        .search-bar-inner .filtro-group:nth-child(2) select {
+            min-width: 200px;
+        }
+
+.form-label-optional {
+    font-size: var(--font-size-xs);
+    font-weight: 400;
+    color: var(--color-text-muted);
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.search-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding-bottom: 1px;
+}
+
+/* ══════════════════════════════════════════
+   IDLE STATE
+══════════════════════════════════════════ */
+.idle-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    padding: var(--space-12) var(--space-4);
+    text-align: center;
+    color: var(--color-text-muted);
+}
+
+.idle-icon {
+    font-size: 3rem;
+    opacity: 0.6;
+    margin-bottom: var(--space-2);
+}
+
+.idle-title {
+    font-size: var(--font-size-xl);
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.idle-subtitle {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    max-width: 28rem;
+}
+
+/* ══════════════════════════════════════════
+   RESULTS HEADER
+══════════════════════════════════════════ */
+.results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+.results-butons-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-1);
+    flex-wrap: wrap;
+}
+
+.results-header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.results-date {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text);
+    text-transform: capitalize;
+}
+
+/* ══════════════════════════════════════════
+   LISTA DE CARGAS
+══════════════════════════════════════════ */
 .miscargas-list {
     display: flex;
     flex-direction: column;
@@ -6,7 +125,9 @@
     margin-bottom: var(--space-6);
 }
 
-/* ── Card expandible ── */
+/* ══════════════════════════════════════════
+   CARD EXPANDIBLE
+══════════════════════════════════════════ */
 .carga-detail-card {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
@@ -21,7 +142,7 @@
 
     /* Borde superior por status */
     .carga-detail-card.carga--Activa::before,
-    .carga-detail-card.carga--PendienteConclusion::before,
+    .carga-detail-card.carga--Pendiente::before,
     .carga-detail-card.carga--Concluida::before,
     .carga-detail-card.carga--Facturada::before {
         content: '';
@@ -34,7 +155,7 @@
         background: var(--color-success);
     }
 
-    .carga-detail-card.carga--PendienteConclusion::before {
+    .carga-detail-card.carga--Pendiente::before {
         background: var(--color-warning);
     }
 
@@ -46,7 +167,9 @@
         background: var(--color-info);
     }
 
-/* ── Summary / Header ── */
+/* ══════════════════════════════════════════
+   SUMMARY / HEADER
+══════════════════════════════════════════ */
 .carga-detail-summary {
     display: flex;
     align-items: center;
@@ -94,7 +217,7 @@
     color: var(--color-text-muted);
 }
 
-/* Mini stats en el header */
+/* Mini stats */
 .carga-detail-mini-stats {
     display: flex;
     gap: var(--space-2);
@@ -128,7 +251,55 @@
     color: var(--color-info);
 }
 
-/* ── Cuerpo expandido ── */
+/* ══════════════════════════════════════════
+   BARRA DE PROGRESO
+══════════════════════════════════════════ */
+.carga-progress-wrap {
+    padding: 0 var(--space-5) var(--space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.carga-progress-bar {
+    height: 5px;
+    border-radius: 99px;
+    background: var(--color-border);
+    overflow: hidden;
+}
+
+.carga-progress-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.5s ease;
+    background: var(--color-text-muted);
+}
+
+/* Colores del fill según status */
+.carga-progress--Activa {
+    background: var(--color-success);
+}
+
+.carga-progress--Pendiente {
+    background: var(--color-warning);
+}
+
+.carga-progress--Concluida {
+    background: var(--color-danger);
+}
+
+.carga-progress--Facturada {
+    background: var(--color-info);
+}
+
+.carga-progress-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+}
+
+/* ══════════════════════════════════════════
+   CUERPO EXPANDIDO
+══════════════════════════════════════════ */
 .carga-detail-body {
     padding: var(--space-4) var(--space-5) var(--space-5);
     border-top: 1px solid var(--color-border);
@@ -147,7 +318,9 @@
     }
 }
 
-/* ── Info grid de la carga ── */
+/* ══════════════════════════════════════════
+   INFO GRID
+══════════════════════════════════════════ */
 .carga-info-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
@@ -177,7 +350,9 @@
     color: var(--color-text-muted);
 }
 
-/* ── Sección de pedidos ── */
+/* ══════════════════════════════════════════
+   SECCIÓN PEDIDOS
+══════════════════════════════════════════ */
 .carga-section-title {
     font-size: var(--font-size-sm);
     font-weight: 700;
@@ -187,7 +362,9 @@
     letter-spacing: 0.05em;
 }
 
-/* ── Timeline de eventos ── */
+/* ══════════════════════════════════════════
+   TIMELINE
+══════════════════════════════════════════ */
 .pedido-timeline {
     margin-top: var(--space-3);
     padding-top: var(--space-3);
@@ -210,7 +387,6 @@
     position: relative;
 }
 
-    /* Línea vertical conectora */
     .timeline-event:not(:last-child)::after {
         content: '';
         position: absolute;
@@ -252,8 +428,29 @@
     margin: 0;
 }
 
-/* ── Responsive ── */
+/* ══════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════ */
 @media (max-width: 640px) {
+    .search-bar-inner {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+        .search-bar-inner .filtro-group:first-child input,
+        .search-bar-inner .filtro-group:nth-child(2) select {
+            width: 100%;
+            min-width: unset;
+        }
+
+    .search-actions {
+        width: 100%;
+    }
+
+        .search-actions .btn {
+            flex: 1;
+        }
+
     .carga-detail-summary {
         flex-direction: column;
         align-items: flex-start;
@@ -265,5 +462,10 @@
 
     .carga-info-grid {
         grid-template-columns: 1fr 1fr;
+    }
+
+    .results-header {
+        flex-direction: column;
+        align-items: flex-start;
     }
 }

@@ -223,8 +223,8 @@ else if (_dashboard is not null)
 
 <GenericModal Title="Detalle del pedido"
               IsVisible="_mostrarPreview"
-              @* Icon="@_modalIcono"
-              Variant="@_modalVariant" *@
+              Icon="@_modalIcono"
+              Variant="@_modalVariant"
               OnCancel="CerrarPreview">
     <BodyContent>
         <OrderDetailsPreview OrderId="_pedidoSeleccionadoId" OnClose="CerrarPreview" />
@@ -237,6 +237,8 @@ else if (_dashboard is not null)
     private bool _loading = true;
     private bool _mostrarPreview;
     private int _pedidoSeleccionadoId;
+    private string _modalIcono = string.Empty;
+    private string _modalVariant = "primary";
 
     protected override async Task OnInitializedAsync()
     {

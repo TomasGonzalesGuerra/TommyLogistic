@@ -5,61 +5,74 @@
 
 <PageTitle>Mis Cargas — Tommy Logistic</PageTitle>
 
-<!-- Encabezado -->
-<div class="list-header">
-    <h1 class="page-title">Mis Cargas</h1>
-    @if (_response is not null)
-    {
-        <span class="badge badge-info">@_response.TotalItems carga(s)</span>
-    }
+<!-- ── BARRA DE BÚSQUEDA (siempre visible) ── -->
+<div class="search-bar">
+    <div class="search-bar-inner">
+        <div class="filtro-group">
+            <label class="form-label">Fecha</label>
+            <input type="date"
+                   class="form-control form-control-sm search-date-input"
+                   @bind="_fechaTemp"
+                   max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+        </div>
+
+        <div class="search-actions">
+            <button class="btn btn-primary" disabled="@(_fechaTemp is null || _loading)" @onclick="EjecutarBusqueda">
+                🔍 Buscar
+            </button>
+
+            @if (_fechaBusqueda is not null)
+            {
+                <button class="btn btn-ghost" @onclick="LimpiarBusqueda">
+                    🧹 Limpiar
+                </button>
+            }
+        </div>
+
+        @if (_response is not null && _response.Items.Any())
+        {
+            <div class="results-header">
+                <div class="results-header-left">
+                    <span class="results-date">
+                        📅 @_fechaBusqueda!.Value.ToString("dddd dd \\d\\e MMMM yyyy", new System.Globalization.CultureInfo("es-PE"))
+                    </span>
+                </div>
+            </div>
+
+            <div class="results-butons-header">
+                @foreach (CargaStatus item in Enum.GetValues(typeof(CargaStatus)))
+                {
+                    <button class="btn btn-ghost" @onclick="LimpiarBusqueda">
+                        @item.ToString()
+                    </button>
+                }
+            </div>
+        }
+    </div>
 </div>
 
-<!-- Filtros -->
-<div class="entregas-filtros">
-    <div class="filtro-group">
-        <label class="form-label">Estado</label>
-        <select class="form-control form-control-sm" @onchange="OnStatusChanged">
-            <option value="">Todas</option>
-            <option value="@CargaStatus.Activa">🟢 Activa</option>
-            <option value="@CargaStatus.PendienteConclusion">⏳ Pendiente conclusión</option>
-            <option value="@CargaStatus.Concluida">✅ Concluida</option>
-            <option value="@CargaStatus.Facturada">🧾 Facturada</option>
-        </select>
+<!-- ── ESTADO IDLE ── -->
+@if (_fechaBusqueda is null)
+{
+    <div class="idle-state">
+        <div class="idle-icon">📦</div>
+        <h2 class="idle-title">Consulta tus cargas</h2>
+        <p class="idle-subtitle">Selecciona una fecha para ver todas las cargas asignadas ese día.</p>
     </div>
-
-    <div class="filtro-group">
-        <label class="form-label">Desde</label>
-        <input type="date" class="form-control form-control-sm"
-               @bind="_desde"
-               @bind:after="OnFiltroChanged" />
-    </div>
-
-    <div class="filtro-group">
-        <label class="form-label">Hasta</label>
-        <input type="date" class="form-control form-control-sm"
-               @bind="_hasta"
-               @bind:after="OnFiltroChanged" />
-    </div>
-
-    <button class="btn btn-ghost btn-sm" @onclick="LimpiarFiltros">
-        🧹 Limpiar
-    </button>
-</div>
-
-<!-- Contenido -->
-@if (_loading)
+}
+else if (_loading)
 {
     <div class="loading-overlay">
         <div class="spinner"></div>
-        <span>Cargando cargas...</span>
+        <span>Buscando cargas para @_fechaBusqueda.Value.ToString("dd/MM/yyyy")…</span>
     </div>
 }
 else if (_response is null || !_response.Items.Any())
 {
     <div class="empty-state">
         <span class="empty-icon">📭</span>
-        <p class="text-bold">Sin cargas para mostrar</p>
-        <p class="text-muted">Prueba cambiando los filtros</p>
+        <p class="text-bold">Sin cargas para el @_fechaBusqueda.Value.ToString("dd/MM/yyyy")</p>
+        <p class="text-muted">No se encontraron cargas con los filtros seleccionados.</p>
     </div>
 }
 else
@@ -67,14 +80,9 @@ else
     <div class="miscargas-list">
         @foreach (var carga in _response.Items)
         {
-            <details class="carga-detail-card @($"carga--{carga.Status}")"
-                     open="@(_expandedId == carga.Id)">
-
-                <!-- ── SUMMARY / HEADER ── -->
-                <summary class="carga-detail-summary"
-                         @onclick="() => ToggleExpand(carga.Id)"
-                         @onclick:preventDefault="true">
-
+            var pct = carga.TotalPedidos > 0 ? (int)Math.Round(carga.Entregados * 100.0 / carga.TotalPedidos) : 0;
+            <details class="carga-detail-card @($"carga--{carga.Status}")" open="@(_expandedId == carga.Id)">
+                <summary class="carga-detail-summary" @onclick="() => ToggleExpand(carga.Id)" @onclick:preventDefault="true">
                     <div class="carga-detail-chevron">
                         @(_expandedId == carga.Id ? "▾" : "▸")
                     </div>
@@ -85,18 +93,18 @@ else
                             <BadgeCarga Status="@carga.Status" />
                         </div>
                         <div class="carga-detail-meta">
-                            <span>📅 @carga.FechaCreacion.ToString("dd/MM/yyyy")</span>
-                            <span>👤 Supervisor: @carga.SupervisorName</span>
+                            <span>🕐 @carga.FechaCreacion.ToString("HH:mm")</span>
+                            <span>👤 @carga.SupervisorName</span>
                             @if (carga.FechaConcluida.HasValue)
                             {
-                                <span>✅ Concluida: @carga.FechaConcluida.Value.ToString("dd/MM/yyyy")</span>
+                                <span>✅ Concluida @carga.FechaConcluida.Value.ToString("HH:mm")</span>
                             }
                         </div>
                     </div>
 
-                    <!-- Mini stats en el header -->
+                    <!-- Mini stats -->
                     <div class="carga-detail-mini-stats">
-                        <span class="mini-stat" title="Total">📦 @carga.TotalPedidos</span>
+                        <span class="mini-stat" title="Total pedidos">📦 @carga.TotalPedidos</span>
                         <span class="mini-stat mini-stat--success" title="Entregados">✅ @carga.Entregados</span>
                         @if (carga.Fallidos > 0)
                         {
@@ -113,10 +121,19 @@ else
                     </div>
                 </summary>
 
-                <!-- ── CONTENIDO EXPANDIDO ── -->
-                <div class="carga-detail-body">
+                <!-- Barra de progreso (fuera del summary, siempre visible) -->
+                <div class="carga-progress-wrap">
+                    <div class="carga-progress-bar">
+                        <div class="carga-progress-fill @($"carga-progress--{carga.Status}")"
+                             style="width: @pct%"></div>
+                    </div>
+                    <span class="carga-progress-label">
+                        @carga.Entregados de @carga.TotalPedidos entregados · @pct%
+                    </span>
+                </div>
 
-                    <!-- Datos de la carga -->
+                <!-- ── CUERPO EXPANDIDO ── -->
+                <div class="carga-detail-body">
                     <div class="carga-info-grid">
                         <div class="carga-info-item">
                             <span class="carga-info-label">Estado</span>
@@ -183,26 +200,22 @@ else
                             @foreach (var pedido in carga.Pedidos)
                             {
                                 <div class="driver-order-card entrega-card">
-                                    <!-- Top -->
                                     <div class="driver-order-top">
                                         <span class="codigo-seguimiento">@pedido.TrackingCode</span>
                                         <BadgeEstado Estado="@pedido.OrderStatus" />
                                     </div>
 
-                                    <!-- Nombre -->
                                     <div class="driver-order-nombre">@pedido.RecipientName</div>
 
-                                    <!-- Meta -->
                                     <div class="driver-order-meta">
                                         <span>📍 @pedido.RecipientAddress, @pedido.RecipientDistrict</span>
                                         <span>📞 @pedido.RecipientPhone</span>
                                         <span>📦 @pedido.PackageDescription (@pedido.Quantity u.)</span>
                                         <span>🏢 @pedido.CompanyName</span>
-                                        <span>📅 Registro: @pedido.RegistrationDate.ToString("dd/MM/yyyy")</span>
-                                        <span>🚚 Tipo: @(pedido.DeliveryType == DeliveryType.ToDay ? "Mismo día" : "Al día siguiente")</span>
+                                        <span>🚚 @(pedido.DeliveryType == DeliveryType.ToDay ? "Mismo día" : "Al día siguiente")</span>
                                         @if (pedido.DeliveryDate.HasValue)
                                         {
-                                            <span>✅ Entregado: @pedido.DeliveryDate.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                            <span>✅ Entregado: @pedido.DeliveryDate.Value.ToString("HH:mm")</span>
                                         }
                                         @if (pedido.RescheduledDate.HasValue)
                                         {
@@ -215,7 +228,6 @@ else
                                         <p class="pedido-card-intentos">⚠️ @pedido.DeliveryAttempts intento(s) fallido(s)</p>
                                     }
 
-                                    <!-- Timeline de eventos -->
                                     @if (pedido.Events.Any())
                                     {
                                         <div class="pedido-timeline">
@@ -228,8 +240,7 @@ else
                                                         <div class="timeline-header">
                                                             <BadgeEstado Estado="@ev.NewStatus" />
                                                             <span class="text-muted text-xs">
-                                                                @ev.Timestamp.ToString("dd/MM HH:mm")
-                                                                · @ev.UserName
+                                                                @ev.Timestamp.ToString("dd/MM HH:mm") · @ev.UserName
                                                             </span>
                                                         </div>
                                                         @if (ev.Note is not null)
@@ -293,21 +304,43 @@ else
     private bool _loading;
     private int _page = 1;
     private int _pageSize = 8;
+    private DateTime? _fechaTemp;
+    private string _statusTemp = "";
+    private DateTime? _fechaBusqueda;
     private CargaStatus? _statusFiltro;
-    private DateTime? _desde;
-    private DateTime? _hasta;
     private int? _expandedId;
 
-    protected override async Task OnInitializedAsync() => await LoadAsync();
 
     private async Task LoadAsync()
     {
+        if (_fechaBusqueda is null) return;
+
         _loading = true;
-        _response = await _DriverService.GetMyCargasAsync( _page, _pageSize, _statusFiltro, _desde, _hasta);        _loading = false;
+        StateHasChanged();
+
+        _response = await _DriverService.GetMyCargasAsync(
+            _page, _pageSize,
+            desde: _fechaBusqueda.Value.Date,
+            hasta: _fechaBusqueda.Value.Date.AddDays(1).AddSeconds(-1));
+
+        _loading = false;
     }
 
-    private void ToggleExpand(int id)
-        => _expandedId = _expandedId == id ? null : id;
+    private async Task EjecutarBusqueda()
+    {
+        if (_fechaTemp is null) return;
+
+        _page = 1;
+        _expandedId = null;
+        _fechaBusqueda = _fechaTemp;
+        _statusFiltro = string.IsNullOrEmpty(_statusTemp)
+            ? null
+            : Enum.Parse<CargaStatus>(_statusTemp);
+
+        await LoadAsync();
+    }
+
+    private void ToggleExpand(int id) => _expandedId = _expandedId == id ? null : id;
 
     private async Task CambiarPagina(int nuevaPagina)
     {
@@ -316,30 +349,15 @@ else
         await LoadAsync();
     }
 
-    private async Task OnStatusChanged(ChangeEventArgs e)
+    private Task LimpiarBusqueda()
     {
         _page = 1;
         _expandedId = null;
-        _statusFiltro = string.IsNullOrEmpty(e.Value?.ToString())
-            ? null
-            : Enum.Parse<CargaStatus>(e.Value!.ToString()!);
-        await LoadAsync();
-    }
-
-    private async Task OnFiltroChanged()
-    {
-        _page = 1;
-        _expandedId = null;
-        await LoadAsync();
-    }
-
-    private async Task LimpiarFiltros()
-    {
-        _page = 1;
-        _expandedId = null;
+        _fechaTemp = null;
+        _statusTemp = "";
+        _fechaBusqueda = null;
         _statusFiltro = null;
-        _desde = null;
-        _hasta = null;
-        await LoadAsync();
+        _response = null;
+        return Task.CompletedTask;
     }
 }

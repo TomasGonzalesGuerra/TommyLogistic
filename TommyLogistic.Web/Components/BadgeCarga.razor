@@ -6,7 +6,7 @@
     private string CssClass => Status switch
     {
         CargaStatus.Activa => "badge-activa",
-        CargaStatus.PendienteConclusion => "badge-pendienteConclusion",
+        CargaStatus.Pendiente => "badge-Pendiente",
         CargaStatus.Concluida => "badge-concluida",
         CargaStatus.Facturada => "badge-facturada",
         _ => "badge-registrado"
@@ -15,7 +15,7 @@
     private string Label => Status switch
     {
         CargaStatus.Activa => "🟢 Activa",
-        CargaStatus.PendienteConclusion => "⏳ Pendiente",
+        CargaStatus.Pendiente => "⏳ Pendiente",
         CargaStatus.Concluida => "✅ Concluida",
         CargaStatus.Facturada => "💰 Facturada",
         _ => Status.ToString()

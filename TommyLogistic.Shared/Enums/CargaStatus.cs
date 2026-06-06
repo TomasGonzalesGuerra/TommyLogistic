@@ -3,7 +3,7 @@
 public enum CargaStatus
 {
     Activa,
-    PendienteConclusion,
+    Pendiente,
     Concluida,
     Facturada
 }

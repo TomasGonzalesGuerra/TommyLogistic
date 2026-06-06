@@ -5,102 +5,168 @@
 
 <PageTitle>Mis Entregas — Tommy Logistic</PageTitle>
 
-<!-- Encabezado -->
-<div class="list-header">
-    <h1 class="page-title">Mis Entregas</h1>
-    @if (_response is not null)
-    {
-        <span class="badge badge-info">@_response.TotalItems pedido(s)</span>
-    }
+<!-- ── BARRA DE BÚSQUEDA ── -->
+<div class="search-bar">
+    <div class="search-bar-inner">
+        <div class="filtro-group">
+            <label class="form-label">Fecha</label>
+            <input type="date"
+                   class="form-control form-control-sm"
+                   @bind="_fechaTemp"
+                   max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+        </div>
+
+        <div class="search-actions">
+            <button class="btn btn-primary" disabled="@(_fechaTemp is null || _loading)" @onclick="EjecutarBusqueda">
+                🔍 Buscar
+            </button>
+
+            @if (_fechaBusqueda is not null)
+            {
+                <button class="btn btn-ghost" @onclick="LimpiarBusqueda">
+                    🧹 Limpiar
+                </button>
+            }
+        </div>
+
+        @if (_response is not null && _response.Items.Any())
+        {
+            <div class="results-header">
+                <div class="results-header-left">
+                    <span class="results-date">
+                        📅 @_fechaBusqueda!.Value.ToString("dddd dd \\d\\e MMMM yyyy", new System.Globalization.CultureInfo("es-PE"))
+                    </span>
+                </div>
+            </div>
+
+            <div class="results-butons-header">
+                @foreach (OrderStatus item in Enum.GetValues(typeof(OrderStatus)))
+                {
+                    <button class="btn btn-ghost" @onclick="LimpiarBusqueda">
+                        @item.ToString()
+                    </button>
+                }
+
+                <!-- Mini resumen de estados -->
+                <div class="results-stats">
+                    @{
+                        var entregados = _response.Items.Count(p => p.OrderStatus == OrderStatus.Delivered);
+                        var fallidos = _response.Items.Count(p => p.OrderStatus == OrderStatus.Failed);
+                        var ausentes = _response.Items.Count(p => p.OrderStatus == OrderStatus.RecipientAbsent);
+                        var retorno = _response.Items.Count(p => p.OrderStatus == OrderStatus.Returning);
+                    }
+                    @if (entregados > 0)
+                    {
+                        <span class="res-stat res-stat--success">✅ @entregados</span>
+                    }
+                    @if (fallidos > 0)
+                    {
+                        <span class="res-stat res-stat--danger">❌ @fallidos</span>
+                    }
+                    @if (ausentes > 0)
+                    {
+                        <span class="res-stat res-stat--warning">🚪 @ausentes</span>
+                    }
+                    @if (retorno > 0)
+                    {
+                        <span class="res-stat res-stat--info">↩️ @retorno</span>
+                    }
+                </div>
+            </div>
+        }
+    </div>
 </div>
 
-<!-- Filtros -->
-<div class="entregas-filtros">
-    <div class="filtro-group">
-        <label class="form-label">Estado</label>
-        <select class="form-control form-control-sm" @onchange="OnStatusChanged">
-            <option value="">Todos</option>
-            <option value="@OrderStatus.Delivered">✅ Entregados</option>
-            <option value="@OrderStatus.Failed">❌ Fallidos</option>
-            <option value="@OrderStatus.RecipientAbsent">🚪 Ausente</option>
-            <option value="@OrderStatus.Returning">↩️ En retorno</option>
-            <option value="@OrderStatus.OnStorage">🏭 En almacén</option>
-            <option value="@OrderStatus.OnTheWay">🚗 En camino</option>
-            <option value="@OrderStatus.PickedUp">📦 Retirado</option>
-        </select>
+<!-- ── IDLE ── -->
+@if (_fechaBusqueda is null)
+{
+    <div class="idle-state">
+        <div class="idle-icon">🚚</div>
+        <h2 class="idle-title">Consulta tus entregas</h2>
+        <p class="idle-subtitle">Selecciona una fecha para ver los pedidos gestionados ese día.</p>
     </div>
-
-    <div class="filtro-group">
-        <label class="form-label">Desde</label>
-        <input type="date" class="form-control form-control-sm"
-               @bind="_desde"
-               @bind:after="OnFiltroChanged" />
-    </div>
-
-    <div class="filtro-group">
-        <label class="form-label">Hasta</label>
-        <input type="date" class="form-control form-control-sm"
-               @bind="_hasta"
-               @bind:after="OnFiltroChanged" />
-    </div>
-
-    <button class="btn btn-ghost btn-sm" @onclick="LimpiarFiltros">
-        🧹 Limpiar
-    </button>
-</div>
-
-<!-- Contenido -->
-@if (_loading)
+}
+else if (_loading)
 {
     <div class="loading-overlay">
         <div class="spinner"></div>
-        <span>Cargando entregas...</span>
+        <span>Buscando entregas para @_fechaBusqueda.Value.ToString("dd/MM/yyyy")…</span>
     </div>
 }
 else if (_response is null || !_response.Items.Any())
 {
     <div class="empty-state">
         <span class="empty-icon">📭</span>
-        <p class="text-bold">Sin entregas para mostrar</p>
-        <p class="text-muted">Prueba cambiando los filtros</p>
+        <p class="text-bold">Sin entregas para el @_fechaBusqueda.Value.ToString("dd/MM/yyyy")</p>
+        <p class="text-muted">No se encontraron pedidos con los filtros seleccionados.</p>
     </div>
 }
 else
 {
-    <!-- Lista de pedidos -->
-    <div class="driver-orders-list">
+    <div class="entregas-list">
         @foreach (var pedido in _response.Items)
         {
-            <div class="driver-order-card entrega-card">
-                <div class="driver-order-top">
-                    <span class="codigo-seguimiento">@pedido.TrackingCode</span>
-                    <BadgeEstado Estado="@pedido.OrderStatus" />
-                </div>
+            <details class="carga-detail-card @($"carga--{pedido.OrderStatus}")" open="@(_expandedId == pedido.Id)">
+                <summary class="carga-detail-summary" @onclick="() => ToggleExpand(pedido.Id)" @onclick:preventDefault="true">
+                    <div class="carga-detail-chevron">
+                        @(_expandedId == pedido.Id ? "▾" : "▸")
+                    </div>
 
-                <div class="driver-order-nombre">@pedido.RecipientName</div>
+                    <div class="carga-detail-header-info">
+                        <div class="carga-detail-title">
+                            <span class="codigo-seguimiento">@pedido.TrackingCode</span>
+                            <BadgeEstado Estado="@pedido.OrderStatus" />
+                        </div>
 
-                <div class="driver-order-meta">
-                    <span>📍 @pedido.RecipientAddress, @pedido.RecipientDistrict</span>
-                    <span>📞 @pedido.RecipientPhone</span>
-                    <span>📦 @pedido.PackageDescription (@pedido.Quantity u.)</span>
-                    <span>🏢 @pedido.CompanyName</span>
-                    <span>📅 @pedido.RegistrationDate.ToString("dd/MM/yyyy")</span>
-                    @if (pedido.DeliveryDate.HasValue)
+                        <div class="entrega-card-nombre">@pedido.RecipientName</div>
+                    </div>
+                    
+                    @if (pedido.CargaId.HasValue)
                     {
-                        <span>✅ Entregado: @pedido.DeliveryDate.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                        <span class="entrega-carga-ref">📋 Carga #@pedido.CargaId</span>
+                    }
+                </summary>
+
+                <div class="carga-detail-body">
+                    <div class="carga-info-grid">
+                        <div class="carga-info-item carga-info-item--wide">
+                            <span class="carga-info-label">Dirección</span>
+                            <span>@pedido.RecipientAddress, @pedido.RecipientDistrict</span>
+                        </div>
+                        <div class="carga-info-item">
+                            <span class="carga-info-label">Teléfono</span>
+                            <span>@pedido.RecipientPhone</span>
+                        </div>
+                        <div class="carga-info-item">
+                            <span class="carga-info-label">Empresa</span>
+                            <span>@pedido.CompanyName</span>
+                        </div>
+                        <div class="carga-info-item">
+                            <span class="carga-info-label">Paquete</span>
+                            <span>@pedido.PackageDescription (@pedido.Quantity u.)</span>
+                        </div>
+                        <div class="carga-info-item">
+                            <span class="carga-info-label">Registro</span>
+                            <span>@pedido.RegistrationDate.ToString("dd/MM/yyyy")</span>
+                        </div>
+                        @if (pedido.DeliveryDate.HasValue)
+                        {
+                            <div class="carga-info-item">
+                                <span class="carga-info-label">Entregado</span>
+                                <span class="carga-info-value--success">@pedido.DeliveryDate.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- ── FOOTER: intentos fallidos ── -->
+                    @if (pedido.DeliveryAttempts > 0)
+                    {
+                        <div class="entrega-card-footer">
+                            <span class="pedido-card-intentos">⚠️ @pedido.DeliveryAttempts intento(s) fallido(s)</span>
+                        </div>
                     }
                 </div>
-
-                @if (pedido.DeliveryAttempts > 0)
-                {
-                    <p class="pedido-card-intentos">⚠️ @pedido.DeliveryAttempts intento(s) fallido(s)</p>
-                }
-
-                @if (pedido.CargaId.HasValue)
-                {
-                    <p class="text-muted text-xs mt-1">Carga #@pedido.CargaId</p>
-                }
-            </div>
+            </details>
         }
     </div>
 
@@ -138,30 +204,48 @@ else
     </p>
 }
 
-
-
 @code {
     private MyDeliveriesResponseDTO? _response;
     private bool _loading;
     private int _page = 1;
     private int _pageSize = 10;
+    private DateTime? _fechaTemp;
+    private string _statusTemp = "";
+    private DateTime? _fechaBusqueda;
     private OrderStatus? _statusFiltro;
-    private DateTime? _desde;
-    private DateTime? _hasta;
+    private int? _expandedId;
 
-    protected override async Task OnInitializedAsync() => await LoadAsync();
 
     private async Task LoadAsync()
     {
+        if (_fechaBusqueda is null) return;
+
         _loading = true;
+        StateHasChanged();
+
         _response = await _DriverService.GetMyDeliveriesAsync(
             page: _page,
             pageSize: _pageSize,
-            status: _statusFiltro,
-            desde: _desde,
-            hasta: _hasta);
+            desde: _fechaBusqueda.Value.Date,
+            hasta: _fechaBusqueda.Value.Date.AddDays(1).AddSeconds(-1));
+
         _loading = false;
     }
+
+    private async Task EjecutarBusqueda()
+    {
+        if (_fechaTemp is null) return;
+
+        _page = 1;
+        _fechaBusqueda = _fechaTemp;
+        _statusFiltro = string.IsNullOrEmpty(_statusTemp)
+            ? null
+            : Enum.Parse<OrderStatus>(_statusTemp);
+
+        await LoadAsync();
+    }
+
+    private void ToggleExpand(int id) => _expandedId = _expandedId == id ? null : id;
 
     private async Task CambiarPagina(int nuevaPagina)
     {
@@ -169,27 +253,14 @@ else
         await LoadAsync();
     }
 
-    private async Task OnStatusChanged(ChangeEventArgs e)
+    private Task LimpiarBusqueda()
     {
         _page = 1;
-        _statusFiltro = string.IsNullOrEmpty(e.Value?.ToString())
-            ? null
-            : Enum.Parse<OrderStatus>(e.Value!.ToString()!);
-        await LoadAsync();
-    }
-
-    private async Task OnFiltroChanged()
-    {
-        _page = 1;
-        await LoadAsync();
-    }
-
-    private async Task LimpiarFiltros()
-    {
-        _page = 1;
+        _fechaTemp = null;
+        _statusTemp = "";
+        _fechaBusqueda = null;
         _statusFiltro = null;
-        _desde = null;
-        _hasta = null;
-        await LoadAsync();
+        _response = null;
+        return Task.CompletedTask;
     }
 }
