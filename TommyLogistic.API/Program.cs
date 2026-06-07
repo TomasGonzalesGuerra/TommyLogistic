@@ -32,7 +32,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", policy =>
     {
-        policy.WithOrigins(builder.Configuration["ClientUrl"]!)
+        policy.WithOrigins(builder.Configuration["PublicClientUrl"]!)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
