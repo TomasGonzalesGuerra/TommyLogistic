@@ -15,7 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Services
 builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
-builder.Services.AddDbContext<LogisticDataContext>(dc => dc.UseSqlServer(builder.Configuration["ConnectionStrings:DefaultConnection"]));
+builder.Services.AddDbContext<LogisticDataContext>(dc => dc.UseSqlServer(builder.Configuration["ConnectionStrings:AzureDBConnection"]));
 builder.Services.AddTransient<SeedDb>();
 
 builder.Services.AddIdentity<User, IdentityRole>(x =>
@@ -76,6 +76,15 @@ builder.Services.AddScoped<OrderEventService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<LogisticDataContext>();
+    if (dbContext.Database.IsRelational())
+    {
+        dbContext.Database.Migrate();
+    }
+}
 
 SeedData(app);
 static void SeedData(WebApplication app)
