@@ -1,5 +1,4 @@
 ﻿@inject ILoginService _ILoginService
-@inject ComingSoonService _ComingSoonService
 
 <div class="sidebar-inner">
 
@@ -12,7 +11,6 @@
     </div>
 
     <nav class="sidebar-nav" aria-label="Navegación principal">
-
         <AuthorizeView Roles="@nameof(UserEnum.Admin)">
             <div class="nav-section-label">Operaciones</div>
             <NavLink class="this" href="/AdminDashboard" Match="NavLinkMatch.All">
@@ -47,10 +45,10 @@
             <NavLink class="this" href="/SupervisorDashboard" Match="NavLinkMatch.All">
                 <span class="nav-icon">📊</span> Dashboard
             </NavLink>
-            <NavLink class="this" href="/Orders">
+            <NavLink class="this" @onclick="_ComingSoonService.Show">
                 <span class="nav-icon">📦</span> Pedidos
             </NavLink>
-            <NavLink class="this" href="/Loads">
+            <NavLink class="this" @onclick="_ComingSoonService.Show">
                 <span class="nav-icon">➕</span> Cargas
             </NavLink>
         </AuthorizeView>
@@ -60,10 +58,10 @@
             <NavLink class="this" href="/OperatorDashboard" Match="NavLinkMatch.All">
                 <span class="nav-icon">📊</span> Dashboard
             </NavLink>
-            <NavLink class="this" href="/Orders">
+            <NavLink class="this" @onclick="_ComingSoonService.Show">
                 <span class="nav-icon">📦</span> Pedidos
             </NavLink>
-            <NavLink class="this" href="/LoadsPage">
+            <NavLink class="this" @onclick="_ComingSoonService.Show">
                 <span class="nav-icon">➕</span> Cargas
             </NavLink>
         </AuthorizeView>
@@ -73,10 +71,10 @@
             <NavLink class="this" href="/ClientDashboard" Match="NavLinkMatch.All">
                 <span class="nav-icon">📊</span> Dashboard
             </NavLink>
-            <NavLink class="this" href="/mis-pedidos">
+            <NavLink class="this" @onclick="_ComingSoonService.Show">
                 <span class="nav-icon">📦</span> Mis pedidos
             </NavLink>
-            <NavLink class="this" href="/mis-pedidos/nuevo">
+            <NavLink class="this" @onclick="_ComingSoonService.Show">
                 <span class="nav-icon">➕</span> Nuevo pedido
             </NavLink>
         </AuthorizeView>
@@ -96,7 +94,6 @@
                 <span class="nav-icon">👤</span> Mi Perfil
             </NavLink>
         </AuthorizeView>
-
     </nav>
 
     <div class="sidebar-footer">

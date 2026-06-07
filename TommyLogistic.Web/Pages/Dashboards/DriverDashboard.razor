@@ -104,7 +104,7 @@ else
     else
     {
         <div class="section-title">
-            <h4>Mi Carga de Hoy <span class="badge">@_dashboard.CargaActiva.Status</span></h4>
+            <h4>Mi Carga de Hoy</h4>
             @if (_dashboard.CargaActiva.Pedidos.Any(o => o.OrderStatus == OrderStatus.Assigned))
             {
                 <div class="blockDoit" @onclick="() => DoitAll(OrderStatus.PickedUp)">
@@ -144,64 +144,20 @@ else
                     {
                         <p class="pedido-card-intentos">⚠️ @pedido.DeliveryAttempts intento(s) fallido(s)</p>
                     }
-                    <div class="driver-order-actions">
-                        @foreach (var accion in GetAcciones(pedido.OrderStatus))
-                        {
-                            <button class="btn @accion.CssClass btn-sm"
-                                    @onclick="() => AbrirAccion(pedido, accion.NuevoEstado)">
-                                @accion.Icono @accion.Label
-                            </button>
-                        }
-                    </div>
-                </div>
-            }
-        </div>
-    }
-
-    <!-- ══ HISTORIAL DE CARGAS ══ -->
-    @if (_dashboard.CargasAnteriores.Any())
-    {
-        <div class="section-title mt-6">
-            <h4>📁 Historial de Cargas</h4>
-        </div>
-
-        @foreach (var carga in _dashboard.CargasAnteriores)
-        {
-            <details class="carga-historial-item">
-                <summary class="carga-historial-header">
-                    <span class="font-medium">Carga #@carga.Id</span>
-                    <BadgeCarga Status="@carga.Status" />
-                    <span class="text-muted text-sm">
-                        @carga.FechaCreacion.ToString("dd/MM/yyyy")
-                        · @carga.TotalPedidos pedido(s)
-                        · ✅ @carga.Entregados entregado(s)
-                    </span>
-                </summary>
-
-                <div class="driver-orders-list mt-2">
-                    @foreach (var pedido in carga.Pedidos)
+                    @if (pedido.OrderStatus != OrderStatus.Assigned && pedido.OrderStatus != OrderStatus.PickedUp)
                     {
-                        <div class="driver-order-card">
-                            <div class="driver-order-top">
-                                <span class="codigo-seguimiento">@pedido.TrackingCode</span>
-                                <BadgeEstado Estado="@pedido.OrderStatus" />
-                            </div>
-                            <div class="driver-order-nombre">@pedido.RecipientName</div>
-                            <div class="driver-order-meta">
-                                <span>📍 @pedido.RecipientAddress, @pedido.RecipientDistrict</span>
-                                <span>📞 @pedido.RecipientPhone</span>
-                                <span>📦 @pedido.PackageDescription (@pedido.Quantity u.)</span>
-                            </div>
+                        <div class="driver-order-actions">
+                            @foreach (var accion in GetAcciones(pedido.OrderStatus))
+                            {
+                                <button class="btn @accion.CssClass btn-sm" @onclick="() => AbrirAccion(pedido, accion.NuevoEstado)">
+                                    @accion.Icono @accion.Label
+                                </button>
+                            }
                         </div>
                     }
                 </div>
-
-                @if (carga.NotaConclusion is not null)
-                {
-                    <p class="carga-historial-nota">📝 @carga.NotaConclusion</p>
-                }
-            </details>
-        }
+            }
+        </div>
     }
 }
 
@@ -230,23 +186,13 @@ else
                     <span class="text-muted text-xs">@(_nota.Length) caracteres</span>
                 </div>
             }
-
-            @if (_error is not null)
-            {
-                <div class="alert alert-danger mt-2">
-                    <span>⚠️</span><span>@_error</span>
-                </div>
-            }
         </div>
 
         <div class="adm-modal__footer">
-            <button class="btn btn-ghost btn-sm"
-                    @onclick="CerrarModal"
-                    disabled="@_guardando">
+            <button class="btn btn-ghost" disabled="@_guardando" style="margin-right: 1rem;" @onclick="CerrarModal">
                 Cancelar
             </button>
-            <button class="btn @_modalBtnClass btn-sm"
-                    disabled="@(_guardando || (_requiereNota && string.IsNullOrWhiteSpace(_nota)))"
+            <button class="btn btn-primary" disabled="@(_guardando || (_requiereNota && string.IsNullOrWhiteSpace(_nota)))"
                     @onclick="ConfirmarAccionAsync">
                 @if (_guardando)
                 {
