@@ -6,12 +6,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
   </PropertyGroup>
-	
+
 	<ItemGroup>
-		<Content Update="wwwroot\staticwebapp.config.json">
+		<Content Include="wwwroot\staticwebapp.config.json">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Content>
 	</ItemGroup>
+
 
 	<ItemGroup>
     <PackageReference Include="BlazorBarcodeScanner.ZXing.JS" Version="1.0.4" />
