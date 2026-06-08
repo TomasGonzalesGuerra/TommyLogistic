@@ -12,7 +12,7 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7229") });
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.Configuration["PublicApiUrl"]!) });
 // ── Auth ───────────────────────────────────────────────────────────────────
 builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<LogisticWebProvider>();
