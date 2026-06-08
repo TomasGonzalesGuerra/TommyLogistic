@@ -8,12 +8,13 @@ using TommyLogistic.Web.Helpers;
 
 namespace TommyLogistic.Web.Services;
 
-public class NotificationService(IJSRuntime jsRuntime) : IAsyncDisposable
+public class NotificationService(IJSRuntime jsRuntime, IConfiguration Configuration) : IAsyncDisposable
 {
     private bool _started;
     private HubConnection? _hubConnection;
     private readonly string _tokenKey = "TOKEN_KEY";
     private readonly IJSRuntime _jsRuntime = jsRuntime;
+    private readonly IConfiguration _configuration = Configuration;
 
     public List<NotificationItem> Historial { get; } = [];
     public int NoLeidas => Historial.Count(n => !n.Leida);
@@ -32,9 +33,11 @@ public class NotificationService(IJSRuntime jsRuntime) : IAsyncDisposable
 
         var token = await _jsRuntime.GetLocalStorage(_tokenKey);
         if (token is null) return;
+        var baseApiUrl = _configuration["PublicApiUrl"];
+        var hubUrl = new Uri(new Uri(baseApiUrl!), "hubs/notifications").ToString();
 
         _hubConnection = new HubConnectionBuilder()
-            .WithUrl("https://localhost:7229/hubs/notifications", options =>
+            .WithUrl(hubUrl, options =>
             {
                 options.AccessTokenProvider = () => Task.FromResult<string?>(token.ToString());
             })
