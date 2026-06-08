@@ -15,33 +15,25 @@ jobs:
     runs-on: ubuntu-latest
     name: Build and Deploy Job
     steps:
-      # 1. Descargar el código del repositorio
+      # 1. Descargar el código
       - uses: actions/checkout@v4
         with:
           submodules: true
           lfs: false
 
-      # 2. Instalar el entorno de .NET para compilar Blazor
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-
-      # 3. Compilar y publicar el proyecto Blazor de manera explícita
-      - name: Publish Blazor App
-        run: dotnet publish ./TommyLogistic.Web/TommyLogistic.Web.csproj -c Release -o release-output
-
-      # 4. Subir los archivos directamente a Azure usando el Token Secreto de Azure
+      # 2. Dejar que Azure compile y suba todo automáticamente de forma nativa
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_PROUD_GLACIER_0A05F1710 }}
           action: "upload"
-          app_location: "release-output/wwwroot"
-          api_location: ""
-          output_location: ""
-          skip_app_build: true
+          ###### CONFIGURACIÓN NATIVA PARA BLAZOR ######
+          app_location: "./TommyLogistic.Web" # Carpeta de tu proyecto cliente
+          api_location: "" # Vacío porque tu API está en otro App Service
+          output_location: "wwwroot" # El motor de Azure sabe que aquí se genera Blazor
+          skip_app_build: false # Forzamos a que Azure haga el build seguro
+          ##############################################
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
