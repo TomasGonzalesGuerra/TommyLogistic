@@ -18,8 +18,6 @@ builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<LogisticWebProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider, LogisticWebProvider>(x => x.GetRequiredService<LogisticWebProvider>());
 builder.Services.AddScoped<ILoginService, LogisticWebProvider>(x => x.GetRequiredService<LogisticWebProvider>());
-var authProvider = builder.Build().Services.GetRequiredService<LogisticWebProvider>();
-await authProvider.InitializeAsync();
 // ── Servicios ──────────────────────────────────────────────────────────────
 builder.Services.AddSweetAlert2();
 builder.Services.AddBlazoredLocalStorage();
@@ -32,5 +30,9 @@ builder.Services.AddScoped<OperatorService>();
 builder.Services.AddSingleton<ComingSoonService>();
 builder.Services.AddSingleton<NotificationService>();
 
+//var host = builder.Build();
+//var authProvider = host.Services.GetRequiredService<LogisticWebProvider>();
+//await authProvider.InitializeAsync();
+//await host.RunAsync();
 
 await builder.Build().RunAsync();
