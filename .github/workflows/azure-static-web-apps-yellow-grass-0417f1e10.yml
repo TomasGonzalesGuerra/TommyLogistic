@@ -46,6 +46,9 @@ jobs:
       - name: Verify wwwroot content
         run: find published/wwwroot -name "dotnet.js" -o -name "*.wasm" | head -20
 
+      - name: Find dotnet.js
+        run: find published -name "dotnet.js" -o -name "dotnet.*.js" 2>/dev/null
+
       - name: Install OIDC Client from Core Package
         run: npm install @actions/core@1.6.0 @actions/http-client
 
