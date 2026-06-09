@@ -1,0 +1,9 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html"
+  },
+  "mimeTypeOverrides": {
+    "js": "application/javascript",
+    "wasm": "application/wasm"
+  }
+}
