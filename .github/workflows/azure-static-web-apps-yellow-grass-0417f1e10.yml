@@ -35,6 +35,9 @@ jobs:
       - name: Publish Blazor WASM
         run: dotnet publish TommyLogistic.Web/TommyLogistic.Web.csproj -c Release -o published
 
+      - name: List publish output   # ← agrega esto temporalmente
+        run: find published -type f | head -50
+
       - name: Install OIDC Client from Core Package
         run: npm install @actions/core@1.6.0 @actions/http-client
 
