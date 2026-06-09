@@ -30,9 +30,9 @@ builder.Services.AddScoped<OperatorService>();
 builder.Services.AddSingleton<ComingSoonService>();
 builder.Services.AddSingleton<NotificationService>();
 
-//var host = builder.Build();
-//var authProvider = host.Services.GetRequiredService<LogisticWebProvider>();
-//await authProvider.InitializeAsync();
-//await host.RunAsync();
+var host = builder.Build();
+var authProvider = host.Services.GetRequiredService<LogisticWebProvider>();
+await authProvider.InitializeAsync();
+await host.RunAsync();
 
-await builder.Build().RunAsync();
+//await builder.Build().RunAsync();
