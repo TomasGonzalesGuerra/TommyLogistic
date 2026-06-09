@@ -1,14 +1,12 @@
 {
+  "mimeTypes": {
+    ".wasm": "application/wasm",
+    ".dll": "application/octet-stream",
+    ".blat": "application/octet-stream",
+    ".dat": "application/octet-stream"
+  },
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": [
-      "/_framework/*",
-      "/css/*",
-      "/js/*"
-    ]
-  },
-  "mimeTypeOverrides": {
-    "wasm": "application/wasm",
-    "js": "application/javascript"
+    "exclude": [ "/_framework/*", "/css/*", "/js/*", "*.{png,jpg,ico,svg,wasm,dll}" ]
   }
 }
