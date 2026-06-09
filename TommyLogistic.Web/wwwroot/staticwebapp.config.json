@@ -1,9 +1,14 @@
 {
   "navigationFallback": {
-    "rewrite": "/index.html"
+    "rewrite": "/index.html",
+    "exclude": [
+      "/_framework/*",
+      "/css/*",
+      "/js/*"
+    ]
   },
   "mimeTypeOverrides": {
-    "js": "application/javascript",
-    "wasm": "application/wasm"
+    "wasm": "application/wasm",
+    "js": "application/javascript"
   }
 }
