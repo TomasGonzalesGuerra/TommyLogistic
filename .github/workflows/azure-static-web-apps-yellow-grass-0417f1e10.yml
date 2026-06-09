@@ -35,8 +35,16 @@ jobs:
       - name: Publish Blazor WASM
         run: dotnet publish TommyLogistic.Web/TommyLogistic.Web.csproj -c Release -o published
 
-      - name: List publish output   # ← agrega esto temporalmente
-        run: find published -type f | head -50
+      - name: Move framework files to wwwroot
+        run: |
+          find published -maxdepth 1 -type f \( -name "*.js" -o -name "*.wasm" -o -name "*.dat" -o -name "*.dll" \) \
+            -exec mv {} published/wwwroot/ \;
+          if [ -d "published/_framework" ]; then
+            mv published/_framework published/wwwroot/_framework
+          fi
+
+      - name: Verify wwwroot content
+        run: find published/wwwroot -name "dotnet.js" -o -name "*.wasm" | head -20
 
       - name: Install OIDC Client from Core Package
         run: npm install @actions/core@1.6.0 @actions/http-client
@@ -56,9 +64,9 @@ jobs:
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_YELLOW_GRASS_0417F1E10 }}
           action: "upload"
-          app_location: "published/wwwroot"   # ← apunta al publish real
+          app_location: "published/wwwroot"
           api_location: ""
-          output_location: ""                 # ← vacío, ya está compilado
+          output_location: ""
           github_id_token: ${{ steps.idtoken.outputs.result }}
 
   close_pull_request_job:
