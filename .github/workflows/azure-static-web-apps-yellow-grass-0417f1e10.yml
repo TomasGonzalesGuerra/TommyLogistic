@@ -48,6 +48,9 @@ jobs:
 
       - name: Find dotnet.js
         run: find published -name "dotnet.js" -o -name "dotnet.*.js" 2>/dev/null
+    
+      - name: Find blazor files
+        run: find published/wwwroot/_framework -name "blazor*" | head -10
 
       - name: Install OIDC Client from Core Package
         run: npm install @actions/core@1.6.0 @actions/http-client
