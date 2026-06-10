@@ -43,14 +43,13 @@ jobs:
             mv published/_framework published/wwwroot/_framework
           fi
 
-      - name: Verify wwwroot content
-        run: find published/wwwroot -name "dotnet.js" -o -name "*.wasm" | head -20
-
-      - name: Find dotnet.js
-        run: find published -name "dotnet.js" -o -name "dotnet.*.js" 2>/dev/null
-    
-      - name: Find blazor files
-        run: find published/wwwroot/_framework -name "blazor*" | head -10
+      - name: Fix blazor fingerprint in index.html
+        run: |
+          FINGERPRINT=$(find published/wwwroot/_framework -name "blazor.webassembly.*.js" ! -name "*.gz" ! -name "*.br" | sed 's/.*blazor\.webassembly\.\(.*\)\.js/\1/')
+          echo "Fingerprint encontrado: $FINGERPRINT"
+          sed -i "s/blazor\.webassembly#\[\.{fingerprint}\]\.js/blazor.webassembly.$FINGERPRINT.js/g" published/wwwroot/index.html
+          echo "index.html resultado:"
+          grep "blazor" published/wwwroot/index.html
 
       - name: Install OIDC Client from Core Package
         run: npm install @actions/core@1.6.0 @actions/http-client
