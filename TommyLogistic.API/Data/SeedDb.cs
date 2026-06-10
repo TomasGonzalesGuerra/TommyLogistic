@@ -24,7 +24,7 @@ public class SeedDb(LogisticDataContext datacontext, IUserHelper userHelper)
         await CheckUserAsync("Toph de Tierra", "toph@yopmail.com", "951 425 687", "https://image.tensorartassets.com/cdn-cgi/image/anim=true,plain=false,w=500,q=85/model_showcase/608513797151344272/d477d208-f808-5a10-453b-d813769bd9df.jpeg", UserEnum.Driver, "TOP-874");
         await CheckUserAsync("Zuko del Fuego", "zuko@yopmail.com", "987 412 365", "https://i.pinimg.com/474x/ab/79/ea/ab79ea0dcbfbfbd5a299f7fa07f31066.jpg", UserEnum.Driver, "ZUK-677");
         await CheckUserAsync("Makima de Tommy", "makima@yopmail.com", "987 654 321", "https://img.anmosugoi.com/file/media-sugoi/2022/10/Makima-Chainsaw-Man-3.jpg", UserEnum.Driver, "MAK-666");
-        await CheckUserAsync("Power de Tommy", "powder@yopmail.com", "987 654 322", "https://image.tensorartassets.com/model_showcase/608861109681797221/7d2aad9a-9ce0-9923-ed18-437f869ad135.jpeg", UserEnum.Driver, "POW-666");
+        await CheckUserAsync("Power de Tommy", "power@yopmail.com", "987 654 322", "https://image.tensorartassets.com/model_showcase/608861109681797221/7d2aad9a-9ce0-9923-ed18-437f869ad135.jpeg", UserEnum.Driver, "POW-666");
         await CheckUserAsync("Mila Azul", "mila@yopmail.com", "382 314 620", "https://globalzonetoday.com/wp-content/uploads/Mila-Azul-Model.jpg", UserEnum.Operator);
         await CheckUserAsync("Sai Ambu", "sai@yopmail.com", "377 314 620", "https://www.nicepng.com/png/full/399-3995389_sai-by-kakashidoe-sai-by-kakashidoe-sai-naruto.png", UserEnum.Supervisor);
         
