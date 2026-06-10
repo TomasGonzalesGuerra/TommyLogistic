@@ -37,11 +37,20 @@ jobs:
 
       - name: Move framework files to wwwroot
         run: |
+          # Mover archivos sueltos a wwwroot primero
           find published -maxdepth 1 -type f \( -name "*.js" -o -name "*.wasm" -o -name "*.dat" -o -name "*.dll" \) \
             -exec mv {} published/wwwroot/ \;
+          # Mover carpeta _framework si existe en raíz
           if [ -d "published/_framework" ]; then
             mv published/_framework published/wwwroot/_framework
           fi
+          # Mover dotnet.js a _framework
+          if [ -f "published/wwwroot/dotnet.js" ]; then
+            mv published/wwwroot/dotnet.js published/wwwroot/_framework/dotnet.js
+          fi
+          # Verificar resultado
+          echo "=== Contenido de _framework ==="
+          ls published/wwwroot/_framework/ | grep "dotnet"
 
       - name: Fix blazor fingerprint in index.html
         run: |
